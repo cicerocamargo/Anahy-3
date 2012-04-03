@@ -58,7 +58,7 @@ int main(int argc, char** argv) {
 	d.add_successor(&e);
 	std::list<Task*> input_nodes;
 	input_nodes.push_back(&a);
-	Scheduler::init(4, input_nodes);
+	Scheduler::init(8, input_nodes);
 	Scheduler::terminate();
 	
 	return 0;

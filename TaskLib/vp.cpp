@@ -1,6 +1,8 @@
 #include "vp.h"
 #include "scheduler.h"
 #include "check.h"
+#include <stdio.h>
+#include <stdlib.h>
 
 bool VirtualProcessor::program_running = false;
 int VirtualProcessor::vps_waiting = 0;
@@ -45,7 +47,7 @@ void VirtualProcessor::run() {
 				ret_code = pthread_mutex_unlock(&mutex);
 				checkResults("pthread_mutex_unlock", ret_code);
 				task->run();
-				
+				printf("I'm VP %ld and finished task %lu\n", this->id, task->get_id());
 				// sends the mutex and conditional var with the last task
 				Scheduler::graph_update_request(task, &mutex, &cond);
 			}

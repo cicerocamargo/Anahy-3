@@ -17,6 +17,7 @@ void Task::dec_pred_counter(std::set<Task*>& callers_ready_successors) {
 	pred_counter--;
 	if (pred_counter == 0) {
 		callers_ready_successors.insert(this);
+		//printf("Task %lu got ready!!\n", get_id());
 	}
 	
 	/* CRITICAL SECTION */
@@ -37,7 +38,8 @@ void Task::add_successor(Task* t) {
 
 Task::Task() {
 	pred_counter = 0;
-	pthread_mutex_t pred_counter_lock = PTHREAD_MUTEX_INITIALIZER;
+//	pred_counter_lock = PTHREAD_MUTEX_INITIALIZER;
+	pthread_mutex_init(&pred_counter_lock, NULL);
 	result = NULL;
 }
 

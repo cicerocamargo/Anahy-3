@@ -6,20 +6,20 @@
 
 class Scheduler;
 
-enum VPState { VPsleeping, VPrunning };
 
-class VirtualProcessor : public SerialObject {
+class VirtualProcessor {
 	static bool program_running;
-	VPState state;
+	static int vps_waiting;
+	static unsigned long int instance_counter;
+	
+	unsigned long int id;
 	unsigned long int affinity_mask;
 
 public:
 	static void set_program_running(bool state);
-	VirtualProcessor(unsigned long int aff_mask);
+	static int get_vps_waiting();
 	VirtualProcessor();
-	~VirtualProcessor();
-	void set_state(VPState state);
-	VPState get_state();
+	VirtualProcessor(unsigned long int aff_mask);
 	void run();
 };
 

@@ -9,14 +9,10 @@ class VirtualProcessor;
 
 class Scheduler {
 	// Initially, this list will contain the input nodes of the graph
-	static bool running;
-	
 	static std::list<Task*> ready_tasks;
-	static pthread_mutex_t task_list_lock;
-	static pthread_cond_t ready_task_cond;
 	
 	static int number_of_vps;
-	static VirtualProcessor* vp_array;	// array of VPs
+	static VirtualProcessor** vp_array;	// array of VP pointers
 	static pthread_t* vp_thread_array;	// threads responsible for running the VPs
 	
 	// a monitor? a conditional variable?
@@ -27,25 +23,14 @@ class Scheduler {
 	Scheduler();
 	Scheduler(Scheduler&);
 	
-	// create pthreads to run the VPs
-	static void create_vp_threads();
-	
-	// join the pthreads running the VPs
-	static void join_vp_threads();
-
 	// a request called from a VP asking for a task;
 	// it can return NULL in case of no ready tasks available
-	static Task* task_request(VirtualProcessor* vp);
-	
-	// a request called from a idle VP asking for sleep time;
-	// the scheduler should put the VP waiting for a condition
-	// variable to be true when there are ready tasks
-	static void sleep_request(VirtualProcessor* vp);
-	
+	static Task* task_request();
+		
 	// a request called from a VP that just finished a task;
 	// the scheduler should update evetual successor of the
 	// "finished task"
-	static void graph_update_request(Task* finished_task);
+	static void graph_update_request(Task* finished_task, pthread_mutex_t* mutex, pthread_cond_t* cond);
 
 public:
 	
@@ -53,10 +38,9 @@ public:
 	
 	// tells to the scheduler the number of VPs to be used
 	// and and an optional set of input nodes
-	static void init(int n_vps, std::list<Task*> input_nodes); 
+	static void init(int n_vps, std::list<Task*> input_nodes);
 	
-	// adds a input node of the graph
-	static void add_input_node(Task* t);
+	static void terminate();
 };
 
 #endif

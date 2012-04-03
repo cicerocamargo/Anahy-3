@@ -1,12 +1,8 @@
 #include "task.h"
-
-void Task::add_predecessor(Task* t) {
-	predecessors.insert(t);
-	pred_counter++;
-}
+#include "check.h"
+#include <stdio.h>
 
 std::set<Task*> Task::update_successors() {
-	std::set<Task*>::iterator it;
 	std::set<Task*> ready_successors;
 	for (it = successors.begin(); it != successors.end(); it++) {
 		(*it)->dec_pred_counter(ready_successors);
@@ -27,7 +23,17 @@ void Task::dec_pred_counter(std::set<Task*>& callers_ready_successors) {
 	pthread_mutex_unlock(&pred_counter_lock);
 }
 
+void Task::add_predecessor(Task* t) {
+	predecessors.insert(t);
+	pred_counter++;
+}
+
 // PUBLIC METHODS
+
+void Task::add_successor(Task* t) {
+	successors.insert(t);
+	t->add_predecessor(this);
+}
 
 Task::Task() {
 	pred_counter = 0;
@@ -35,11 +41,8 @@ Task::Task() {
 	result = NULL;
 }
 
-void Task::run() {}
-
-void Task::add_successor(Task* t) {
-	successors.insert(t);
-	t->add_predecessor(this);
+void Task::run() {
+	printf("No code implemented to task %ld...\n", get_id());
 }
 
 void* Task::get_result() {

@@ -37,14 +37,14 @@ void Scheduler::graph_update_request(Task* finished_task, pthread_mutex_t* mutex
 	std::set<Task*>::iterator it;
 	int ret_code;
 	
-	printf("New tasks? ... ");
+	//printf("New tasks? ... ");
 	
 	// update successors of finished_task
 	new_ready_tasks = finished_task->update_successors();
 	
 	// if any task got ready, push it onto the ready_tasks list
 	if (!new_ready_tasks.empty()) {
-		printf("Yeah!!");
+		//printf("Yeah!!");
 		ret_code = pthread_mutex_lock(mutex);
 		checkResults("pthread_mutex_lock", ret_code);
 		
@@ -54,7 +54,7 @@ void Scheduler::graph_update_request(Task* finished_task, pthread_mutex_t* mutex
 		
 		if (VirtualProcessor::get_vps_waiting()) {
 			// if there are vps waiting, signal them that new tasks arrived!
-			printf("Signaling VPs that that are waiting...\n");
+			//printf("Signaling VPs that that are waiting...\n");
 			ret_code = pthread_cond_broadcast(cond);
 			checkResults("pthread_cond_broadcast", ret_code);
 		}
@@ -63,7 +63,7 @@ void Scheduler::graph_update_request(Task* finished_task, pthread_mutex_t* mutex
 		checkResults("pthread_mutex_unlock", ret_code);
 	}
 	
-	printf("out!");
+	//printf("out!");
 }
 
 // PUBLIC METHODS

@@ -1,7 +1,13 @@
+Cicero: Alan, dá uma olhada nas configurações globais do git da tua máquina (estás commitando em meu nome)
+
 * implementar o escalonador como um thread daemon
 -
 * implementar a operação join da seguinte maneira:
   caso o thread joined não esteja terminado, ele pode estar em dois estados:
     READY: então o VP troca para running e começa a executar imediatamente
     RUNNING: realiza uma operação get_job parametrizada com o thread joined 
+
+* estabelecer se todos os pontos de escalonamento gerarão operaçõesno grafo para
+	o thread escalonador -- daemon.	
+* definir melhor a arquitetura de SW (CICERO: ainda não tenho uma ideia clara do porquê de ter athreads e jobs -- duas estruturas)
 

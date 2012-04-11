@@ -47,14 +47,14 @@ void VirtualProcessor::run() {
 				ret_code = pthread_mutex_unlock(&mutex);
 				checkResults("pthread_mutex_unlock", ret_code);
 				task->run();
-				printf("I'm VP %ld and finished task %lu\n", this->id, task->get_id());
+				//printf("I'm VP %ld and finished task %lu\n", this->id, task->get_id());
 				// sends the mutex and conditional var with the last task
 				Scheduler::graph_update_request(task, &mutex, &cond);
 			}
 			else {
 				vps_waiting++;
 				if (vps_waiting == instance_counter) {
-					printf("I'm VP %ld and I say the game is over! muá-ha-ha-ha!!!\n", this->id);
+					//printf("I'm VP %ld and I say the game is over! muá-ha-ha-ha!!!\n", this->id);
 					program_running = false;
 					pthread_cond_broadcast(&cond);
 					checkResults("pthread_cond_broadcast", ret_code);
@@ -62,7 +62,7 @@ void VirtualProcessor::run() {
 					checkResults("pthread_mutex_unlock", ret_code);
 				}
 				else {
-					printf("VP %ld blocked!\n", this->id);
+					//printf("VP %ld blocked!\n", this->id);
 					ret_code = pthread_cond_wait(&cond, &mutex);
 					checkResults("pthread_cond_wait", ret_code);
 					vps_waiting--;

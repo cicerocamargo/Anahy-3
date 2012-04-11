@@ -1,4 +1,5 @@
 * implementar o escalonador como um thread daemon
+-
 * implementar a operação join da seguinte maneira:
   caso o thread joined não esteja terminado, ele pode estar em dois estados:
     READY: então o VP troca para running e começa a executar imediatamente

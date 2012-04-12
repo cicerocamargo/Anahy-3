@@ -71,9 +71,7 @@ void Scheduler::init(int n_vps, std::list<Task*> input_nodes) {
 	number_of_vps = n_vps;
 	vp_array = (VirtualProcessor**) malloc(number_of_vps * sizeof(VirtualProcessor*));
 	vp_thread_array = (pthread_t*) malloc(number_of_vps * sizeof(pthread_t));
-
-        for (int i = 0; i < number_of_vps; i++) {
-            
+	for (int i = 0; i < number_of_vps; i++) {
 		vp_array[i] = new VirtualProcessor();
 	}
 	ready_tasks = input_nodes;

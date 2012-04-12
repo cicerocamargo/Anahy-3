@@ -4,7 +4,6 @@
 #include <stdio.h>
 #include <string.h>
 #include "athread.h"
-#include "job.h"
 #include "graph_operation.h"
 
 /* environment variables */
@@ -18,6 +17,47 @@ bool env_is_running;
 std::list<athread_t*> root_threads;
 
 /* environment variables */
+
+Job::Job() {
+        printf("New thread!\n");
+}
+
+Job::Job(void* (*func)(void*), void* job_data) {
+        pfunc = func;
+        data = job_data;
+}
+
+void Job::set_job(Job* j) {
+        job = j;
+}
+
+Job* Job::get_job() {
+        return job;
+}
+
+void Job::set_parent(Job* p) {
+        parent = p;
+}
+
+Job* Job::get_parent() {
+        return parent;
+}
+
+void Job::set_creator(pthread_t* c) {
+        creator = c;
+}
+
+pthread_t* Job::get_creator() {
+        return creator;
+}
+
+unsigned long Job::get_id() {
+        return id;
+}
+
+void Job::run() {
+       (*pfunc)(data);
+}
 
 Job* get_job(Job* starting_point) {
 	int ret_code;

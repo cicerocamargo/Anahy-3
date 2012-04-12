@@ -1,0 +1,21 @@
+Cicero: Alan, dá uma olhada nas configurações globais do git da tua máquina (estás commitando em meu nome)
+
+* implementar o escalonador como um thread daemon (nao seria uma boa ideia, um thread darmon gera gargalo com um 
+numero suficientemente grande de cores e threads para atender muitas requisições)
+-
+* implementar a operação join da seguinte maneira:
+  caso o thread joined não esteja terminado, ele pode estar em dois estados:
+    READY: então o VP troca para running e começa a executar imediatamente
+    RUNNING: realiza uma operação get_job parametrizada com o thread joined 
+
+* estabelecer se todos os pontos de escalonamento gerarão operações no grafo para
+	o thread escalonador -- daemon.	
+* definir melhor a arquitetura de SW (CICERO: ainda não tenho uma ideia clara do porquê de ter athreads e jobs -- duas estruturas)
+(ALAN: não acho bom termos duas estruturas, para mim apenas poderiamos utilizar jobs, uma vez que os jobs guardariam todas as informações,
+como retorno das operações, atributos, afinidade, etc).
+
+*Seria bom antecipar a retirada de jobs do grafo, um thread retirando jobs do grafo e os colocando em uma fila diminuiria locks, ja que
+é possivel colocar jobs numa ponta da fila e retirar por outra.
+
+*Deixar as operações inserção no grafo mais finas, o ideal eh termos o local onde o job será inserido
+

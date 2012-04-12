@@ -3,6 +3,8 @@
 
 #include <pthread.h>
 
+class Job;
+
 enum ThreadState {none, ready, running, finished, blocked};
 
 

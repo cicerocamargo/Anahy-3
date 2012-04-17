@@ -2,6 +2,7 @@
 #include <list>
 #include <queue>
 #include <stdio.h>
+#include <unistd.h>
 #include <string.h>
 #include "athread.h"
 #include "graph_operation.h"
@@ -12,26 +13,29 @@ pthread_t main_thread, scheduler_daemon;
 pthread_t* vp_array;
 pthread_cond_t 	cond = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t	mutex = PTHREAD_MUTEX_INITIALIZER;
-unsigned int num_vps = 1;
+unsigned int num_vps;
+unsigned long Job::counter = 0;
 bool env_is_running;
-std::list<athread_t*> root_threads;
+std::list<Job*> root_threads;
 
 /* environment variables */
 
 Job::Job() {
         printf("New thread!\n");
+        id = counter++;
 }
 
-Job::Job(void* (*func)(void*), void* job_data) {
-        pfunc = func;
+Job::Job(pfunc func, void* job_data) {
+        function = func;
         data = job_data;
+        id = counter++;
 }
 
 void Job::set_job(Job* j) {
         job = j;
 }
 
-Job* Job::get_job() {
+Job* Job::get_job() const {
         return job;
 }
 
@@ -39,7 +43,7 @@ void Job::set_parent(Job* p) {
         parent = p;
 }
 
-Job* Job::get_parent() {
+Job* Job::get_parent() const {
         return parent;
 }
 
@@ -47,11 +51,15 @@ void Job::set_creator(pthread_t* c) {
         creator = c;
 }
 
-pthread_t* Job::get_creator() {
+Job* Job::get_creator() const {
         return creator;
 }
 
-unsigned long Job::get_id() {
+ThreadState Job::get_state() const {
+    return state;
+}
+
+unsigned long Job::get_id() const {
         return id;
 }
 
@@ -146,21 +154,38 @@ void* vp_function(void* args) {
 void aInit(int* _argc, char*** _argv) {
 	main_thread = pthread_self();
 	
-	char** argv = *_argv;
-	int argc = *_argc;
-	
-	// FIX: discover number of vps
-	for (int i = 0; i < argc; i++) {
-		if (strcmp(argv[i], "-vp") == 0 && (i+1) < argc) {
-			num_vps = atoi(argv[i+1]);
-		}
-	}
+	int c;
+        while(1) {
+            if((c = getopt(argc, argv, "v:s:m:")) == -1)
+                break;
+            switch(c) {
+                case 'v':
+                    num_vps = strtol(optarg, NULL, 10);
+                    if(num_vps < 1) {
+                        printf("Invalid number of vps, assuming 1 vp!\n");
+                        num_vps = 1;
+                    }
+                    break;
+                case 's':
+                    //set scheduler (our problem)
+                    break;
+                case 'm':
+                    /* set mode to executing and the 
+                     * frequency of the cores (Alan says my problem)
+                     */
+                    break;
+                default:
+                    //set default state and frequency of the cores
+                    break;
+            }
+            
+        }
 	
 	printf("Anahy started: %d VPs running.\n", num_vps);
 	env_is_running = true;
 	
 	// allocate and launch VPs
-	vp_array = (pthread_t*) malloc(num_vps*sizeof(pthread_t));
+	vp_array = (pthread_t*) malloc(num_vps * sizeof(pthread_t));
 	for (int i = 0; i < num_vps; i++) {
 		pthread_create(&vp_array[i], NULL, vp_function, NULL);
 	}
@@ -179,10 +204,11 @@ void aTerminate() {
 	}
 }
 
-int athread_create(athread_t* handle, athread_attr_t* attr, void*(*func)(void*), void* args) {
+int athread_create(Job* handle, athread_attr_t* attr, pfunc function,
+void* args) {
 							
 	pthread_t self = pthread_self();
-	// handle->set_job(new Job(func, args));
+	// handle->set_job(new Job(function, args));
 	// handle->set_creator(self);
 	// handle->set_parent(/* e agora?? */)
 
@@ -199,8 +225,8 @@ int athread_create(athread_t* handle, athread_attr_t* attr, void*(*func)(void*),
 	}
 }
 
-int athread_join(athread_t handle, void** result) {
-	//ThreadState st = handle->get_state();
+int athread_join(Job* handle, void** result) {
+	ThreadState st = handle->get_state();
 	pthread_t self = pthread_self();
 	
 	// who am I ?

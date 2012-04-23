@@ -4,16 +4,11 @@
 map<pthread_t,VirtualProcessor*> VirtualProcessor::vp_map;
 uint VirtualProcessor::instance_counter = 0;
 
-/* PRIVATE METHODS' DEFINITIONS */
-
-
-
 /* PUBLIC METHODS' DEFINITIONS */
 VirtualProcessor::VirtualProcessor(Daemon* daemon) {
 	this->daemon = daemon;
         id = instance_counter++;
 }
-
 
 VirtualProcessor::~VirtualProcessor() {
 	
@@ -54,4 +49,9 @@ pthread_t VirtualProcessor::get_thread() {
 
 pthread_mutex_t* VirtualProcessor::get_mutex() {
 	return &mutex;
+}
+
+VirtualProcessor* VirtualProcessor::get_vp_from_pthraed(pthread_t thread_id)
+const {
+    return vp_map[thread_id];
 }

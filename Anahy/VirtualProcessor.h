@@ -35,6 +35,7 @@ public:
 	ulong get_job_counter() const;
 	pthread_t get_thread() const;
 	pthread_mutex_t* get_mutex() const;
+        static VirtualProcessor* get_vp_from_pthread(pthread_t thread_id) const;
 };
 
 #endif

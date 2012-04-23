@@ -8,7 +8,7 @@
 using namespace std;
 
 class AnahyVM;
-class SchedulingOperation;
+class SchedulingOperation;ne
 
 class Daemon {
 

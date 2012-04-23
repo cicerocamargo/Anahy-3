@@ -14,22 +14,18 @@ Job::Job (pfunc func, void* job_data) {
 }
 
 void Job::set_parent(Job* job_parent) {
-    parent = p;
+    parent = job_parent;
 }
 
 Job* Job::get_parent() const {
     return parent;
 }
 
-void set_creator(Job* job_creator) {
-    creator = job_creator;
+VirturalProcessor* Job::get_vp_creator() const {
+    return vp_creator;
 }
 
-Job* Job::get_creator() const {
-    return creator;
-}
-
-ThreadState Job::get_state() const {
+JobState Job::get_state() const {
     return state;
 }
 

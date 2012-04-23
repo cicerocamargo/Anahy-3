@@ -29,10 +29,10 @@ void Daemon::push_scheduling_operation(SchedulingOperation* sched_op) {
 
 
 /* getters and setters */
-queue<SchedulingOperation*> Daemon::get_new_operations() {
+queue<SchedulingOperation*> Daemon::get_new_operations() const {
 	return new_operations;
 }
 
-list<SchedulingOperation*> Daemon::get_suspended_operations() {
+list<SchedulingOperation*> Daemon::get_suspended_operations() const {
 	return suspended_operations;
 }

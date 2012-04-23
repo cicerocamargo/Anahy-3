@@ -8,7 +8,6 @@
 class VirtualProcessor;
 class Daemon;
 class Job;
-typedef ulong JobId;
 
 class AnahyVM {
 	
@@ -25,13 +24,13 @@ class AnahyVM {
 
 public:
 	
-	static AnahyVM* get_instance_handler();
+	static AnahyVM* get_instance_handler() const;
 	
 	void boot(uint n_processors, sfunc scheduling_function);
 	void shut_down();
-	void insert_job(Job*);
-	void remove_job(Job*);
-	Job* find_a_ready_job(Job*);
+	void insert_job(Job* job);
+	void remove_job(Job* job);
+	Job* find_a_ready_job(Job* job);
 	
 	/* getters and setters */
 	list<Job*> get_root_jobs() const;

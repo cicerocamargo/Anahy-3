@@ -34,12 +34,12 @@ public:
 	Job* find_a_ready_job(Job*);
 	
 	/* getters and setters */
-	list<Job*> get_root_jobs();
-	map<JobId,Job*> get_job_map();
+	list<Job*> get_root_jobs() const;
+	map<JobId,Job*> get_job_map() const;
 	int get_num_processors();
-	vector<VirtualProcessor*> get_processors();
+	vector<VirtualProcessor*> get_processors() const;
 	Daemon* get_daemon();
-	Job* get_job_by_id(JobId job_id);
+	Job* get_job_by_id(JobId job_id) const;
 	void set_scheduling_function(sfunc new_value);
 };
 

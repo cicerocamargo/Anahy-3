@@ -27,8 +27,8 @@ public:
 	void push_scheduling_operation(SchedulingOperation* sched_op);
 	
 	/* getters and setters */
-	queue<SchedulingOperation*> get_new_operations();
-	list<SchedulingOperation*> get_suspended_operations();
+	queue<SchedulingOperation*> get_new_operations() const;
+	list<SchedulingOperation*> get_suspended_operations() const;
 };
 
 #endif

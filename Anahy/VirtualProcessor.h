@@ -29,12 +29,12 @@ public:
 	void flush();
 
 	/* getters and setters */
-	Job* get_current_job();
+	Job* get_current_job() const;
 	void set_current_job(Job* new_value);
-	uint get_id();
-	ulong get_job_counter();
-	pthread_t get_thread();
-	pthread_mutex_t* get_mutex();
+	uint get_id() const;
+	ulong get_job_counter() const;
+	pthread_t get_thread() const;
+	pthread_mutex_t* get_mutex() const;
 };
 
 #endif

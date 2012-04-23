@@ -1,38 +1,46 @@
 #include "Job.h"
 
-ulong Job::counter = 0;
-
-Job::Job() {
-    puts("New thread!\n");
-    id = counter++;
+Job::Job (JobId _id, Job* _parent, VirtualProcessor* _creator,
+	JobAttributes _attributes, pfunc _function, void* _data) :
+id(_id),
+parent(_parent),
+creator(_creator),
+attributes(_attributes),
+function(_function),
+data(_data) {
+	state = ready;
 }
 
-Job::Job (pfunc func, void* job_data) {
-    function = func;
-    data = job_data;
-    id = counter++;
+void Job::run() {
+    (function)(data);
 }
 
-void Job::set_parent(Job* job_parent) {
-    parent = job_parent;
+void Job::add_child(Job* child) {
+	children.insert(child);
+}
+
+// getters and setters
+
+void* Job::get_retval() const {
+	return retval;
+}
+
+JobId Job::get_id() const {
+    return id;
 }
 
 Job* Job::get_parent() const {
     return parent;
 }
 
-VirturalProcessor* Job::get_vp_creator() const {
-    return vp_creator;
+VirtualProcessor* Job::get_creator() const {
+    return creator;
 }
 
 JobState Job::get_state() const {
     return state;
 }
 
-ulong Job::get_id() const {
-    return id;
-}
-
-void run() {
-    (function)(data);
+JobAttributes Job::get_attributes() const {
+	return attributes;
 }

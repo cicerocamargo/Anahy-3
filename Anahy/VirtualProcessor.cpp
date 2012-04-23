@@ -51,7 +51,11 @@ pthread_mutex_t* VirtualProcessor::get_mutex() {
 	return &mutex;
 }
 
-VirtualProcessor* VirtualProcessor::get_vp_from_pthraed(pthread_t thread_id)
-const {
+JobId VirtualProcessor::get_new_JobId() {
+	JobId jid(id, job_counter++);
+	return jid;
+}
+
+VirtualProcessor* VirtualProcessor::get_vp_from_pthraed(pthread_t thread_id) {
     return vp_map[thread_id];
 }

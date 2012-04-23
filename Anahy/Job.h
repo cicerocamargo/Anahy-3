@@ -2,13 +2,13 @@
 #define JOB_H
 
 #include "definitions.h"
-#include "Job.h"
 #include "JobId.h"
-#include "VirtualProcessor.h"
 #include <pthread.h>
 #include <set>
 
 using namespace std;
+
+class VirtualProcessor;
 
 typedef int JobAttributes;
 

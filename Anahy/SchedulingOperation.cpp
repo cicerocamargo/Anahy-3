@@ -1,6 +1,5 @@
 #include "SchedulingOperation.h"
-#include "Job.h"
-#include "VirtualProcessor.h"
+
 
 SchedulingOperation::SchedulingOperation(SchedOpType _type, 
 	Job* _associated_job, VirtualProcessor* _applicant)

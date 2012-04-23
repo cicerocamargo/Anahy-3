@@ -1,8 +1,8 @@
 #ifndef SCHEDULINGOPERATION_H
 #define SCHEDULINGOPERATION_H
 
-class Job;
-class VirtualProcessor;
+#include "Job.h"
+#include "VirtualProcessor.h"
 
 enum SchedOpType { NewJob, EndJob, GetJob };
 
@@ -14,7 +14,6 @@ class SchedulingOperation {
 
 public:
 	SchedulingOperation(SchedOpType _type, Job* _associated_job, VirtualProcessor* _applicant);
-	virtual ~SchedulingOperation();
 
 	/* getters and setters */
 	SchedOpType get_type();

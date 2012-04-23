@@ -4,9 +4,9 @@
 #include <pthread.h>
 #include <map>
 #include "definitions.h"
-
-class Job;
-class Daemon;
+#include "JobId.h"
+#include "Job.h"
+#include "Daemon.h"
 
 class VirtualProcessor {
 
@@ -34,9 +34,9 @@ public:
 	uint get_id() const;
 	ulong get_job_counter() const;
 	pthread_t get_thread() const;
-	pthread_mutex_t* get_mutex() const;
+	pthread_mutex_t* get_mutex();
 	JobId get_new_JobId();
-   static VirtualProcessor* get_vp_from_pthread(pthread_t thread_id);
+        static VirtualProcessor* get_vp_from_pthread(pthread_t thread_id);
 };
 
 #endif

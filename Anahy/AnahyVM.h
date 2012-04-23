@@ -3,11 +3,13 @@
 
 #include <map>
 #include <vector>
-#include "definitions.h"
+#include <list>
 
-class VirtualProcessor;
-class Daemon;
-class Job;
+#include "definitions.h"
+#include "VirtualProcessor.h"
+#include "Job.h"
+#include "JobId.h"
+#include "Daemon.h"
 
 class AnahyVM {
 	
@@ -24,7 +26,7 @@ class AnahyVM {
 
 public:
 	
-	static AnahyVM* get_instance_handler() const;
+	static AnahyVM* get_instance_handler();
 	
 	void boot(uint n_processors, sfunc scheduling_function);
 	void shut_down();
@@ -35,10 +37,11 @@ public:
 	/* getters and setters */
 	list<Job*> get_root_jobs() const;
 	map<JobId,Job*> get_job_map() const;
-	int get_num_processors();
+	
+        int get_num_processors() const;
 	vector<VirtualProcessor*> get_processors() const;
-	Daemon* get_daemon();
-	Job* get_job_by_id(JobId job_id) const;
+	Daemon* get_daemon() const;
+	Job* get_job_by_id(JobId job_id);
 	void set_scheduling_function(sfunc new_value);
 };
 

@@ -7,7 +7,11 @@ AnahyVM AnahyVM::unique_instance;
 
 /* PUBLIC METHODS' DEFINITIONS */
 
-AnahyVM* AnahyVM::get_instance_handler() const {
+AnahyVM::AnahyVM() {
+    
+}
+
+AnahyVM* AnahyVM::get_instance_handler() {
 	return &unique_instance;
 }
 
@@ -46,7 +50,7 @@ map<JobId,Job*> AnahyVM::get_job_map() const {
 	return job_map;
 }
 
-int AnahyVM::get_num_processors() {
+int AnahyVM::get_num_processors() const {
 	return num_processors;
 }
 
@@ -58,11 +62,10 @@ Daemon* AnahyVM::get_daemon() const {
 	return daemon;
 }
 
-Job* AnahyVM::get_job_by_id(JobId job_id) const {
+Job* AnahyVM::get_job_by_id(JobId job_id) {
 	return job_map[job_id];
 }
 
 void AnahyVM::set_scheduling_function(sfunc new_value) {
 	scheduling_function = new_value;
 }
-

@@ -27,7 +27,7 @@ void VirtualProcessor::flush() {
 }
 
 /* getters and setters */
-Job* VirtualProcessor::get_current_job() {
+Job* VirtualProcessor::get_current_job() const {
 	return current_job;
 }
 
@@ -35,15 +35,15 @@ void VirtualProcessor::set_current_job(Job* new_value) {
 	current_job = new_value;
 }
 
-uint VirtualProcessor::get_id() {
+uint VirtualProcessor::get_id() const {
 	return id;
 }
 
-ulong VirtualProcessor::get_job_counter() {
+ulong VirtualProcessor::get_job_counter() const {
 	return job_counter;
 }
 
-pthread_t VirtualProcessor::get_thread() {
+pthread_t VirtualProcessor::get_thread() const {
 	return thread;
 }
 
@@ -56,6 +56,6 @@ JobId VirtualProcessor::get_new_JobId() {
 	return jid;
 }
 
-VirtualProcessor* VirtualProcessor::get_vp_from_pthraed(pthread_t thread_id) {
+VirtualProcessor* VirtualProcessor::get_vp_from_pthread(pthread_t thread_id) {
     return vp_map[thread_id];
 }

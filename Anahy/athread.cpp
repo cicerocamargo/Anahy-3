@@ -7,7 +7,6 @@
 #include "athread.h"
 #include "Daemon.h"
 #include "VirtualProcessor.h"
-#include "graph_operation.h"
 
 /* environment variables */
 

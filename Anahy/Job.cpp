@@ -12,7 +12,7 @@ data(_data) {
 }
 
 void Job::run() {
-    (function)(data);
+    retval = (function)(data);
 }
 
 void Job::add_child(Job* child) {

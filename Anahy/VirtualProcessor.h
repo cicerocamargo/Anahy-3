@@ -36,7 +36,7 @@ public:
 	pthread_t get_thread() const;
 	pthread_mutex_t* get_mutex();
 	JobId get_new_JobId();
-        static VirtualProcessor* get_vp_from_pthread(pthread_t thread_id);
+    static VirtualProcessor* get_vp_from_pthread(pthread_t thread_id);
 };
 
 #endif

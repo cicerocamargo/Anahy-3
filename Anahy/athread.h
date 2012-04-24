@@ -7,7 +7,7 @@ typedef JobId athread_t
 
 void aInit(int* _argc, char*** _argv);
 void aTerminate();
-void athread_exit(void* ret);
+void* athread_exit(void* ret);
 int athread_create(athread_t* thid, athread_attr_t* attr,
 	pfunc function, void* args);
 int athread_join(athread_t thid, void** result);

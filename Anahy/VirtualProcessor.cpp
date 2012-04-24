@@ -5,8 +5,7 @@ map<pthread_t,VirtualProcessor*> VirtualProcessor::vp_map;
 uint VirtualProcessor::instance_counter = 0;
 
 /* PUBLIC METHODS' DEFINITIONS */
-VirtualProcessor::VirtualProcessor(Daemon* daemon) {
-	this->daemon = daemon;
+VirtualProcessor::VirtualProcessor(Daemon* _daemon) : daemon(_daemon) {
         id = instance_counter++;
 }
 

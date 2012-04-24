@@ -22,10 +22,10 @@ void JobId::display() {
 }
 
 /* getters and setters */
-uint JobId::get_vp_id() {
+uint JobId::get_vp_id() const {
 	return vp_id;
 }
 
-ulong JobId::get_serial_number() {
+ulong JobId::get_serial_number() const {
 	return serial_number;
 }

@@ -7,10 +7,9 @@
 #include "athread.h"
 #include "Daemon.h"
 #include "VirtualProcessor.h"
+#include "Job.h"
 
 /* environment variables */
-
-class Job;
 
 VirtualProcessor** vp_array;
 pthread_t* vp_thread_array
@@ -66,8 +65,7 @@ void aInit(int* _argc, char*** _argv) {
         }
         
 	for (int i = 0; i < num_vps; i++) {
-		pthread_create(&vp_thread_array[i], NULL, run_vp,
-(void*)vp_array[i]);
+		pthread_create(&vp_thread_array[i], NULL, run_vp, (void*)vp_array[i]);
 	}
 }
 
@@ -79,15 +77,18 @@ void aTerminate() {
 	}
 }
 
+void athread_exit(void* value_ptr) {
+    VirtualProcessor* vp = VirtualProcessor::get_vp_from_pthread(pthread_self());
+    Job* job = vp->get_current_job();
+    job->set_retval(value_ptr);
+}
+
 int athread_create(athread_t* thid, athread_attr_t* attr, pfunc function,
 void* args) {
-	
-        VirtualProcessor* vp =
-VirtualProcessor::get_vp_from_pthread(pthread_self());
-        parent = vp->get_current_job();
-        thid
-        parent->add_child(thid);
-	
+    Job* job;
+    VirtualProcessor* vp = VirtualProcessor::get_vp_from_pthread(pthread_self());
+    parent = vp->get_current_job();
+    parent->add_child(thid);
 }
 
 int athread_join(athread_t thid, void** result) {

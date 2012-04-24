@@ -28,6 +28,8 @@ public:
 	void stop();
 	void flush();
 
+    void notify_new_job(Job* job);
+    
 	/* getters and setters */
 	Job* get_current_job() const;
 	void set_current_job(Job* new_value);

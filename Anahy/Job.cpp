@@ -8,6 +8,9 @@ creator(_creator),
 attributes(_attributes),
 function(_function),
 data(_data) {
+    if(parent) {
+        parent->add_child(this);
+    }
 	state = ready;
     retval = NULL;
 }

@@ -25,6 +25,11 @@ void VirtualProcessor::flush() {
 	
 }
 
+void VirtualProcessor::notify_new_job(Job* job) {
+    SchedulingOperation* op = new SchedulingOperation(NewJob, job, this);
+    daemon->push_scheduling_operation(op);
+}
+
 /* getters and setters */
 Job* VirtualProcessor::get_current_job() const {
 	return current_job;

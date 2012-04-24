@@ -85,10 +85,15 @@ void athread_exit(void* value_ptr) {
 
 int athread_create(athread_t* thid, athread_attr_t* attr, pfunc function,
 void* args) {
-    Job* job;
     VirtualProcessor* vp = VirtualProcessor::get_vp_from_pthread(pthread_self());
-    parent = vp->get_current_job();
-    parent->add_child(thid);
+    JobId job_id = vp->get_new_JobId();
+    Job* parent = vp->get_current_job();
+    JobAttributes job_attr = (int) attr;
+    Job* job = new Job(job_id, parent, vp, job_attr, function, args);
+    
+    vp->notify_new_job(job);
+     
+    *thid = job_id;
 }
 
 int athread_join(athread_t thid, void** result) {

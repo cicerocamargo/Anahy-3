@@ -1,4 +1,7 @@
 #include "VirtualProcessor.h"
+#include "Daemon.h"
+#include "SchedulingOperation.h"
+#include "definitions.h"
 
 /* STATIC MEMBERS' ITIALIZATIONS */
 map<pthread_t,VirtualProcessor*> VirtualProcessor::vp_map;
@@ -6,11 +9,14 @@ uint VirtualProcessor::instance_counter = 0;
 
 /* PUBLIC METHODS' DEFINITIONS */
 VirtualProcessor::VirtualProcessor(Daemon* _daemon) : daemon(_daemon) {
-        id = instance_counter++;
+	pthread_t self = pthread_self();
+	vp_map[self] = this;
+	id = instance_counter++;
+	job_counter = 0;
 }
 
 VirtualProcessor::~VirtualProcessor() {
-	
+
 }
 
 void VirtualProcessor::start() {

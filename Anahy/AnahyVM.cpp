@@ -18,6 +18,7 @@ AnahyVM* AnahyVM::get_instance_handler() {
 void AnahyVM::boot(uint n_processors, sfunc scheduling_function) {
 	puts("Booting AnahyVM...");
 	
+	VirtualProcessor* vp = new VirtualProcessor(new Daemon());
 	// do stuff
 	
 	puts("Done!");
@@ -30,7 +31,10 @@ void AnahyVM::shut_down() {
 }
 
 void AnahyVM::insert_job(Job* job) {
-	
+	if (job->get_parent() == NULL) { // root job
+		root_jobs.push_back(job);
+	}
+	job_map[job->get_id()] = job;
 }
 
 void AnahyVM::remove_job(Job* job) {

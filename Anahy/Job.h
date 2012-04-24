@@ -10,7 +10,7 @@ using namespace std;
 
 class VirtualProcessor;
 
-typedef int JobAttributes;
+typedef long int JobAttributes;
 
 enum JobState {ready, running, finished, blocked};
 
@@ -27,13 +27,13 @@ class Job {
 	void* data;
 	void* retval; // return value of 'function'
 	
+	void add_child(Job* child); // called from the constructor
 public:
 	Job (JobId _id, Job* _parent, VirtualProcessor* _creator,
 		JobAttributes _attributes, pfunc _function, void* _data);
 	
 	void run();
-	void add_child(Job* child);
-	void display();
+	void display(int num_tabs=0);
 	
 	// getters and setters
     

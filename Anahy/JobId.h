@@ -13,6 +13,7 @@ class JobId {
 	ulong serial_number;
 
 public:
+	JobId();
 	JobId(uint _vp_id, ulong _serial_number);
 	bool operator<(const JobId& id) const;
 	bool operator==(const JobId& id) const;

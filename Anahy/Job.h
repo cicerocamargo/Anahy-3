@@ -33,6 +33,7 @@ public:
 	
 	void run();
 	void add_child(Job* child);
+	void display();
 	
 	// getters and setters
 	JobId get_id() const;
@@ -41,7 +42,6 @@ public:
 	JobState get_state() const;
 	JobAttributes get_attributes() const;
 	void* get_retval() const;
-
 };
 
 #endif

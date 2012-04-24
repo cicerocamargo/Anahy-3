@@ -1,4 +1,6 @@
 #include "Job.h"
+#include "VirtualProcessor.h"
+#include <cstdio>
 
 Job::Job (JobId _id, Job* _parent, VirtualProcessor* _creator,
 	JobAttributes _attributes, pfunc _function, void* _data) :
@@ -17,6 +19,16 @@ void Job::run() {
 
 void Job::add_child(Job* child) {
 	children.insert(child);
+}
+
+void Job::display() {
+	id.display();
+	if (parent) {
+		printf("\tParent: ");
+		(parent->get_id()).display();
+	}
+	printf("\nCreator: %ld\n", creator->get_id());
+	printf("State: %d\n", state);
 }
 
 // getters and setters

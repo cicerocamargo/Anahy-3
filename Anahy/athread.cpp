@@ -85,13 +85,53 @@ int athread_create(athread_t* thid, athread_attr_t* attr, pfunc function, void* 
 	printf("New Job!\n");
 	job->display();
 	anahy->insert_job(job);
+
+	return 0;
+}
+
+int compare_and_swap(JobState* state, JobState target_val, JobState new_val) {
+	if (*state == target_val) {
+		*state = new_val;
+		return target_val;
+	}
+	else {
+		return *state;
+	}
 }
 
 int athread_join(athread_t thid, void** result) {
+	// which vp is this ?
 	VirtualProcessor* vp = VirtualProcessor::get_vp_from_pthread(pthread_self());
+	// which job is this ?
 	Job* job = anahy->get_job_by_id((JobId) thid);
-	if (job){
-		vp->set_current_job(job);
-		job->run();
-	}
+
+	bool done = false;
+	do {
+		JobState state = compare_and_swap(job->get_state_var(), ready, running);
+
+		if (state == running) {
+			Job* another_job = vp->ask_for_another_job(job);
+			if (another_job) {
+				vp->set_current_job(another_job);
+				another_job->run();
+				vp->notify_finished_job(another_job);
+			}
+		}
+		else { // if job is ready for execution or finished
+			if (state == ready) {
+				Job* previous_job = vp->get_current_job();
+
+				vp->set_current_job(job);
+				job->run();
+				vp->notify_finished_job(job);
+
+				vp->set_current_job(previous_job);
+			}
+			
+			*result = job->get_retval();
+			done = true;
+
+		}
+	} while (!done);
+	return 0;
 }

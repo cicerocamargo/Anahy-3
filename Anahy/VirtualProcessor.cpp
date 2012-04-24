@@ -8,15 +8,17 @@ map<pthread_t,VirtualProcessor*> VirtualProcessor::vp_map;
 uint VirtualProcessor::instance_counter = 0;
 
 /* PUBLIC METHODS' DEFINITIONS */
-VirtualProcessor::VirtualProcessor(Daemon* _daemon) : daemon(_daemon) {
-	pthread_t self = pthread_self();
-	vp_map[self] = this;
+VirtualProcessor::VirtualProcessor(Daemon* _daemon, pthread_t* _thread) : 
+daemon(_daemon),
+thread(_thread) {
+
+	vp_map[thread] = this;
 	id = instance_counter++;
 	job_counter = 0;
 }
 
 VirtualProcessor::~VirtualProcessor() {
-
+	
 }
 
 void VirtualProcessor::start() {

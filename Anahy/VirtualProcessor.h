@@ -21,7 +21,7 @@ class VirtualProcessor {
 	pthread_mutex_t mutex;
 
 public:
-	VirtualProcessor(Daemon* daemon); // default constructor
+	VirtualProcessor(Daemon* _daemon, pthread_t* _thread); // default constructor
 	virtual ~VirtualProcessor();
 
 	void start();

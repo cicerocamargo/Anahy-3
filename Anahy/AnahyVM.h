@@ -14,11 +14,13 @@
 class AnahyVM {
 	
 	uint num_processors;
-	vector<VirtualProcessor*> processors;
+	list<VirtualProcessor*> processors;
 	Daemon* daemon;
 	sfunc scheduling_function;
 	list<Job*> root_jobs;
 	map<JobId, Job*> job_map;
+
+	pthread_t* vp_thread_array;
 	
 	static AnahyVM unique_instance;
 	AnahyVM(); // default constructor

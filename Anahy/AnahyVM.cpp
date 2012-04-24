@@ -4,7 +4,6 @@
 /* STATIC MEMBERS' ITIALIZATIONS */
 AnahyVM AnahyVM::unique_instance;
 
-
 /* PUBLIC METHODS' DEFINITIONS */
 
 AnahyVM::AnahyVM() {
@@ -15,19 +14,39 @@ AnahyVM* AnahyVM::get_instance_handler() {
 	return &unique_instance;
 }
 
+void* run_vp(void* vp_obj) {
+	VirtualProcessor* vp = (VirtualProcessor*) vp_obj;
+	vp->run();
+	return NULL;
+}
+
 void AnahyVM::boot(uint n_processors, sfunc scheduling_function) {
 	puts("Booting AnahyVM...");
+	num_processors = n_processors;
+	vp_thread_array = (pthread_t*) malloc(n_processors*sizeof(pthread_t));
 	
-	VirtualProcessor* vp = new VirtualProcessor(new Daemon());
-	// do stuff
+	VirtualProcessor* vp;
+	list<VirtualProcessor*>::iterator it;
 	
+	daemon = new Daemon();
+	processors.push_back(new VirtualProcessor(daemon, pthread_self()));
+
+	for (int i = 0; i < n_processors; i++) {
+		vp = new VirtualProcessor(daemon, vp_thread_array[i]);
+		processors.push_back(vp);
+		pthread_create(&vp_thread_array[i], NULL, run_vp, (void*)vp);
+	}
+
 	puts("Done!");
 }
 
 void AnahyVM::shut_down() {
 	puts("Shuting AnahyVM down...");
 	
-	// do stuff
+	for (int i = 0; i < num_processors; i++) {
+		pthread_join(vp_thread_array[i], NULL);
+	}
+
 }
 
 void AnahyVM::insert_job(Job* job) {

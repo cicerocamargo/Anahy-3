@@ -21,14 +21,11 @@ Job::Job (JobId _id, Job* _parent, VirtualProcessor* _creator,
         parent->add_child(this);
     }
 	state = ready;
-	retval = NULL;
 }
 
 void Job::run() {
     void* temp = (function)(data);
-    if(!temp) {
-        retval = temp;
-    }
+    retval = (temp ? temp : NULL);
 }
 
 // auxiliary function

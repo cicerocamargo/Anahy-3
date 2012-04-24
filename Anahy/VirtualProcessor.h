@@ -28,6 +28,8 @@ public:
 	void stop();
 	void flush();
 
+    void notify_new_job(Job* job);
+    
 	/* getters and setters */
 	Job* get_current_job() const;
 	void set_current_job(Job* new_value);
@@ -36,7 +38,7 @@ public:
 	pthread_t get_thread() const;
 	pthread_mutex_t* get_mutex();
 	JobId get_new_JobId();
-        static VirtualProcessor* get_vp_from_pthread(pthread_t thread_id);
+    static VirtualProcessor* get_vp_from_pthread(pthread_t thread_id);
 };
 
 #endif

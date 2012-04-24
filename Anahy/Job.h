@@ -36,12 +36,14 @@ public:
 	void display();
 	
 	// getters and setters
+    
 	JobId get_id() const;
 	Job* get_parent() const;
 	VirtualProcessor* get_creator() const;
 	JobState get_state() const;
 	JobAttributes get_attributes() const;
 	void* get_retval() const;
+	void set_retval(void* new_retval);
 };
 
 #endif

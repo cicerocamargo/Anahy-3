@@ -5,8 +5,7 @@ map<pthread_t,VirtualProcessor*> VirtualProcessor::vp_map;
 uint VirtualProcessor::instance_counter = 0;
 
 /* PUBLIC METHODS' DEFINITIONS */
-VirtualProcessor::VirtualProcessor(Daemon* daemon) {
-	this->daemon = daemon;
+VirtualProcessor::VirtualProcessor(Daemon* _daemon) : daemon(_daemon) {
         id = instance_counter++;
 }
 
@@ -24,6 +23,11 @@ void VirtualProcessor::stop() {
 
 void VirtualProcessor::flush() {
 	
+}
+
+void VirtualProcessor::notify_new_job(Job* job) {
+    SchedulingOperation* op = new SchedulingOperation(NewJob, job, this);
+    daemon->push_scheduling_operation(op);
 }
 
 /* getters and setters */

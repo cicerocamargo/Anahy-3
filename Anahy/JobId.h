@@ -19,8 +19,8 @@ public:
 	void display();
 
 	/* getters and setters */
-	uint get_vp_id();
-	ulong get_serial_number();
+	uint get_vp_id() const;
+	ulong get_serial_number() const;
 };
 
 #endif

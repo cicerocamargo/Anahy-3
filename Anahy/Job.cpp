@@ -10,11 +10,18 @@ creator(_creator),
 attributes(_attributes),
 function(_function),
 data(_data) {
+    if(parent) {
+        parent->add_child(this);
+    }
 	state = ready;
+    retval = NULL;
 }
 
 void Job::run() {
-    retval = (function)(data);
+    void* temp = (function)(data);
+    if(!temp) {
+        retval = temp;
+    }
 }
 
 void Job::add_child(Job* child) {
@@ -35,6 +42,10 @@ void Job::display() {
 
 void* Job::get_retval() const {
 	return retval;
+}
+
+void set_retval(void* new_retval) {
+    retval = new_retval;
 }
 
 JobId Job::get_id() const {

@@ -11,7 +11,6 @@
 #include "AnahyVM.h"
 
 
-/* environment variables */
 
 uint num_vps;
 AnahyVM* anahy = AnahyVM::get_instance_handler();
@@ -89,6 +88,7 @@ int athread_create(athread_t* thid, athread_attr_t* attr, pfunc function, void* 
 	return 0;
 }
 
+// to be changed!
 int compare_and_swap(JobState* state, JobState target_val, JobState new_val) {
 	if (*state == target_val) {
 		*state = new_val;
@@ -110,28 +110,20 @@ int athread_join(athread_t thid, void** result) {
 		JobState state = compare_and_swap(job->get_state_var(), ready, running);
 
 		if (state == running) {
-			Job* another_job = vp->ask_for_another_job(job);
-			if (another_job) {
-				vp->set_current_job(another_job);
-				another_job->run();
-				vp->notify_finished_job(another_job);
-			}
+			// if the joined job was already running ...
+			// try to help, executing one of its descendants
+			vp->try_to_help_job(job);
 		}
-		else { // if job is ready for execution or finished
+		else {
+			// if the job was ready for execution or already finished
 			if (state == ready) {
-				Job* previous_job = vp->get_current_job();
-
-				vp->set_current_job(job);
-				job->run();
-				vp->notify_finished_job(job);
-
-				vp->set_current_job(previous_job);
+				vp->run_temp_job(job);
 			}
 			
 			*result = job->get_retval();
 			done = true;
-
 		}
 	} while (!done);
 	return 0;
 }
+

@@ -126,4 +126,3 @@ int athread_join(athread_t thid, void** result) {
 	} while (!done);
 	return 0;
 }
-

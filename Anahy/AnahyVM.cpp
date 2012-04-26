@@ -14,9 +14,9 @@ AnahyVM* AnahyVM::get_instance_handler() {
 	return &unique_instance;
 }
 
-void* run_vp(void* vp_obj) {
+void* AnahyVM::run_vp(void* vp_obj) {
 	VirtualProcessor* vp = (VirtualProcessor*) vp_obj;
-	vp->run();
+	vp->start();
 	return NULL;
 }
 

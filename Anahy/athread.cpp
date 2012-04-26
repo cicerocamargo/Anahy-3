@@ -10,6 +10,7 @@
 #include "VirtualProcessor.h"
 #include "AnahyVM.h"
 
+ // G:A é possível criar uma área de memória própria a cada threads, evitando fazer uma chamada de sistema para obter o selo. Assim, no inicio do VP pega-se o selv e atualiza esta memória. Thread specific data.
 
 
 uint num_vps;

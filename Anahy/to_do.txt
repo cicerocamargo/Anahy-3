@@ -1,1 +1,2 @@
 - implementar os atributos do Job
+- implementar a pilha de jobs suspensos no VP

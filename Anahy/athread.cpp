@@ -13,7 +13,6 @@
  // G:A é possível criar uma área de memória própria a cada threads, evitando fazer uma chamada de sistema para obter o selo. Assim, no inicio do VP pega-se o selv e atualiza esta memória. Thread specific data.
 
 
-uint num_vps;
 AnahyVM* anahy = AnahyVM::get_instance_handler();
 
 Job* work_stealing(list<Job*> list, Job* job) {
@@ -27,6 +26,8 @@ void* vp_run(void* vp_args) {
 }
 
 void aInit(int argc, char** argv) {
+	// parse command line
+
 /*
 	int c;
 	while(1) {
@@ -65,26 +66,21 @@ void aTerminate() {
 }
 
 void athread_exit(void* value_ptr) {
-	VirtualProcessor* vp = VirtualProcessor::get_vp_from_pthread(pthread_self());
+
+	pthread_key_t current_vp = anahy->get_vp_key();
+	VirtualProcessor* vp = (VirtualProcessor*)pthread_getspecific(current_vp);
 	Job* job = vp->get_current_job();
 	job->set_retval(value_ptr);
 }
 
 int athread_create(athread_t* thid, athread_attr_t* attr, pfunc function, void* args) {
-	
-	VirtualProcessor* vp = VirtualProcessor::get_vp_from_pthread(pthread_self());
-	JobId job_id = vp->get_new_JobId();
-	Job* parent = vp->get_current_job();
-	JobAttributes job_attr = (long int) attr;
-	Job* job = new Job(job_id, parent, vp, job_attr, function, args);
 
-	vp->notify_new_job(job);
+	pthread_key_t current_vp = anahy->get_vp_key();
+	VirtualProcessor* vp = (VirtualProcessor*)pthread_getspecific(current_vp);
+
+	JobId job_id = vp->create_new_job(function, args, (JobAttributes) *attr);
 
 	*thid = job_id;
-	
-	printf("New Job!\n");
-	job->display();
-	anahy->insert_job(job);
 
 	return 0;
 }
@@ -102,7 +98,8 @@ int compare_and_swap(JobState* state, JobState target_val, JobState new_val) {
 
 int athread_join(athread_t thid, void** result) {
 	// which vp is this ?
-	VirtualProcessor* vp = VirtualProcessor::get_vp_from_pthread(pthread_self());
+	pthread_key_t current_vp = anahy->get_vp_key();
+	VirtualProcessor* vp = (VirtualProcessor*)pthread_getspecific(current_vp);
 	// which job is this ?
 	Job* job = anahy->get_job_by_id((JobId) thid);
 
@@ -113,15 +110,21 @@ int athread_join(athread_t thid, void** result) {
 		if (state == running) {
 			// if the joined job was already running ...
 			// try to help, executing one of its descendants
-			vp->try_to_help_job(job);
+			vp->suspend_current_job_and_try_to_help(job);
 		}
 		else {
 			// if the job was ready for execution or already finished
 			if (state == ready) {
-				vp->run_temp_job(job);
+				vp->suspend_current_job_and_run_another(job);
 			}
 			
+			
 			*result = job->get_retval();
+			/*
+			if (job->decrement_join_count() == 0) {
+				delete job;
+			}
+			*/
 			done = true;
 		}
 	} while (!done);

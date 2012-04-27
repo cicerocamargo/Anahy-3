@@ -7,9 +7,14 @@
 map<pthread_t,VirtualProcessor*> VirtualProcessor::vp_map;
 uint VirtualProcessor::instance_counter = 0;
 
-
+/* PRIVATE METHODS' DEFINITIONS */
 void VirtualProcessor::notify_finished_job_to_daemon(Job* job) {
 	SchedulingOperation* op = new SchedulingOperation(EndJob, job, this);
+    daemon->push_scheduling_operation(op);
+}
+
+void VirtualProcessor::notify_new_job_to_dameon(Job* job) {
+    SchedulingOperation* op = new SchedulingOperation(NewJob, job, this);
     daemon->push_scheduling_operation(op);
 }
 
@@ -68,19 +73,23 @@ void VirtualProcessor::flush() {
 
 /* messages to be received from athread API */
 
-void VirtualProcessor::notify_new_job(Job* job) {
-    SchedulingOperation* op = new SchedulingOperation(NewJob, job, this);
-    daemon->push_scheduling_operation(op);
+JobId create_new_job(pfunc function, void* args, JobAttributes attr) {
+	JobId jid(id, job_counter++);
+	Job* job = new Job(jid, current_job, this, attr, function, args);
+	notify_new_job_to_dameon(job);
+	return jid;
 }
 
-void VirtualProcessor::try_to_help_job(Job* job) {
+void VirtualProcessor::suspend_current_job_and_try_to_help(Job* job) {
 	Job* temp = ask_daemon_for_new_job(job);
-	run_temp_job(temp);
+	if (temp) {
+		suspend_current_job_and_run_another(temp);
+	}
 }
 
 
 // run another job keeping track of the suspended job
-void VirtualProcessor::run_temp_job(Job* job) {
+void VirtualProcessor::suspend_current_job_and_run_another(Job* job) {
 	Job* previous_job = current_job;
 	current_job = job;
 	job->run();
@@ -118,10 +127,6 @@ pthread_mutex_t* VirtualProcessor::get_mutex() {
 	return &mutex;
 }
 
-JobId VirtualProcessor::get_new_JobId() {
-	JobId jid(id, job_counter++);
-	return jid;
-}
 
 VirtualProcessor* VirtualProcessor::get_vp_from_pthread(pthread_t thread_id) {
     return vp_map[thread_id];

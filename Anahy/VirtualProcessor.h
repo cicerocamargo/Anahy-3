@@ -24,9 +24,11 @@ class VirtualProcessor {
 	pthread_cond_t operation_finished;
 
 	void notify_finished_job_to_daemon(Job* job);
+	void notify_new_job_to_daemon(Job* job);
 	Job* ask_daemon_for_new_job(Job* job);
 
 public:
+
 	VirtualProcessor(Daemon* _daemon, pthread_t _thread); // default constructor
 	virtual ~VirtualProcessor();
 
@@ -35,9 +37,9 @@ public:
 	void flush();
 	
 	// messages to be received from athread API
-	void notify_new_job(Job* job);
-	void try_to_help_job(Job* job);
-	void run_temp_job(Job* job);
+	JobId create_new_job(pfunc function, void* args, JobAttributes attr);
+	void suspend_current_job_and_try_to_help(Job* job);
+	void suspend_current_job_and_run_another(Job* job);
 
 	// messages to be received from a Daemon
 	void signal_operation_finished();
@@ -49,7 +51,6 @@ public:
 	ulong get_job_counter() const;
 	pthread_t get_thread() const;
 	pthread_mutex_t* get_mutex();
-	JobId get_new_JobId();
 	static VirtualProcessor* get_vp_from_pthread(pthread_t thread_id);
 };
 

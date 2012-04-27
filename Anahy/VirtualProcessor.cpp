@@ -4,8 +4,14 @@
 #include "definitions.h"
 
 /* STATIC MEMBERS' ITIALIZATIONS */
-map<pthread_t,VirtualProcessor*> VirtualProcessor::vp_map;
 uint VirtualProcessor::instance_counter = 0;
+pthread_key_t VirtualProcessor::key;
+
+void VirtualProcessor::call_vp_destructor(void *vp_obj) {
+	VirtualProcessor* vp = (VirtualProcessor*) vp_obj;
+	//printf("Destroying VP %d\n", vp->id);
+	delete vp;
+}
 
 /* PRIVATE METHODS' DEFINITIONS */
 void VirtualProcessor::notify_finished_job_to_daemon(Job* job) {
@@ -36,7 +42,6 @@ Job* VirtualProcessor::ask_daemon_for_new_job(Job* job) {
 VirtualProcessor::VirtualProcessor(Daemon* _daemon, pthread_t _thread) {
 	daemon = _daemon;
 	thread = _thread;
-	vp_map[thread] = this;
 	id = instance_counter++;
 	job_counter = 0;
 	program_end = false;
@@ -74,6 +79,7 @@ void VirtualProcessor::flush() {
 /* messages to be received from athread API */
 
 JobId create_new_job(pfunc function, void* args, JobAttributes attr) {
+
 	JobId jid(id, job_counter++);
 	Job* job = new Job(jid, current_job, this, attr, function, args);
 	notify_new_job_to_dameon(job);
@@ -127,7 +133,6 @@ pthread_mutex_t* VirtualProcessor::get_mutex() {
 	return &mutex;
 }
 
-
-VirtualProcessor* VirtualProcessor::get_vp_from_pthread(pthread_t thread_id) {
-    return vp_map[thread_id];
+pthread_key_t VirtualProcessor::get_pthread_key() {
+		return key;
 }

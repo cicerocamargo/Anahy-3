@@ -1,7 +1,6 @@
 #ifndef ATHREAD_H
 #define ATHREAD_H
 
-#include <pthread.h>
 #include "Job.h"
 #include "JobId.h"
 

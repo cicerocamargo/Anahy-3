@@ -4,6 +4,7 @@
 #include <map>
 #include <vector>
 #include <list>
+#include <pthread>
 
 #include "definitions.h"
 #include "VirtualProcessor.h"
@@ -41,11 +42,12 @@ public:
 	list<Job*> get_root_jobs() const;
 	map<JobId,Job*> get_job_map() const;
 	
-        int get_num_processors() const;
+	int get_num_processors() const;
 	vector<VirtualProcessor*> get_processors() const;
 	Daemon* get_daemon() const;
 	Job* get_job_by_id(JobId job_id);
 	void set_scheduling_function(sfunc new_value);
+	pthread_key_t get_vp_key();
 };
 
 #endif

@@ -1,7 +1,3 @@
-/* objects of this class serve as key 
-	for a map<JobId, Job*> in AnahyVM */
-
-
 #ifndef JOBID_H
 #define JOBID_H
 

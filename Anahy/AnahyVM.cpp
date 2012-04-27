@@ -15,7 +15,12 @@ AnahyVM* AnahyVM::get_instance_handler() {
 }
 
 void* AnahyVM::run_vp(void* vp_obj) {
+
 	VirtualProcessor* vp = (VirtualProcessor*) vp_obj;
+
+	//this set the key as a vp pointer
+	pthread_setspecific(get_vp_key(), (void *) vp);
+	
 	vp->start();
 	return NULL;
 }
@@ -25,6 +30,8 @@ void AnahyVM::boot(uint n_processors, sfunc scheduling_function) {
 	num_processors = n_processors;
 	vp_thread_array = (pthread_t*) malloc(n_processors*sizeof(pthread_t));
 	
+	VirtualProcessor::init_pthread_key();
+
 	VirtualProcessor* vp;
 	list<VirtualProcessor*>::iterator it;
 	
@@ -91,4 +98,8 @@ Job* AnahyVM::get_job_by_id(JobId job_id) {
 
 void AnahyVM::set_scheduling_function(sfunc new_value) {
 	scheduling_function = new_value;
+}
+
+pthread_key_t AnahyVM::get_vp_key() {
+	return VirtualProcessor::get_pthread_key();
 }

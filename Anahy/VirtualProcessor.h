@@ -2,7 +2,6 @@
 #define VIRTUALPROCESSOR_H
 
 #include <pthread.h>
-#include <map>
 #include "definitions.h"
 #include "JobId.h"
 #include "Job.h"
@@ -10,8 +9,8 @@
 
 class VirtualProcessor {
 
-	static map<pthread_t,VirtualProcessor*> vp_map;
 	static uint instance_counter;
+	static pthread_key_t key;
 	
 	uint id;
 	ulong job_counter;
@@ -41,6 +40,13 @@ public:
 	void suspend_current_job_and_try_to_help(Job* job);
 	void suspend_current_job_and_run_another(Job* job);
 
+	// now we can initialize the key
+	static void call_vp_destructor(void *vp_obj);
+
+	static void init_pthread_key() {
+		pthread_key_create(&key, call_vp_destructor);
+	}
+
 	// messages to be received from a Daemon
 	void signal_operation_finished();
 	
@@ -51,7 +57,7 @@ public:
 	ulong get_job_counter() const;
 	pthread_t get_thread() const;
 	pthread_mutex_t* get_mutex();
-	static VirtualProcessor* get_vp_from_pthread(pthread_t thread_id);
+	static pthread_key_t get_pthread_key();
 };
 
 #endif

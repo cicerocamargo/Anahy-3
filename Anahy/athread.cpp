@@ -12,16 +12,9 @@
 
  // G:A é possível criar uma área de memória própria a cada threads, evitando fazer uma chamada de sistema para obter o selo. Assim, no inicio do VP pega-se o selv e atualiza esta memória. Thread specific data.
 
-
 AnahyVM* anahy = AnahyVM::get_instance_handler();
 
 Job* work_stealing(list<Job*> list, Job* job) {
-	return NULL;
-}
-
-void* vp_run(void* vp_args) {
-	VirtualProcessor* vp = (VirtualProcessor*) vp_args;
-	vp->start();
 	return NULL;
 }
 
@@ -54,7 +47,6 @@ void aInit(int argc, char** argv) {
 		}
 	}
 */
-	
 	anahy->boot(1, work_stealing);
 	//printf("Anahy started: %d VPs running.\n", num_vps);
 	// do something with AnahyVM object

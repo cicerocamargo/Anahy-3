@@ -68,18 +68,18 @@ void VirtualProcessor::start() {
 }
 
 void VirtualProcessor::stop() {
-	
+	// compare_and_swap(&program_end, false, true);
+	// wake vp thread to break the while loop in start() method;
 }
 
 void VirtualProcessor::flush() {
-	
+	// ???
 }
 
 
 /* messages to be received from athread API */
 
 JobId create_new_job(pfunc function, void* args, JobAttributes attr) {
-
 	JobId jid(id, job_counter++);
 	Job* job = new Job(jid, current_job, this, attr, function, args);
 	notify_new_job_to_dameon(job);
@@ -96,11 +96,15 @@ void VirtualProcessor::suspend_current_job_and_try_to_help(Job* job) {
 
 // run another job keeping track of the suspended job
 void VirtualProcessor::suspend_current_job_and_run_another(Job* job) {
-	Job* previous_job = current_job;
+	suspended_jobs.push(current_job); // memorize current job
+	
 	current_job = job;
 	job->run();
 	notify_finished_job_to_daemon(job);
-	current_job = previous_job;
+	
+	// restore previous job
+	current_job = suspended_jobs.front();
+	suspended_jobs.pop();
 }
 
 /* msg to be received from a Daemon */

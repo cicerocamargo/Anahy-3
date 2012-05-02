@@ -2,6 +2,7 @@
 #define VIRTUALPROCESSOR_H
 
 #include <pthread.h>
+#include <queue>
 #include "definitions.h"
 #include "JobId.h"
 #include "Job.h"
@@ -15,6 +16,7 @@ class VirtualProcessor {
 	uint id;
 	ulong job_counter;
 	Job* current_job;
+	queue<Job*> suspended_jobs;
 	Daemon* daemon;
 	pthread_t thread;
 

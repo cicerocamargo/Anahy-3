@@ -46,15 +46,15 @@ void AnahyVM::boot(uint n_processors, sfunc scheduling_function) {
 	daemon = new Daemon();
 	processors.push_back(new VirtualProcessor(daemon, pthread_self()));
 
+	//now we got to initializate the daemon thread
+	pthread_create(&daemon_pthr, NULL, run_daemon, (void*)daemon);
+	
 	for (int i = 0; i < n_processors; i++) {
 		vp = new VirtualProcessor(daemon, vp_thread_array[i]);
 		processors.push_back(vp);
 		pthread_create(&vp_thread_array[i], NULL, run_vp, (void*)vp);
 	}
-
-	//now we got to initializate the daemon thread
-	pthread_create(&daemon_pthr, NULL, run_daemon, (void*)daemon);
-
+	
 	puts("Done!");
 }
 
@@ -64,9 +64,10 @@ void AnahyVM::shut_down() {
 	for (int i = 0; i < num_processors; i++) {
 		pthread_join(vp_thread_array[i], NULL);
 	}
-
-	pthread_join)daemon_pthr, NULL);
-
+	pthread_join(daemon_pthr, NULL);
+	
+	free(vp_thread_array);
+	delete(daemon);
 }
 
 void AnahyVM::insert_job(Job* job) {

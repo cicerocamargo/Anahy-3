@@ -2,7 +2,7 @@
 \usepackage{sbc-template}
 \usepackage{graphicx,url}
 \usepackage[brazil]{babel}   
-\usepackage[latin1]{inputenc}  
+\usepackage[utf8]{inputenc}  
 
 \title{Documentação Oficial do Anahy 3}
 
@@ -36,23 +36,24 @@ O código fonte de Anahy 3 é escrito em C++, usando uma modelagem orientada a o
 \label{sub:classes}
 
 
-\subsubsection{Job}
+\subsubsection*{Job}
 
-\paragraph{JobId}
-
-
-\paragraph{JobAttributes}
+\subsubsection*{JobId}
 
 
-\subsubsection{VirtualProcessor}
+\subsubsection*{JobAttributes}
 
 
-\subsubsection{Daemon}
-
-\paragraph{SchedulingOperation} 
+\subsubsection*{VirtualProcessor}
 
 
-\subsubsection{AnahyVM} 
+\subsubsection*{Daemon}
+
+
+\subsubsection*{SchedulingOperation} 
+
+
+\subsubsection*{AnahyVM} 
 
 % subsection classes (end)
 
@@ -61,17 +62,43 @@ O código fonte de Anahy 3 é escrito em C++, usando uma modelagem orientada a o
 \section{Biblioteca athread.h} % (fold)
 \label{sec:athread}
 
-A biblioteca athread.h fornece uma interface de programação similar a de pthread para  bla bla bla
+A biblioteca \textbf{athread.h} oferece uma programação a alto nível para lançar atividades concorrentes, similar a interface do 
+padrão POSIX Thread. A interface fornece um modelo \emph{fork/join} para descrever programas em termos de \emph{threads}. Uma 
+camada intermediária entre \textbf{athread.h} e o núcleo do programa é responsável por identificar a concorrência fornecida 
+a partir da infertace em pequenas partes, chamadas tarefas e implementadas pela classe \emph{Job}. A partir disso é possível
+construir um DCG para representar as tarefas do programa. Esta camada intermediária é implementada na classe \emph{AnahyVM}.
 
-\paragraph{aInit}
+\subsubsection*{aInit}
 
-\paragraph{athread\_create}
+Este método coleta dados fornecidos pelo programador para configurar o ambiente de execução. A\_INIT tem a seguinte definição: 
+\texttt{void aInit(int argc, char** argv)}, os dados passados por linha de comando são: número de processadores virtuais, modo de 
+execução do ambiente, modelo de escalonamento das tarefas e mais alguns atributos que serão apresentados adiante.
 
-\paragraph{athread\_join}
+\subsubsection*{athread\_create}
 
-\paragraph{athread\_exit}
+O A\_THREAD\_CREATE lança as atividaes concorrentes ao ambiente de execução. Este método fornece a seguinte definição: 
+\texttt{int athread\_create(athread\_t* thid, athread\_attr\_t* attr, pfunc function, void\* args)}. Novos \emph{threads} são criados
+para executarem a função em \texttt{pfunc function} que os descreve. Os dados de entrada para função são especificados em \texttt{args}.
+O parâmetro \texttt{thid} é usado para identificar o novo \emph{thread} criado. O argumento \texttt{attr} especifica os atributos dos 
+\emph{threads}, sendo estes, custos de computação, número de \emph{joins} sofridos entre outros que serão vistos na seção Atributos.
 
-\paragraph{aTerminate}
+\subsubsection*{athread\_join}
+
+A\_THREAD\_JOIN fornece a definição: \texttt{int athread\_join(athread\_t thid, void** result)}. Cada \emph{thread} identificada por
+\texttt{thid} realiza uma operação de sincronização e \texttt{result} guarda a área de memória com o resultado final do \emph{thread}, 
+esse dado é definido pela primitiva ATHREAD\_EXIT.
+
+\subsubsection*{athread\_exit}
+
+Este método cuja definição é \texttt{void athread\_exit(void* value\_ptr)} é chamado ao final de cada função que define um \emph{thread},
+onde \texttt{value\_ptr} guarda o resultado final da execução em uma área de memória própria da tarefa.
+
+\subsubsection*{aTerminate}
+
+A\_TERMINATE é definida por \texttt{void aTerminate()} e é chamada no final da execução do programa para liberar a área de memória 
+utilizada pelo ambiente. Ao término da execução do programa a função redefinir possíveis atributos do sistema que foram alterados 
+durante a execução da aplicação.
+
 
 % section biblioteca_athread (end)
 

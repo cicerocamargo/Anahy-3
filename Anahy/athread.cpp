@@ -54,7 +54,7 @@ void aInit(int argc, char** argv) {
 }
 
 void aTerminate() {
-	anahy->shut_down();	
+	anahy->shut_down();
 }
 
 void athread_exit(void* value_ptr) {

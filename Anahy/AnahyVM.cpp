@@ -3,6 +3,7 @@
 
 /* STATIC MEMBERS' ITIALIZATIONS */
 AnahyVM AnahyVM::unique_instance;
+pthread_t AnahyVM::daemon_pthr;
 
 /* PUBLIC METHODS' DEFINITIONS */
 
@@ -21,7 +22,14 @@ void* AnahyVM::run_vp(void* vp_obj) {
 	//this set the key as a vp pointer
 	pthread_setspecific(get_vp_key(), (void *) vp);
 	
-	vp->start();
+	vp->start_and_run();
+	return NULL;
+}
+
+void* run_daemon(void* daemon_obj) {
+	Daemon* daemon = (Daemon*) daemon_obj;
+	daemon->start_and_run();
+
 	return NULL;
 }
 
@@ -29,11 +37,11 @@ void AnahyVM::boot(uint n_processors, sfunc scheduling_function) {
 	puts("Booting AnahyVM...");
 	num_processors = n_processors;
 	vp_thread_array = (pthread_t*) malloc(n_processors*sizeof(pthread_t));
-	
+
 	VirtualProcessor::init_pthread_key();
 
 	VirtualProcessor* vp;
-	list<VirtualProcessor*>::iterator it;
+	//list<VirtualProcessor*>::iterator it;
 	
 	daemon = new Daemon();
 	processors.push_back(new VirtualProcessor(daemon, pthread_self()));
@@ -44,6 +52,9 @@ void AnahyVM::boot(uint n_processors, sfunc scheduling_function) {
 		pthread_create(&vp_thread_array[i], NULL, run_vp, (void*)vp);
 	}
 
+	//now we got to initializate the daemon thread
+	pthread_create(&daemon_pthr, NULL, run_daemon, (void*)daemon);
+
 	puts("Done!");
 }
 
@@ -53,6 +64,8 @@ void AnahyVM::shut_down() {
 	for (int i = 0; i < num_processors; i++) {
 		pthread_join(vp_thread_array[i], NULL);
 	}
+
+	pthread_join)daemon_pthr, NULL);
 
 }
 

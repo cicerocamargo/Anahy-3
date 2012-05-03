@@ -21,7 +21,7 @@ public:
 	Daemon(); // default constructor
 	virtual ~Daemon();
 
-	void start();
+	void start_and_run();
 	void stop();
 	void flush();
 	void push_scheduling_operation(SchedulingOperation* sched_op);

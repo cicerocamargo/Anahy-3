@@ -22,9 +22,11 @@ class AnahyVM {
 	map<JobId, Job*> job_map;
 
 	pthread_t* vp_thread_array;
+	static pthread_t daemon_pthr;
 	
 	static AnahyVM unique_instance;
 	static void* run_vp(void* vp_obj);
+	static void* run_daemon(void* daemon_obj);
 	AnahyVM(); // default constructor
 	AnahyVM(AnahyVM&); // copy-constructor
 

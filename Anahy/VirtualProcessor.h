@@ -53,13 +53,13 @@ public:
 	void signal_operation_finished();
 	
 	/* getters and setters */
+	static pthread_key_t get_pthread_key();
 	Job* get_current_job() const;
 	void set_current_job(Job* new_value);
 	uint get_id() const;
 	ulong get_job_counter() const;
 	pthread_t get_thread() const;
 	pthread_mutex_t* get_mutex();
-	static pthread_key_t get_pthread_key();
 };
 
 #endif

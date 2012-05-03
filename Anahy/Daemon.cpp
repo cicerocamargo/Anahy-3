@@ -11,7 +11,7 @@ Daemon::~Daemon() {
 	
 }
 
-void Daemon::start() {
+void* Daemon::start_and_run() {
 	puts("Starting Daemon...");
 }
 
@@ -24,7 +24,7 @@ void Daemon::flush() {
 }
 
 void Daemon::push_scheduling_operation(SchedulingOperation* sched_op) {
-	
+	new_operations.push_back(sched_op);
 }
 
 

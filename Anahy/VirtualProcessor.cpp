@@ -9,6 +9,8 @@ pthread_key_t VirtualProcessor::key;
 
 void VirtualProcessor::call_vp_destructor(void *vp_obj) {
 	VirtualProcessor* vp = (VirtualProcessor*) vp_obj;
+	pthread_mutex_destroy(vp->mutex);
+	pthread_cond_destroy(vp->operation_finished);
 	//printf("Destroying VP %d\n", vp->id);
 	delete vp;
 }
@@ -27,7 +29,7 @@ void VirtualProcessor::notify_new_job_to_dameon(Job* job) {
 Job* VirtualProcessor::ask_daemon_for_new_job(Job* job) {
 	// create a new scheduling operation and push onto daemon's queue
 	SchedulingOperation* op = new SchedulingOperation(GetJob, job, this);
-    daemon->push_scheduling_operation(op);
+    daemon->push_scheduling_operation(op); // não está implementada
 
     // wait for the operation to be finished
     pthread_mutex_lock(&mutex);
@@ -45,15 +47,15 @@ VirtualProcessor::VirtualProcessor(Daemon* _daemon, pthread_t _thread) {
 	id = instance_counter++;
 	job_counter = 0;
 	program_end = false;
-	//operation_finished = PTHREAD_COND_INITIALIZER		?????
-	//mutex = PTHREAD_MUTEX_INITIALIZER;				?????
+	pthread_mutex_init(pthread_mutex_t *mutex, NULL);
+	pthread_mutex_init(pthread_mutex_t *operation_finished, NULL);
 }
 
 VirtualProcessor::~VirtualProcessor() {
 	
 }
 
-void VirtualProcessor::start() {
+void VirtualProcessor::start_and_run() {
 	while (true) {
 		if (program_end) {
 			break;
@@ -113,6 +115,10 @@ void VirtualProcessor::signal_operation_finished() {
 }
 
 /* getters and setters */
+pthread_key_t VirtualProcessor::get_pthread_key() {
+		return key;
+}
+
 Job* VirtualProcessor::get_current_job() const {
 	return current_job;
 }
@@ -135,8 +141,4 @@ pthread_t VirtualProcessor::get_thread() const {
 
 pthread_mutex_t* VirtualProcessor::get_mutex() {
 	return &mutex;
-}
-
-pthread_key_t VirtualProcessor::get_pthread_key() {
-		return key;
 }

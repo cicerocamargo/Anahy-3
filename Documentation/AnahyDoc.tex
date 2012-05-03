@@ -1,0 +1,112 @@
+\documentclass[12pt]{article} usepackage{sbc-template} usepackage{graphicx,url}
+\usepackage[brazil]{babel}
+
+
+\title{Documentação Oficial do Anahy 3}
+
+\author{Gerson Geraldo H. Cavalheiro, Cícero Augusto de S. Camargo, Alan S. de
+\Araújo}
+
+\address{Programa de Pós-Graduação em Computação (PPGC)\\ Universidade Federal
+de Pelotas(UFPEL)
+\email{\{cadscamargo,asdaraujo,gerson.cavalheiro\}@inf.ufpel.edu.br} }
+
+\begin{document}
+
+\maketitle
+
+\section{Introdução} % (fold) label{sec:introducao}
+
+% section introducao (end)
+
+\section{Modelo de execução} % (fold) label{sec:modelo_de_execucao}
+
+Uma programa em Anahy pode ser descrito, resumidamente, por um grafo cíclico de
+jobs (threads de usuário) e processadores virtuais que consomem os jobs deste
+grafo em alguma ordem que respeite as dependências estabelecidas entre estes.
+
+O fluxo normal de uma aplicação que usa o ambiente Anahy consiste da execução
+da função \textt{main} em um único thread, até que seja o ambiente seja
+explicitamente iniciado pela chamada de uma função da API para tal. Feito
+isso, é possível criar e sincronizar jobs dinamicamente, de forma irrestrita
+na maneira que as dependências entre estes são organizadas, desde que os jobs
+criados diretamente a partir do thread main sejam sincronizados também no
+thread main. Após o último job sincronizado a partir do thread main concluir
+sua execução e antes do fim do thread main, o programador deve encerrar o
+ambiente Anahy de maneira adequada.
+
+% section sec:modelo_de_execucao (end)
+
+\section{Código Fonte} % (fold) label{sec:codigo}
+
+O código fonte de Anahy 3 é escrito em C++, usando uma modelagem orientada a
+objetos e threads POSIX~\cite{NicholsPthreads} para a execução multithread no
+nível de sistema.
+
+\subsection{Classes} % (fold) label{sub:classes}
+
+A evolução de um programa que use o ambiente multithread de Anahy se dá pela
+criação dinâmica de instâncias das classes que serão descritas a seguir e a consequente troca de
+mensagens entre estes objetos.
+
+\subsubsection{Job}
+
+Um job é a unidade básica de execução de Anahy. Programadores espicificam jobs indiretamente, através da interface de programação (API) que será descrita na Seção~\ref{sec:athread}. Um novo job é criado, ele recebe um ponteiro para uma função C/C++ que poderá ser executada em paralelo com o código subsequente à chamada da API que gerou este movo. A função pela qual um job deverá iniciar sua execução, e demais chamadas realizadas a partir dessa, podem conter chamadas da API para criar e/ou sincronizar jobs, gerando novas dependências no grafo de jobs. Assim, um job possui ponteiros para seu pai (nulo, se o job for criado a partir do thread main), seus filhos, o Processador Virtual que o criou, além de uma variáve que indica seu estado e outros objetos que serão descritos a seguir.
+
+\paragraph{JobId}
+
+Um job possui uma identificação única (um objeto, instância de JobId) no ambiente Anahy. Os Processadores Virtuais são as entidades responsáveis por criar diretamente um Job e, assim, seu respectivo JobId. Este JobId é composto pelo id do Processador Virtual que o criou e um número de série correspondente ao número de jobs criados naquele Processador Virtual até o momento.
+
+\paragraph{JobAttributes}
+
+Um job possui um objeto que descreve atributos, os quais dizem respeito às restrições que o programador deseja impor à execução do mesmo. (\textbf{?????})
+
+\subsubsection{VirtualProcessor}
+
+Processadores Virtuais (Virtual Processors) são objetos criado pela máquina virtual do ambiente Anahy em número estabelecido pelo programador através da API. Estes elementos, estão sempre associados a um Daemon, ao qual se referem quando estão ociosos e necessitam de um job para executar. Processadores Virtuais também recebem mensagens a partir das funções da API, para criar um novo job, ou suspender a execução do job em execução e executar outro.
+
+Processadores Virtuais notificam seu Daemon associado sempre que criam um novo job (operação \textit{NewJob}), encerram a execução de um job (operação \textit{EndJob}) ou necessitam de outro job para executar (operação \textit{GetJob}). Nesta última situação, o Processador Virtual deve permanecer bloqueado até que sua solicitação seja atendida.
+
+A máquina virtual de Anahy associa um objeto do tipo Virtual Processor ao thread main, ou seja, entre o início e término do ambiente Anahy, o thread main age como um processador virtual durante as chamadas às funções da API.
+
+\subsubsection{Daemon}
+
+O Daemon é um objeto cuja finalidade é atender as solicitações dos Processadores Associados a ele, as quais manipulam o grafo de jbos. Solicitações enviadas a um Daemon são atendidas por ordem de chegada e, caso uma destas seja do tipo \textit{GetJob} e não possa ser atendida, é colocadas em uma segunda fila de solicitações suspensas. Caso ocorra alguma operação do tipo \textit{NewJob}, o Daemon atualiza o grafo e, em seguida, atende uma das solicitações suspensas.
+
+\paragraph{SchedulingOperation}
+
+
+\subsubsection{AnahyVM}
+
+% subsection classes (end)
+
+% section codigo_fonte (end)
+
+\section{Biblioteca athread.h} % (fold)
+\label{sec:athread}
+
+A biblioteca athread.h fornece uma interface de programação similar a de pthread
+para  bla bla bla
+
+\paragraph{aInit}
+
+\paragraph{athread_create}
+
+\paragraph{athread_join}
+
+\paragraph{athread_exit}
+
+\paragraph{aTerminate}
+
+% section biblioteca_athread (end)
+
+\section{Conclusão} % (fold) label{sec:conclusao}
+
+Anahy é bom demais!
+
+% section conclusao (end)
+
+\bibliographystyle{sbc} bibliography{bibs}
+
+\end{document}
+

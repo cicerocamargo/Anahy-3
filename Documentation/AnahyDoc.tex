@@ -1,11 +1,13 @@
-\documentclass[12pt]{article} usepackage{sbc-template} usepackage{graphicx,url}
+\documentclass[12pt]{article} 
+\usepackage{sbc-template}
+\usepackage{graphicx,url}
 \usepackage[brazil]{babel}
+\usepackage[utf8]{inputenc}
 
 
 \title{Documentação Oficial do Anahy 3}
 
-\author{Gerson Geraldo H. Cavalheiro, Cícero Augusto de S. Camargo, Alan S. de
-\Araújo}
+\author{Gerson Geraldo H. Cavalheiro, Cícero Augusto de S. Camargo, Alan S. de Araújo}
 
 \address{Programa de Pós-Graduação em Computação (PPGC)\\ Universidade Federal
 de Pelotas(UFPEL)
@@ -26,7 +28,7 @@ jobs (threads de usuário) e processadores virtuais que consomem os jobs deste
 grafo em alguma ordem que respeite as dependências estabelecidas entre estes.
 
 O fluxo normal de uma aplicação que usa o ambiente Anahy consiste da execução
-da função \textt{main} em um único thread, até que seja o ambiente seja
+da função \textit{main} em um único thread, até que seja o ambiente seja
 explicitamente iniciado pela chamada de uma função da API para tal. Feito
 isso, é possível criar e sincronizar jobs dinamicamente, de forma irrestrita
 na maneira que as dependências entre estes são organizadas, desde que os jobs

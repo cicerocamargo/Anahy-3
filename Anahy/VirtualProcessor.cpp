@@ -1,27 +1,21 @@
 #include "VirtualProcessor.h"
-#include "Daemon.h"
 #include "SchedulingOperation.h"
-#include "definitions.h"
 
-/* STATIC MEMBERS' ITIALIZATIONS */
+
+/**** STATIC MEMBERS' ITIALIZATIONS ****/
+
 uint VirtualProcessor::instance_counter = 0;
 pthread_key_t VirtualProcessor::key;
 
-void VirtualProcessor::call_vp_destructor(void *vp_obj) {
-	VirtualProcessor* vp = (VirtualProcessor*) vp_obj;
-	pthread_mutex_destroy(vp->mutex);
-	pthread_cond_destroy(vp->operation_finished);
-	//printf("Destroying VP %d\n", vp->id);
-	delete vp;
-}
 
-/* PRIVATE METHODS' DEFINITIONS */
+/**** PRIVATE METHODS' DEFINITIONS ****/
+
 void VirtualProcessor::notify_finished_job_to_daemon(Job* job) {
 	SchedulingOperation* op = new SchedulingOperation(EndJob, job, this);
     daemon->push_scheduling_operation(op);
 }
 
-void VirtualProcessor::notify_new_job_to_dameon(Job* job) {
+void VirtualProcessor::notify_new_job_to_daemon(Job* job) {
     SchedulingOperation* op = new SchedulingOperation(NewJob, job, this);
     daemon->push_scheduling_operation(op);
 }
@@ -29,7 +23,7 @@ void VirtualProcessor::notify_new_job_to_dameon(Job* job) {
 Job* VirtualProcessor::ask_daemon_for_new_job(Job* job) {
 	// create a new scheduling operation and push onto daemon's queue
 	SchedulingOperation* op = new SchedulingOperation(GetJob, job, this);
-    daemon->push_scheduling_operation(op); // não está implementada
+    daemon->push_scheduling_operation(op);
 
     // wait for the operation to be finished
     pthread_mutex_lock(&mutex);
@@ -40,33 +34,51 @@ Job* VirtualProcessor::ask_daemon_for_new_job(Job* job) {
     return job;
 }
 
-/* PUBLIC METHODS' DEFINITIONS */
+/**** STATIC METHODS ****/
+
+void VirtualProcessor::call_vp_destructor(void *vp_obj) {
+	VirtualProcessor* vp = (VirtualProcessor*) vp_obj;
+	pthread_mutex_destroy(&vp->mutex);
+	pthread_cond_destroy(&vp->operation_finished);
+	//printf("Destroying VP %d\n", vp->id);
+	delete vp;
+}
+
+void VirtualProcessor::init_pthread_key() {
+	pthread_key_create(&key, call_vp_destructor);
+}
+
+pthread_key_t VirtualProcessor::get_pthread_key() {
+		return key;
+}
+
+
+/**** PUBLIC METHODS ****/
+
 VirtualProcessor::VirtualProcessor(Daemon* _daemon, pthread_t _thread) {
 	daemon = _daemon;
 	thread = _thread;
 	id = instance_counter++;
 	job_counter = 0;
 	program_end = false;
-	pthread_mutex_init(pthread_mutex_t *mutex, NULL);
-	pthread_mutex_init(pthread_mutex_t *operation_finished, NULL);
+	pthread_mutex_init(&mutex, NULL);
+	pthread_cond_init(&operation_finished, NULL);
 }
 
 VirtualProcessor::~VirtualProcessor() {
 	
 }
 
-void VirtualProcessor::start_and_run() {
-	while (true) {
-		if (program_end) {
-			break;
-		}
 
+void VirtualProcessor::start() {
+	do {
 		current_job = ask_daemon_for_new_job(NULL);
 		if (current_job) {
 			current_job->run();
 			notify_finished_job_to_daemon(current_job);
+			current_job = NULL;
 		}
-	}
+	} while (!graph_completed);
 }
 
 void VirtualProcessor::stop() {
@@ -81,10 +93,10 @@ void VirtualProcessor::flush() {
 
 /* messages to be received from athread API */
 
-JobId create_new_job(pfunc function, void* args, JobAttributes attr) {
+JobId VirtualProcessor::create_new_job(pfunc function, void* args, JobAttributes attr) {
 	JobId jid(id, job_counter++);
 	Job* job = new Job(jid, current_job, this, attr, function, args);
-	notify_new_job_to_dameon(job);
+	notify_new_job_to_daemon(job);
 	return jid;
 }
 
@@ -114,10 +126,8 @@ void VirtualProcessor::signal_operation_finished() {
 	pthread_cond_signal(&operation_finished);
 }
 
+
 /* getters and setters */
-pthread_key_t VirtualProcessor::get_pthread_key() {
-		return key;
-}
 
 Job* VirtualProcessor::get_current_job() const {
 	return current_job;

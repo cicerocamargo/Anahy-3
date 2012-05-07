@@ -1,5 +1,6 @@
 #include "AnahyVM.h"
 #include <cstdio>
+#include <cstdlib>
 
 /* STATIC MEMBERS' ITIALIZATIONS */
 AnahyVM AnahyVM::unique_instance;
@@ -20,26 +21,29 @@ void* AnahyVM::run_vp(void* vp_obj) {
 	VirtualProcessor* vp = (VirtualProcessor*) vp_obj;
 
 	//this set the key as a vp pointer
-	pthread_setspecific(get_vp_key(), (void *) vp);
+	pthread_setspecific(VirtualProcessor::get_pthread_key(), (void*)vp);
 	
-	vp->start_and_run();
+	vp->start();
 	return NULL;
 }
 
-void* run_daemon(void* daemon_obj) {
+void* AnahyVM::run_daemon(void* daemon_obj) {
 	Daemon* daemon = (Daemon*) daemon_obj;
-	daemon->start_and_run();
+	daemon->start();
 
 	return NULL;
 }
 
-void AnahyVM::boot(uint n_processors, sfunc scheduling_function) {
+void AnahyVM::boot(uint _num_daemons, uint _vps_per_daemon, sfunc scheduling_function) {
 	puts("Booting AnahyVM...");
-	num_processors = n_processors;
-	vp_thread_array = (pthread_t*) malloc(n_processors*sizeof(pthread_t));
+	vps_per_daemon = _vps_per_daemon;
+	num_daemons =_num_daemons;
+	
 
+	/**** REVISAR LÓGICA !!! ****/
+
+	vp_thread_array = (pthread_t*) malloc(num_processors*sizeof(pthread_t));
 	VirtualProcessor::init_pthread_key();
-
 	VirtualProcessor* vp;
 	//list<VirtualProcessor*>::iterator it;
 	
@@ -47,7 +51,7 @@ void AnahyVM::boot(uint n_processors, sfunc scheduling_function) {
 	processors.push_back(new VirtualProcessor(daemon, pthread_self()));
 
 	//now we got to initializate the daemon thread
-	pthread_create(&daemon_pthr, NULL, run_daemon, (void*)daemon);
+	pthread_create(&daemon_pthr, NULL, AnahyVM::run_daemon, (void*)daemon);
 	
 	for (int i = 0; i < n_processors; i++) {
 		vp = new VirtualProcessor(daemon, vp_thread_array[i]);
@@ -98,7 +102,7 @@ int AnahyVM::get_num_processors() const {
 	return num_processors;
 }
 
-vector<VirtualProcessor*> AnahyVM::get_processors() const {
+list<VirtualProcessor*> AnahyVM::get_processors() const {
 	return processors;
 }
 

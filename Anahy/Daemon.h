@@ -12,23 +12,22 @@ class SchedulingOperation;
 
 class Daemon {
 
-	queue<SchedulingOperation*> new_operations;
+	queue<SchedulingOperation*> pending_operations;
 	list<SchedulingOperation*> suspended_operations;
 	pthread_mutex_t queue_mutex;
 	AnahyVM* anahy;
 	
+	static void* run_vp(void* vp_obj);
+	bool execute_operation(SchedulingOperation* sched_op);
+
 public:
 	Daemon(); // default constructor
 	virtual ~Daemon();
 
-	void start_and_run();
+	void start();
 	void stop();
 	void flush();
 	void push_scheduling_operation(SchedulingOperation* sched_op);
-	
-	/* getters and setters */
-	queue<SchedulingOperation*> get_new_operations() const;
-	list<SchedulingOperation*> get_suspended_operations() const;
 };
 
 #endif

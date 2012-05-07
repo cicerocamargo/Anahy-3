@@ -21,6 +21,8 @@ schedop: SchedulingOperation.cpp
 athread: athread.cpp
 	$(CPP) athread.cpp -c
 
+env: daemon anahyvm schedop vp job jobid 
+	
 job_test: Job.o JobId.o Daemon.o VirtualProcessor.o AnahyVM.o SchedulingOperation.o athread.o
 	$(CPP) Job.o JobId.o Daemon.o VirtualProcessor.o AnahyVM.o SchedulingOperation.o athread.o job_test.cpp -o job_test
 

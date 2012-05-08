@@ -2,3 +2,5 @@
 */.directory
 */*/.directory
 */*.o
+*/.out
+*/*.out

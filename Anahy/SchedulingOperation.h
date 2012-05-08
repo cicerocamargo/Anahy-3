@@ -4,7 +4,7 @@
 #include "Job.h"
 #include "VirtualProcessor.h"
 
-enum SchedOpType { NewJob, EndJob, GetJob };
+enum SchedOpType { NewJob, EndJob, GetJob, GraphCompleted };
 
 class SchedulingOperation {
 

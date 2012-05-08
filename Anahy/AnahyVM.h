@@ -13,19 +13,22 @@
 #include "Daemon.h"
 
 class AnahyVM {
-	
 	uint num_daemons, vps_per_daemon;
 	
-	Daemon* daemon;
+	// Daemon structures
+	Daemon** daemon_array;
+	pthread_t* daemon_threads_array;
+
+	// funtion to be used in "Job* find_a_ready_job(Job* job)"
 	sfunc scheduling_function;
 	
 	// graph variables
 	list<Job*> root_jobs;
 	map<JobId, Job*> job_map;
 
-	static pthread_t daemon_pthr;
 	static AnahyVM unique_instance;
 	
+	// starting routine to a daemon thread
 	static void* run_daemon(void* daemon_obj);
 
 	AnahyVM(); // default constructor
@@ -35,22 +38,17 @@ public:
 	
 	static AnahyVM* get_instance_handler();
 	
-	void boot(uint _num_daemons, uint _vps_per_daemon, sfunc scheduling_function);
+	void boot(uint _num_daemons, uint _vps_per_daemon,
+		sfunc scheduling_function);
 	void shut_down();
+
+	// messages to be received from a Daemon
 	void insert_job(Job* job);
 	void remove_job(Job* job);
 	Job* find_a_ready_job(Job* job);
 	
-	/* getters and setters */
-	list<Job*> get_root_jobs() const;
-	map<JobId,Job*> get_job_map() const;
-	
-	int get_num_processors() const;
-	list<VirtualProcessor*> get_processors() const;
-	Daemon* get_daemon() const;
+	// message to be received from the API
 	Job* get_job_by_id(JobId job_id);
-	void set_scheduling_function(sfunc new_value);
-	pthread_key_t get_vp_key();
 };
 
 #endif

@@ -44,8 +44,21 @@ public:
 		return key;
 	}
 
+	static void delete_pthread_key() {
+		puts("deleting pthread_key...");
+		int ret_code;
+		if ((ret_code = pthread_key_delete(key)) < 0) {
+			printf("pthread_key_delete failed, error code %d", ret_code);
+			exit(1);
+		}
+	}
+
 	void* run_user_func(par_func func, void* args) {
 		return func(args);
+	}
+
+	~VirtualProcessor() {
+		printf("Destroying VP %d...\n", id);
 	}
 };
 
@@ -82,8 +95,8 @@ void* run_vp(void *vp_obj) {
 
 void call_vp_destructor(void *vp_obj) {
    VirtualProcessor* vp = (VirtualProcessor*) vp_obj;
-   printf("Destroying VP %d\n", vp->id);
-   delete vp;
+   printf("Nothing happens to VP %d\n", vp->id);
+   //delete vp;
 }
 
 int main(int argc, char** argv) {
@@ -106,10 +119,17 @@ int main(int argc, char** argv) {
 	}
 
 	run_vp((void*) vp_array[0]);
-	call_vp_destructor((void*) vp_array[0]);
+	//call_vp_destructor((void*) vp_array[0]);
 
 	for (int i = 1; i < num_vps; i++) {
 		pthread_join(thread_array[i], NULL);
 	}
+
+	// delete VPs
+	for (int i = 0; i < num_vps; i++) {
+		delete vp_array[i];
+	}
+
+	VirtualProcessor::delete_pthread_key();	
 	return 0;
 }

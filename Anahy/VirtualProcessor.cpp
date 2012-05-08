@@ -36,31 +36,28 @@ Job* VirtualProcessor::ask_daemon_for_new_job(Job* job) {
 
 /**** STATIC METHODS ****/
 
-void VirtualProcessor::call_vp_destructor(void *vp_obj) {
-	VirtualProcessor* vp = (VirtualProcessor*) vp_obj;
-	pthread_mutex_destroy(&vp->mutex);
-	pthread_cond_destroy(&vp->operation_finished);
-	//printf("Destroying VP %d\n", vp->id);
-	delete vp;
-}
+// dummy functon to fill pthread_key_create(...) requirements
+void VirtualProcessor::call_vp_destructor(void *vp_obj) { }
 
 void VirtualProcessor::init_pthread_key() {
 	pthread_key_create(&key, call_vp_destructor);
 }
 
 pthread_key_t VirtualProcessor::get_pthread_key() {
-		return key;
+	return key;
 }
 
+void VirtualProcessor::delete_pthread_key() {
+	pthread_key_delete(key);
+}
 
 /**** PUBLIC METHODS ****/
 
-VirtualProcessor::VirtualProcessor(Daemon* _daemon, pthread_t _thread) {
+VirtualProcessor::VirtualProcessor(Daemon* _daemon) {
+	anahy_is_running = true;
 	daemon = _daemon;
-	thread = _thread;
 	id = instance_counter++;
 	job_counter = 0;
-	program_end = false;
 	pthread_mutex_init(&mutex, NULL);
 	pthread_cond_init(&operation_finished, NULL);
 }
@@ -71,6 +68,7 @@ VirtualProcessor::~VirtualProcessor() {
 
 
 void VirtualProcessor::start() {
+	
 	do {
 		current_job = ask_daemon_for_new_job(NULL);
 		if (current_job) {
@@ -78,7 +76,7 @@ void VirtualProcessor::start() {
 			notify_finished_job_to_daemon(current_job);
 			current_job = NULL;
 		}
-	} while (!graph_completed);
+	} while (!anahy_is_running);
 }
 
 void VirtualProcessor::stop() {
@@ -143,12 +141,4 @@ uint VirtualProcessor::get_id() const {
 
 ulong VirtualProcessor::get_job_counter() const {
 	return job_counter;
-}
-
-pthread_t VirtualProcessor::get_thread() const {
-	return thread;
-}
-
-pthread_mutex_t* VirtualProcessor::get_mutex() {
-	return &mutex;
 }

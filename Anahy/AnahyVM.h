@@ -38,8 +38,7 @@ public:
 	
 	static AnahyVM* get_instance_handler();
 	
-	void boot(uint _num_daemons, uint _vps_per_daemon,
-		sfunc scheduling_function);
+	void boot(uint _num_daemons, uint _vps_per_daemon, uint _scheduling_function, uint _mode_operation);
 	void shut_down();
 
 	// messages to be received from a Daemon

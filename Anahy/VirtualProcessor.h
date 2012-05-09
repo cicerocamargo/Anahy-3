@@ -13,7 +13,6 @@ class VirtualProcessor {
 
 	static uint instance_counter;	// tracks how many VP objects
 									// have been created
-	
 	static pthread_key_t key;	// a key to store an VP object
 								// in and retrieve it from a pthread
 	

@@ -21,7 +21,7 @@ void* AnahyVM::run_daemon(void* daemon_obj) {
 
 // messages to be received from the API
 
-void AnahyVM::boot(uint _num_daemons, uint _vps_per_daemon, sfunc scheduling_function) {
+void AnahyVM::boot(uint _num_daemons = 1, uint _vps_per_daemon, uint _scheduling_function, uint mode_operation) {
 	puts("Booting AnahyVM...");
 
 	vps_per_daemon = _vps_per_daemon;

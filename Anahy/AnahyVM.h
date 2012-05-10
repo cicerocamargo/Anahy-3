@@ -39,8 +39,7 @@ public:
 	static AnahyVM* get_instance_handler();
 	
 	// messages to be received from the API
-	void boot(uint _num_daemons, uint _vps_per_daemon,
-		sfunc scheduling_function);
+	void boot(uint _num_daemons, uint _vps_per_daemon, uint _scheduling_function, uint _mode_operation);
 	void shut_down();
 	Job* get_job_by_id(JobId job_id);
 

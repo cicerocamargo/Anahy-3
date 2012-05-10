@@ -3,14 +3,13 @@
 
 #include "definitions.h"
 #include "JobId.h"
+#include "JobAttributes.h"
 #include <pthread.h>
 #include <set>
 
 using namespace std;
 
 class VirtualProcessor;
-
-typedef long int JobAttributes;
 
 enum JobState {ready, running, finished, blocked};
 

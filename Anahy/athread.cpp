@@ -6,6 +6,7 @@
 #include <string.h>
 #include "definitions.h"
 #include "athread.h"
+#include "JobAttributes.h"
 #include "Daemon.h"
 #include "VirtualProcessor.h"
 #include "AnahyVM.h"
@@ -25,8 +26,6 @@ void help() {
 		   1-PASSIVE; 2-NORMAL; 3-AGRESSIVE.\n");
 	printf("\n");
 }
-
-
 
 void aInit(int argc, char** argv) {
 	// parse command line
@@ -140,5 +139,46 @@ int athread_join(athread_t thid, void** result) {
 			done = true;
 		}
 	} while (!done);
+	return 0;
+}
+
+int athread_attr_init(athread_attr_t* attr) {
+	//initialize all the job attributes as default
+	JobAttributes* attr_t = new JobAttributes(1, true, ATHREAD_CREATE_JOINABLE, 0);
+	*attr = attr_t;
+	return 0;
+}
+
+int athread_attr_destroy(athread_attr_t* attr) {
+	attr->initialized = false;
+	return 0;
+}
+
+int athread_attr_setdetached(athread_attr_t* attr, int _detach_state) {
+	if (!(detach_state & (ATHREAD_CREATE_JOINABLE | ATHREAD_CREATE_DETACHED))) {
+		return -1;
+	} else {
+		attr->detach_state = _detach_state;
+		return 0;
+	}
+}
+
+int athread_attr_getdetached(athread_attr_t* attr, int* _detach_state) {
+	*_detach_state = attr->get_JobAttributes_State();
+	return 0;
+}
+
+int athread_attr_setjoinnumber(athread_attr_t* attr, int _max_joins) {
+	attr->max_joins = _max_joins;
+	return 0;
+}
+
+int athread_attr_getjoinnumber(athread_attr_t* attr, int* _max_joins) {
+	*_max_joins = attr->get_max_joins();
+	return 0;	
+}
+
+int athread_attr_setjobcost(athread_attr_t* attr, int _job_cost) {
+	attr->job_cost = _job_cost;
 	return 0;
 }

@@ -9,6 +9,18 @@ uint Daemon::instance_counter = 0;
 
 /* PRIVATE METHODS */
 
+void Daemon::start_vps() {
+	// launch vp objects
+	for (uint i = 0; i < num_processors; ++i) {
+		if (this->id == 0 && i == 0) {
+			// the main VP has id 0 and is associated to Daemon 0
+			// DO NOT create a new thread for the main VP !!
+			continue;
+		}
+		pthread_create(&vp_threads_array[i], NULL, run_vp, vp_array[i]);
+	}
+}
+
 // funtion to be used as start routine for a pthread
 // receives a (void*) pointer to a VP and start it
 void* Daemon::run_vp(void* vp_obj) { // static
@@ -30,19 +42,13 @@ void Daemon::execute_operation(SchedulingOperation* op) {
 			anahy->insert_job(op->get_associated_job());		
 			break;
 		case EndJob:
+			printf("Job ");
+			op->get_associated_job()->get_id()->display();
+			printf(" finished by VP %d", op->get_applicant()->get_id());
 
-			// do stuff
-		
 			break;
 		case GetJob:
-			
-			// do stuff
-
-			break;
-		case GraphCompleted:
-					
-			// do stuff
-			
+			printf("GetJob received from VP%d\n", op->get_applicant()->get_id());
 			break;
 		default:
 			puts("Invalid scheduling operation...");
@@ -72,16 +78,6 @@ Daemon::Daemon(uint _num_processors) : num_processors(_num_processors) {
 	for (uint i = 0; i < num_processors; ++i) {
 		vp_array[i] = new VirtualProcessor(this);
 	}
-
-	// launch vp objects
-	for (uint i = 0; i < num_processors; ++i) {
-		if (this->id == 0 && i == 0) {
-			// the main VP has id 0 and is associated to Daemon 0
-			// DO NOT create a new thread for the main VP !!
-			continue;
-		}
-		pthread_create(&vp_threads_array[i], NULL, run_vp, vp_array[i]);
-	}
 }
 
 Daemon::~Daemon() {
@@ -91,11 +87,13 @@ Daemon::~Daemon() {
 	free(vp_array);
 
 	for (uint i = 0; i < num_processors; ++i) {
+		/*
 		if (this->id == 0 && i == 0) {
 			// the main VP has id 0 and is associated to Daemon 0
 			// DO NOT create a new thread for the main VP !!
 			continue;
 		}
+		*/
 		pthread_join(vp_threads_array[i], NULL);
 	}
 	free(vp_threads_array);
@@ -105,8 +103,8 @@ Daemon::~Daemon() {
 }
 
 void Daemon::start() {
-	puts("Starting Daemon...");
-	
+	printf("Daemon %d running on thread %lu\n", id, (ulong)pthread_self());
+
 	SchedulingOperation* operation;
 	
 	do {

@@ -54,10 +54,11 @@ void VirtualProcessor::delete_pthread_key() {
 /**** PUBLIC METHODS ****/
 
 VirtualProcessor::VirtualProcessor(Daemon* _daemon) {
+	id = instance_counter++;
 	anahy_is_running = true;
 	daemon = _daemon;
-	id = instance_counter++;
 	job_counter = 0;
+	current_job = NULL;
 	pthread_mutex_init(&mutex, NULL);
 	pthread_cond_init(&operation_finished, NULL);
 }
@@ -68,7 +69,7 @@ VirtualProcessor::~VirtualProcessor() {
 
 
 void VirtualProcessor::start() {
-	
+	printf("VP %d running on thread %lu\n", id, (ulong)pthread_self());
 	do {
 		current_job = ask_daemon_for_new_job(NULL);
 		if (current_job) {
@@ -76,7 +77,7 @@ void VirtualProcessor::start() {
 			notify_finished_job_to_daemon(current_job);
 			current_job = NULL;
 		}
-	} while (!anahy_is_running);
+	} while (anahy_is_running);
 }
 
 void VirtualProcessor::stop() {
@@ -120,7 +121,7 @@ void VirtualProcessor::suspend_current_job_and_run_another(Job* job) {
 }
 
 /* msg to be received from a Daemon */
-void VirtualProcessor::signal_operation_finished() {
+void VirtualProcessor::continue_execution() {
 	pthread_cond_signal(&operation_finished);
 }
 

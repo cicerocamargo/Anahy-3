@@ -14,7 +14,7 @@ class VirtualProcessor;
 
 class Daemon {
 	static uint instance_counter;	// tracks how many Daemon objects
-									// have been created
+									// have been created so far
 	
 	uint id; // a unique id for this Daemon
 
@@ -35,7 +35,11 @@ class Daemon {
 	
 	bool anahy_is_running; // indicates VMs state
 	
+	// some private methods
 	static void* run_vp(void* vp_obj);
+	void start_vps();
+
+	// a method to evaluate a scheduling operation
 	void execute_operation(SchedulingOperation* sched_op);
 
 public:

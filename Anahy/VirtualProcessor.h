@@ -60,7 +60,7 @@ public:
 	void suspend_current_job_and_run_another(Job* job);
 
 	// messages to be received from a Daemon
-	void signal_operation_finished();
+	void continue_execution();
 	
 	/* getters and setters */
 	Job* get_current_job() const;

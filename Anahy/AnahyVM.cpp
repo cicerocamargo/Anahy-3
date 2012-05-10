@@ -100,5 +100,19 @@ void AnahyVM::remove_job(Job* job) {
 // uses the scheduling function to find
 // the most suitable ready job in the graph
 Job* AnahyVM::find_a_ready_job(Job* job) {
-	return scheduling_function(root_jobs, job);
+	return root_jobs.front();
+	//return scheduling_function(root_jobs, job);
+}
+
+
+void AnahyVM::create_dummy_job(pfunc func, void* args) {
+	JobId id(666,999);
+	Job* parent = NULL;
+	JobAttributes attr = 0;
+	VirtualProcessor* vp = NULL;
+
+	Job* j = new Job(id, parent, vp, attr, func, args);
+
+	root_jobs.push_back(j);
+	job_map[id] = j;
 }

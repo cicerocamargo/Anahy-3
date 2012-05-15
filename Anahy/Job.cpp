@@ -21,11 +21,38 @@ Job::Job (JobId _id, Job* _parent, VirtualProcessor* _creator,
         parent->add_child(this);
     }
 	state = ready;
+	pthread_mutex_init(&mutex, NULL);
 }
 
 void Job::run() {
     void* temp = (function)(data);
     retval = (temp ? temp : NULL);
+}
+
+// self explanatory ...
+JobState Job::compare_and_swap_state(JobState target_value, JobState new_value) {
+	pthread_mutex_lock(&mutex);
+
+	JobState retval = state;
+	if (state == target_value) {
+		state = new_value;
+	}
+
+	pthread_mutex_unlock(&mutex);
+
+	return retval;
+}
+
+// drecement atomically the number of joins that
+// the job has to receive and return the value
+uint Job::dec_join_counter() {
+	pthread_mutex_lock(&mutex);
+
+	// change attributes ???
+	
+	pthread_mutex_lock(&mutex);
+
+	return 0;
 }
 
 // auxiliary function

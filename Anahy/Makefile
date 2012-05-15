@@ -9,14 +9,14 @@ job: Job.cpp
 jobid: JobId.cpp
 	$(CPP) JobId.cpp -c
 
-daemon: anahyvm schedop Daemon.cpp
+daemon: Daemon.cpp
 	$(CPP) Daemon.cpp -c
 
 anahyvm: AnahyVM.cpp
 	$(CPP) AnahyVM.cpp -c
 
-schedop: SchedulingOperation.cpp
-	$(CPP) SchedulingOperation.cpp -c
+vpevent: VPEvent.cpp
+	$(CPP) VPEvent.cpp -c
 
 athread: athread.cpp
 	$(CPP) athread.cpp -c
@@ -24,13 +24,13 @@ athread: athread.cpp
 jobattributes: JobAttributes.cpp
 	$(CPP) JobAttributes.cpp -c
 
-env: daemon anahyvm schedop vp job jobid jobattributes
+env: daemon anahyvm vpevent vp job jobid jobattributes
 	
-job_test: Job.o JobId.o Daemon.o VirtualProcessor.o AnahyVM.o SchedulingOperation.o athread.o
-	$(CPP) Job.o JobId.o Daemon.o VirtualProcessor.o AnahyVM.o SchedulingOperation.o athread.o job_test.cpp -o job_test
+job_test: Job.o JobId.o Daemon.o VirtualProcessor.o AnahyVM.o VPEvent.o athread.o
+	$(CPP) Job.o JobId.o Daemon.o VirtualProcessor.o AnahyVM.o VPEvent.o athread.o job_test.cpp -o job_test
 
-athread_test: Job.o JobId.o Daemon.o VirtualProcessor.o AnahyVM.o SchedulingOperation.o athread.o
-	$(CPP) Job.o JobId.o Daemon.o VirtualProcessor.o AnahyVM.o SchedulingOperation.o athread.o JobAttributes.o athread_test.cpp -o athread_test
+athread_test: Job.o JobId.o Daemon.o VirtualProcessor.o AnahyVM.o VPEvent.o athread.o
+	$(CPP) Job.o JobId.o Daemon.o VirtualProcessor.o AnahyVM.o VPEvent.o athread.o JobAttributes.o athread_test.cpp -o athread_test
 	
 clean:
-	rm *.o
+	rm -f *.o *.out

@@ -5,7 +5,7 @@
 #include "JobId.h"
 #include "JobAttributes.h"
 
-typedef JobId athread_t;
+typedef JobHandle athread_t;
 typedef JobAttributes athread_attr_t;
 
 

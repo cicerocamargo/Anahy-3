@@ -1,5 +1,4 @@
 #include "VirtualProcessor.h"
-#include "SchedulingOperation.h"
 
 
 /**** STATIC MEMBERS' ITIALIZATIONS ****/
@@ -10,29 +9,61 @@ pthread_key_t VirtualProcessor::key;
 
 /**** PRIVATE METHODS' DEFINITIONS ****/
 
-void VirtualProcessor::notify_finished_job_to_daemon(Job* job) {
-	SchedulingOperation* op = new SchedulingOperation(EndJob, job, this);
-    daemon->push_scheduling_operation(op);
+void* VirtualProcessor::call_vp_run(void* vp_obj) {
+	pthread_setspecific(key, vp_obj);
+	VirtualProcessor* vp = (VirtualProcessor*) vp_obj;
+	vp->run();
+	return NULL;
 }
 
-void VirtualProcessor::notify_new_job_to_daemon(Job* job) {
-    SchedulingOperation* op = new SchedulingOperation(NewJob, job, this);
-    daemon->push_scheduling_operation(op);
+// VP main loop
+void VirtualProcessor::run() {
+	while(true) {
+		daemon->get_job(this, NULL); // ask daemon and wait
+
+		if (!current_job) { // daemon set my job as NULL ...
+			// I should stop!
+			return;
+		}
+
+		current_job->run();
+		daemon->end_of_job(this, current_job);
+		current_job = NULL;
+	}
 }
 
-Job* VirtualProcessor::ask_daemon_for_new_job(Job* job) {
-	// create a new scheduling operation and push onto daemon's queue
-	SchedulingOperation* op = new SchedulingOperation(GetJob, job, this);
-    daemon->push_scheduling_operation(op);
+// 'job' was not Finished, so I'll ask daemon for a Ready job related to it
+void VirtualProcessor::suspend_current_job_and_try_to_help(Job* joined) {
+	context_stack.push(current_job); // save context
+	daemon->get_job(this, joined); // ask daemon and wait
 
-    // wait for the operation to be finished
-    pthread_mutex_lock(&mutex);
-    pthread_cond_wait(&operation_finished, &mutex);
-    pthread_mutex_unlock(&mutex);
-
-    // now job points to nil or a ready job
-    return job;
+	if (current_job != context_stack.top()) { // daemon updated my current job
+		current_job->run();
+		daemon->end_of_job(this, current_job); // notify daemon
+		current_job = context_stack.top(); // restore stacked context
+	}
+	
+	// when daemon don't change the current job and resume me
+	// (so I got here without executing the IF statement)
+	// means that 'joined' got finished before a ready job was available
+	
+	context_stack.pop();
 }
+
+
+// run another job keeping track of the suspended job
+void VirtualProcessor::suspend_current_job_and_run_another(Job* another) {
+	context_stack.push(current_job); // save context
+	current_job = another; // update current_job
+	
+	current_job->run();
+	daemon->end_of_job(this, current_job); // notify daemon
+	
+	current_job = context_stack.top(); // restore stacked context
+	context_stack.pop();
+	
+}
+
 
 /**** STATIC METHODS ****/
 
@@ -43,88 +74,95 @@ void VirtualProcessor::init_pthread_key() {
 	pthread_key_create(&key, call_vp_destructor);
 }
 
-pthread_key_t VirtualProcessor::get_pthread_key() {
-	return key;
-}
-
 void VirtualProcessor::delete_pthread_key() {
 	pthread_key_delete(key);
 }
 
 /**** PUBLIC METHODS ****/
 
-VirtualProcessor::VirtualProcessor(Daemon* _daemon) {
+VirtualProcessor::VirtualProcessor(Daemon* _daemon) : daemon(_daemon) {
 	id = instance_counter++;
-	anahy_is_running = true;
-	daemon = _daemon;
 	job_counter = 0;
 	current_job = NULL;
 	pthread_mutex_init(&mutex, NULL);
-	pthread_cond_init(&operation_finished, NULL);
+	pthread_mutex_lock(&mutex); // to block myself in the next lock
 }
 
 VirtualProcessor::~VirtualProcessor() {
-	
+	instance_counter--;
+	pthread_mutex_unlock(&mutex);
+	pthread_mutex_destroy(&mutex);
 }
 
-
+// message received from a daemon object and daemon thread
 void VirtualProcessor::start() {
-	printf("VP %d running on thread %lu\n", id, (ulong)pthread_self());
-	do {
-		current_job = ask_daemon_for_new_job(NULL);
-		if (current_job) {
-			current_job->run();
-			notify_finished_job_to_daemon(current_job);
-			current_job = NULL;
-		}
-	} while (anahy_is_running);
+	printf("Starting VP %d\n", id);
+	pthread_create(&thread, NULL, call_vp_run, (void*)this);
 }
 
+// message received from a daemon object and daemon thread
 void VirtualProcessor::stop() {
-	// compare_and_swap(&program_end, false, true);
-	// wake vp thread to break the while loop in start() method;
+	pthread_join(thread, NULL);
+	printf("Stopping VP %d ...\n", id);
 }
 
-void VirtualProcessor::flush() {
-	// ???
+// message received from a daemon object but from my thread
+void VirtualProcessor::block() {
+	pthread_mutex_lock(&mutex);
 }
 
+// message received from a daemon object and daemon thread
+void VirtualProcessor::resume() {
+	pthread_mutex_unlock(&mutex);
+}
 
 /* messages to be received from athread API */
 
-JobId VirtualProcessor::create_new_job(pfunc function, void* args, JobAttributes attr) {
-	JobId jid(id, job_counter++);
-	Job* job = new Job(jid, current_job, this, attr, function, args);
-	notify_new_job_to_daemon(job);
-	return jid;
+VirtualProcessor* VirtualProcessor::get_current_vp() { // class method!
+	return (VirtualProcessor*) pthread_getspecific(key);
 }
 
-void VirtualProcessor::suspend_current_job_and_try_to_help(Job* job) {
-	Job* temp = ask_daemon_for_new_job(job);
-	if (temp) {
-		suspend_current_job_and_run_another(temp);
-	}
+JobHandle VirtualProcessor::create_new_job(pfunc function, void* args, JobAttributes attr) {
+	JobId job_id(id, job_counter++);
+	Job* job = new Job(job_id, current_job, this, attr, function, args);
+	daemon->new_job(this, job);
+	JobHandle handle;
+	handle.pointer = job;
+	handle.id = job_id;
 }
 
+void* VirtualProcessor::join_job(JobHandle handle) {
+	Job* joined = handle.pointer;
+	void* result;
 
-// run another job keeping track of the suspended job
-void VirtualProcessor::suspend_current_job_and_run_another(Job* job) {
-	suspended_jobs.push(current_job); // memorize current job
+	bool done = false;
+	do {
+		JobState state = joined->compare_and_swap_state(ready, running);
+
+		if (state == running) {
+			// if the joined job was already running ...
+			// try to help its execution
+			suspend_current_job_and_try_to_help(joined);
+		}
+		else {
+			// if the job was ready for execution or already finished
+			if (state == ready) {
+				suspend_current_job_and_run_another(joined);
+			}
+			
+			result = joined->get_retval();
+
+			/* if (joined->dec_join_counter() == 0) {
+				delete job;
+			} */
+
+			done = true;
+		}
+	} while (!done);
 	
-	current_job = job;
-	job->run();
-	notify_finished_job_to_daemon(job);
-	
-	// restore previous job
-	current_job = suspended_jobs.front();
-	suspended_jobs.pop();
+	daemon->destroy_job(this, joined);
+	return result;
 }
-
-/* msg to be received from a Daemon */
-void VirtualProcessor::continue_execution() {
-	pthread_cond_signal(&operation_finished);
-}
-
 
 /* getters and setters */
 

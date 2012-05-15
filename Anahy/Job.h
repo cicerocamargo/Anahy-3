@@ -26,16 +26,23 @@ class Job {
 	void* data;
 	void* retval; // return value of 'function'
 	
+	pthread_mutex_t mutex;
+
 	void add_child(Job* child); // called from the constructor
+	Job(Job&); // to avoid copy construction
 public:
 	Job (JobId _id, Job* _parent, VirtualProcessor* _creator,
 		JobAttributes _attributes, pfunc _function, void* _data);
 	
-	void run();
-	void display(int num_tabs=0);
+	void run(); // to be called from a VP
 	
-	// getters and setters
-    
+	// atomic operations
+	JobState compare_and_swap_state(JobState target_value, JobState new_value);  
+	uint dec_join_counter();
+
+	void display(int num_tabs=0);
+
+	// getters and setters 
 	JobId get_id() const;
 	Job* get_parent() const;
 	VirtualProcessor* get_creator() const;
@@ -43,6 +50,11 @@ public:
 	JobAttributes get_attributes() const;
 	void* get_retval() const;
 	void set_retval(void* new_retval);
+};
+
+struct JobHandle {
+	Job* pointer;
+	JobId id;
 };
 
 #endif

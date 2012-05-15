@@ -11,8 +11,6 @@
 #include "VirtualProcessor.h"
 #include "AnahyVM.h"
 
-AnahyVM* anahy = AnahyVM::get_instance_handler();
-
 void help() {
 	printf("\nOptions:\n");
 	printf("	-h show this help message.\n");
@@ -70,75 +68,29 @@ void aInit(int argc, char** argv) {
 		}
 	}
 
-	anahy->boot(num_daemons, num_vps, scheduling_function, mode_operation);
+	AnahyVM::boot(num_daemons, num_vps, scheduling_function, mode_operation);
 }
 
 void aTerminate() {
-	anahy->shut_down();
+	Anahy::shut_down();
 }
 
 void athread_exit(void* value_ptr) {
-	pthread_key_t current_vp = VirtualProcessor::get_pthread_key();
-	VirtualProcessor* vp = (VirtualProcessor*)pthread_getspecific(current_vp);
-	Job* job = vp->get_current_job();
+	VirtualProcessor* current_vp = VirtualProcessor::get_current_vp();
+	Job* job = current_vp->get_current_job();
 	job->set_retval(value_ptr);
 }
 
 int athread_create(athread_t* thid, athread_attr_t* attr, pfunc function, void* args) {
-
-	pthread_key_t current_vp = VirtualProcessor::get_vp_key();
-	VirtualProcessor* vp = (VirtualProcessor*)pthread_getspecific(current_vp);
-
-	JobId job_id = vp->create_new_job(function, args, (JobAttributes) *attr);
-
-	*thid = job_id;
-
+	VirtualProcessor* current_vp = VirtualProcessor::get_current_vp();
+	JobHandle handle = current_vp->create_job(function, args, (JobAttributes) *attr);
+	*thid = handle;
 	return 0;
 }
 
-// to be changed!
-int compare_and_swap(JobState* state, JobState target_val, JobState new_val) {
-	if (*state == target_val) {
-		*state = new_val;
-		return target_val;
-	}
-	else {
-		return *state;
-	}
-}
-
 int athread_join(athread_t thid, void** result) {
-	// which vp is this ?
-	pthread_key_t current_vp = VirtualProcessor::get_vp_key();
-	VirtualProcessor* vp = (VirtualProcessor*)pthread_getspecific(current_vp);
-	// which job is this ?
-	Job* job = anahy->get_job_by_id((JobId) thid);
-
-	bool done = false;
-	do {
-		JobState state = compare_and_swap(job->get_state_var(), ready, running);
-
-		if (state == running) {
-			// if the joined job was already running ...
-			// try to help, executing one of its descendants
-			vp->suspend_current_job_and_try_to_help(job);
-		}
-		else {
-			// if the job was ready for execution or already finished
-			if (state == ready) {
-				vp->suspend_current_job_and_run_another(job);
-			}
-			
-			
-			*result = job->get_retval();
-			/*
-			if (job->decrement_join_count() == 0) {
-				delete job;
-			}
-			*/
-			done = true;
-		}
-	} while (!done);
+	VirtualProcessor* current_vp = VirtualProcessor::get_current_vp();
+	*result = current_vp->join_job((JobHandle) thid);
 	return 0;
 }
 

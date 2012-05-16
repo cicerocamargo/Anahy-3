@@ -2,17 +2,18 @@
 #include <cstdlib>
 #include <ctime>
 #include <cstdio>
-#include "Manager.h"
-#include "WorkerEvent.h"
+#include "ManagerController.h"
+
 
 int main(int argc, char const *argv[])
 {
 	srand(time(NULL));
 
-	Manager m(4);
-	m.start();
-
-	m.stop();
+	int managers=2, workers_per_manager=4;
+	ManagerController::init(managers, workers_per_manager);
+	ManagerController::start();
+	ManagerController::stop();
+	ManagerController::terminate();	
 
 	return 0;
 }

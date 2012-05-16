@@ -9,16 +9,17 @@ class Worker;
 class WorkerEvent;
 
 class Manager {
+	static int instances;
+	int id;
 
 	pthread_t thread;
 	pthread_mutex_t mutex;
-	pthread_cond_t worker_event;
+	pthread_cond_t event_cond;
 	
-	int num_workers, workers_waiting;
+	int num_workers;
 	vector<Worker*> workers;
-	queue<WorkerEvent*> event_queue, unhandled_events;
-	queue<Work*> work_queue;
-
+	queue<WorkerEvent*> event_queue, workers_waiting;
+	
 	static void* run_manager(void*);
 	void run();
 	void handle_event(WorkerEvent* event);
@@ -26,14 +27,11 @@ public:
 	Manager(int workers);
 	~Manager();
 
-	// this messages are received from a worker,
-	// like our VPs, so, they will be called from a
-	// Worker thread!!!
+	// messages received from a worker,
 	void request_work_and_wait(Worker* sender);
 	void post_work(Work* work);
 
-	// this messages are received from a control unit
-	// like AnahyVM
+	// messages received from ManagerController
 	void start();
 	void stop();
 };

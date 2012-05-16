@@ -23,7 +23,7 @@ void Worker::run() {
 		printf("VP %d is running a job with cost %d\n", id, current->amount);
 		should_create_more_work = current->run();
 		if (should_create_more_work) {
-			puts("New Work!!!");
+			printf("Worker %d: New Work!!!\n", id);
 			manager->post_work(new Work());
 		}
 	}

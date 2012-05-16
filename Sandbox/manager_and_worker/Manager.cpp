@@ -1,10 +1,12 @@
 #include "Manager.h"
+#include "ManagerController.h"
 #include "Work.h"
 #include "Worker.h"
 #include "WorkerEvent.h"
 #include <cstdio>
 #include <cstdlib>
 
+int Manager::instances = 0;
 
 void* Manager::run_manager(void* arg) {
 	Manager* m = (Manager*) arg;
@@ -14,33 +16,48 @@ void* Manager::run_manager(void* arg) {
 
 void Manager::run() {
 	WorkerEvent* event;
+	Worker* worker;
 
+	// start my workers
+	for (int i = 0; i < num_workers; ++i) {
+		workers[i]->start();
+	}
+
+	pthread_mutex_lock(&mutex);
 	while (true) {
-		pthread_mutex_lock(&mutex);
-		
-		if (workers_waiting == num_workers && work_queue.empty()) {
-			printf("All workers are waiting...");
-			// if every worker is waiting no more work will be produced
-			for (int i = 0; i < num_workers; ++i) {
-				workers[i]->assign_work_and_resume(NULL); // to break worker loops
+				
+		if (workers_waiting.size() == num_workers) {
+			// all workers are waiting, so this is the end ...
+			while (workers_waiting.empty() == false) {
+				event = workers_waiting.front(); // the related event
+				workers_waiting.pop();
+				worker = event->get_sender();
+				worker->assign_work_and_resume(NULL);
+				delete event;
 			}
 			pthread_mutex_unlock(&mutex);
-			break; // break the loop
+			break;
 		}
 		else {
 			if (event_queue.empty()) {
-				puts("Manager waiting for worker events...");
-				pthread_cond_wait(&worker_event, &mutex);
+				printf("Manager %d: waiting for events...\n", id);
+				pthread_cond_wait(&event_cond, &mutex);
 			}
 			else {
 				while (event_queue.empty() == false) {
 					event = event_queue.front();
 					event_queue.pop();
+					pthread_mutex_unlock(&mutex);
 					handle_event(event);
+					pthread_mutex_lock(&mutex);
 				}
 			}
-			pthread_mutex_unlock(&mutex); // anyway
 		}
+	}
+
+	// stop my workers
+	for (int i = 0; i < num_workers; ++i) {
+		workers[i]->stop();
 	} 
 }
 
@@ -50,34 +67,33 @@ void Manager::handle_event(WorkerEvent* event) {
 	WorkerEvent* unhandled;
 
 	if (event->get_type() == PostWork) {
-		printf("PostWork event received... ");
-		if (unhandled_events.empty()) {
+		printf("Manager %d: PostWork event received... ", id);
+		if (workers_waiting.empty()) {
+			ManagerController::post_work(event->get_work());
 			puts("Work enqueued.");
-			work_queue.push(event->get_work());
 			delete event;
 		}
 		else {
-			unhandled = unhandled_events.front();
-			unhandled_events.pop();
+			unhandled = workers_waiting.front();
+			workers_waiting.pop();
 			worker = unhandled->get_sender();
-			workers_waiting--;
 			worker->assign_work_and_resume(event->get_work());
-			printf("Work assigned to Worker %d\n", worker->get_id());
+			printf("Bypassing Controller! Work assigned to Worker %d\n", worker->get_id());
 			delete event;
 			delete unhandled;
 		}
 	}
 	else if (event->get_type() == GetWork) {
-		printf("GetWork event received from Worker %d... ", event->get_sender()->get_id());
-		if (work_queue.empty()) {
-			puts("Event enqueued.");
-			unhandled_events.push(event);	
+		printf("Manager %d: GetWork received from Worker %d... ",
+			id, event->get_sender()->get_id());
+
+		work = ManagerController::get_work();
+		if (!work) {
+			puts("No work. Worker is gonna wait.");
+			workers_waiting.push(event);	
 		}
 		else {
 			Worker* worker = event->get_sender();
-			workers_waiting--;
-			work = work_queue.front();
-			work_queue.pop();
 			worker->assign_work_and_resume(work);
 			puts("Work assigned!");
 			delete event;				
@@ -90,25 +106,21 @@ void Manager::handle_event(WorkerEvent* event) {
 }
 
 Manager::Manager(int workers) : num_workers(workers) {
+	id = instances++;
+	
 	pthread_mutex_init(&mutex, NULL);
-	pthread_cond_init(&worker_event, NULL);
+	pthread_cond_init(&event_cond, NULL);
 
 	// create workers
 	for (int i = 0; i < num_workers; ++i) {
 		this->workers.push_back(new Worker(this));
-	}
-	workers_waiting = 0;
-
-	// create initial work
-	for (int i = 0; i < 20; ++i) {
-		work_queue.push(new Work());
 	}
 }
 
 Manager::~Manager() {
 	puts("Manager object deleted!");
 	pthread_mutex_destroy(&mutex);
-	pthread_cond_destroy(&worker_event);
+	pthread_cond_destroy(&event_cond);
 	for (int i = 0; i < num_workers; ++i) {
 		delete workers[i];
 	}
@@ -119,8 +131,7 @@ Manager::~Manager() {
 void Manager::request_work_and_wait(Worker* sender) {
 	pthread_mutex_lock(&mutex);
 	event_queue.push(new WorkerEvent(GetWork, sender, NULL));
-	workers_waiting++;
-	pthread_cond_signal(&worker_event); // wake manager
+	pthread_cond_signal(&event_cond); // wake manager
 	pthread_mutex_unlock(&mutex);
 	sender->block(); // block worker thread
 }
@@ -129,28 +140,17 @@ void Manager::request_work_and_wait(Worker* sender) {
 void Manager::post_work(Work* work) {
 	pthread_mutex_lock(&mutex);
 	event_queue.push(new WorkerEvent(PostWork, NULL, work));
-	pthread_cond_signal(&worker_event);
+	pthread_cond_signal(&event_cond);
 	pthread_mutex_unlock(&mutex);
 }
 
 void Manager::start() {
 	puts("Starting Manager...");
-
 	// create my own thread
 	pthread_create(&thread, NULL, run_manager, this); 
-
-	// start my workers
-	for (int i = 0; i < num_workers; ++i) {
-		workers[i]->start();
-	}
 }
 
 void Manager::stop() {
-	// stop my workers
-	for (int i = 0; i < num_workers; ++i) {
-		workers[i]->stop();
-	}
-	
 	// join my own thread
 	pthread_join(thread, NULL);
 	puts("Manager stopped!");

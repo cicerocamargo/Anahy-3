@@ -1,6 +1,7 @@
 #include <pthread.h>
 #include <queue>
 #include <vector>
+#include <fstream>
 
 using namespace std;
 
@@ -11,6 +12,7 @@ class WorkerEvent;
 class Manager {
 	static int instances;
 	int id;
+	fstream log;
 
 	pthread_t thread;
 	pthread_mutex_t mutex;

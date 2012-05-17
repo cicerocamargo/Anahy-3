@@ -43,8 +43,18 @@ Worker::~Worker()  {
 }
 
 void Worker::start() {
-	printf("Starting Worker %d\n", id);
+	printf("Starting Worker %d in ", id);
+	// if (id == 0) { // main worker
+	// 	// set specific data
+	// 	printf("main thread.\n")
+	// 	return;
+	// }
+	// else {
+	// 	pthread_create(&thread, NULL, run_worker, this);
+	// 	printf("a new thread (%lu).\n", (long) thread);
+	// }
 	pthread_create(&thread, NULL, run_worker, this);
+	printf("a new thread (%lu).\n", (long) thread);
 }
 
 void Worker::stop() {

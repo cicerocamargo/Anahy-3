@@ -10,6 +10,7 @@ class Work;
 class Worker {
 	static int instances;
 	int id;
+	char* tabs;
 
 	pthread_t thread;
 	pthread_mutex_t mutex; // bin semaphore
@@ -17,8 +18,8 @@ class Worker {
 	Work* current;
 
 	static void* run_worker(void* arg);
-	void run();
 public:
+	void run();
 
 	Worker(Manager* m);
 	~Worker();
@@ -27,6 +28,7 @@ public:
 	void start();
 	void stop();
 	void block();
+	void say(const char* str);
 
 	// called from a Manager thread
 	void assign_work_and_resume(Work* w);

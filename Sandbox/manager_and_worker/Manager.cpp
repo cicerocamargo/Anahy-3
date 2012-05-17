@@ -26,7 +26,7 @@ void Manager::run() {
 	pthread_mutex_lock(&mutex);
 	while (true) {
 				
-		if (workers_waiting.size() == num_workers) {
+		if (stop_signal && workers_waiting.size() == num_workers) {
 			// all workers are waiting, so this is the end ...
 			while (workers_waiting.empty() == false) {
 				event = workers_waiting.front(); // the related event
@@ -89,6 +89,7 @@ void Manager::handle_event(WorkerEvent* event) {
 		work = ManagerController::get_work();
 		if (!work) {
 			log << "No work. Worker is gonna wait.\n";
+			event->get_sender()->say("waiting...");
 			workers_waiting.push(event);	
 		}
 		else {
@@ -106,9 +107,10 @@ void Manager::handle_event(WorkerEvent* event) {
 
 Manager::Manager(int workers) : num_workers(workers) {
 	id = instances++;
+	stop_signal = false;
+
 	char file_name[20];
-	sprintf(file_name, "Manager%d.log", id);
-	printf("%s\n", file_name);
+	sprintf(file_name, "logs/Manager%d.log", id);
 	log.open(file_name, ifstream::out);
 
 	pthread_mutex_init(&mutex, NULL);
@@ -154,6 +156,14 @@ void Manager::start() {
 	pthread_create(&thread, NULL, run_manager, this); 
 }
 
+void Manager::signal_stop() {
+	pthread_mutex_lock(&mutex);
+	stop_signal = true;
+	pthread_cond_signal(&event_cond);
+	pthread_mutex_unlock(&mutex);
+}
+
+// called from ManagerController
 void Manager::stop() {
 	// join my own thread
 	pthread_join(thread, NULL);

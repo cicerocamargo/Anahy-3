@@ -16,12 +16,12 @@ void* Daemon::call_daemon_run(void* daemon_obj) { // static
 }
 
 void Daemon::run() {
-	VPEvent* e;
+	VPEvent* event;
 	VirtualProcessor* vp;
 
 	pthread_mutex_lock(&queue_mutex);
 	while(true) {
-		printf("%d processors waiting...\n", processors_waiting);
+		//printf("%d processors waiting...\n", processors_waiting);
 		if (anahy_stop && (processors_waiting == num_processors)) {
 			// anahy signaled to stop and all my processors are waiting
 			list<VPEvent*>::iterator it;
@@ -36,11 +36,11 @@ void Daemon::run() {
 		}
 		else {
 			while (!event_queue.empty()) {
-				e = event_queue.front();
+				event = event_queue.front();
 				event_queue.pop();
 				pthread_mutex_unlock(&queue_mutex);
 
-				handle_vp_event(e);
+				handle_vp_event(event);
 
 				pthread_mutex_lock(&queue_mutex);
 			}

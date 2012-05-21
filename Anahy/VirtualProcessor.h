@@ -11,12 +11,15 @@
 
 class VirtualProcessor {
 
-	static uint instance_counter;	// tracks how many VP objects
-									// have been created
-	static pthread_key_t key;	// a key to store an VP object
-								// in and retrieve it from a pthread
-								// is set in 'call_vp_run' and
-								// got in 'static get_current_vp' from API
+	//tracks how many VP objects have been created 
+	static uint instance_counter;
+
+	/* a key to store an VP object
+	   in and retrieve it from a pthread
+	   is set in 'call_vp_run' and
+	   got in 'static get_current_vp' from API
+	*/
+	static pthread_key_t key;
 	
 	uint id; // a unique id for this VP
 	ulong job_counter; // the number of jobs created by this VP
@@ -31,12 +34,14 @@ class VirtualProcessor {
 	pthread_t thread; // my thread
 	pthread_mutex_t mutex; // where I wait for daemon answers
 	
-
 // some private methods
 
-	static void* call_vp_run(void* vp_obj); // called from 'this->thread'
-											// set thread specific data as this
-											// and call this->run() (vp_obj is 'this')
+	/* called from 'this->thread'
+	   set thread specific data as this
+	   and call this->run() (vp_obj is 'this')
+	*/
+	static void* call_vp_run(void* vp_obj);
+
 	void run(); // called from call_vp_run
 				// main VP loop
 
@@ -54,8 +59,8 @@ public:
 	static void init_pthread_key();
 	static void delete_pthread_key();
 	
-	static void call_vp_destructor(void *vp_obj);	// just to fill pthread_key_create
-													// requirements
+	//just to fill pthread_key_create requirements
+	static void call_vp_destructor(void *vp_obj);
 
 	// messages to be received from a Daemon
 	void start();
@@ -65,7 +70,7 @@ public:
 	
 	// messages to be received from athread API
 	static VirtualProcessor* get_current_vp(); // class method!
-	JobHandle create_new_job(pfunc function, void* args, JobAttributes attr);
+	JobHandle create_new_job(pfunc function, void* args, JobAttributes* attr);
 	void* join_job(JobHandle handle);
 		
 	/* getters and setters */

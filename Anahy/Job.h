@@ -20,7 +20,7 @@ class Job {
 	set<Job*> children;
 	VirtualProcessor* creator;
 	JobState state;
-	JobAttributes attributes;
+	JobAttributes *attributes;
 	
 	pfunc function;
 	void* data;
@@ -32,13 +32,13 @@ class Job {
 	Job(Job&); // to avoid copy construction
 public:
 	Job (JobId _id, Job* _parent, VirtualProcessor* _creator,
-		JobAttributes _attributes, pfunc _function, void* _data);
+		JobAttributes* _attributes, pfunc _function, void* _data);
 	
 	void run(); // to be called from a VP
 	
 	// atomic operations
 	JobState compare_and_swap_state(JobState target_value, JobState new_value);  
-	uint dec_join_counter();
+	int dec_join_counter();
 
 	void display(int num_tabs=0);
 
@@ -47,7 +47,7 @@ public:
 	Job* get_parent() const;
 	VirtualProcessor* get_creator() const;
 	JobState get_state() const;
-	JobAttributes get_attributes() const;
+	JobAttributes* get_attributes() const;
 	void* get_retval() const;
 	void set_retval(void* new_retval);
 };

@@ -9,10 +9,12 @@ int main(int argc, char const *argv[])
 {
 	srand(time(NULL));
 
-	int managers=2, workers_per_manager=4;
-	ManagerController::init(managers, workers_per_manager);
-	ManagerController::start();
-	ManagerController::stop();
+	int managers = atoi(argv[1]);
+	int workers_per_manager = atoi(argv[2]);
+	int initial_work = atoi(argv[3]);
+
+	ManagerController::init(managers, workers_per_manager, initial_work);
+	// do stuff
 	ManagerController::terminate();	
 
 	return 0;

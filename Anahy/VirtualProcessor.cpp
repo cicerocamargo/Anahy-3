@@ -63,9 +63,6 @@ void VirtualProcessor::suspend_current_job_and_run_another(Job* another) {
 
 /**** STATIC METHODS ****/
 
-// dummy functon to fill pthread_key_create(...) requirements
-void VirtualProcessor::call_vp_destructor(void *vp_obj) { }
-
 void VirtualProcessor::init_pthread_key() {
 	pthread_key_create(&key, call_vp_destructor);
 }
@@ -73,6 +70,9 @@ void VirtualProcessor::init_pthread_key() {
 void VirtualProcessor::delete_pthread_key() {
 	pthread_key_delete(key);
 }
+
+// dummy functon to fill pthread_key_create(...) requirements
+void VirtualProcessor::call_vp_destructor(void *vp_obj) { }
 
 /**** PUBLIC METHODS ****/
 

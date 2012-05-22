@@ -13,6 +13,7 @@ class Manager {
 	static int instances;
 	int id;
 	fstream log;
+	bool stop_signal;
 
 	pthread_t thread;
 	pthread_mutex_t mutex;
@@ -34,6 +35,8 @@ public:
 	void post_work(Work* work);
 
 	// messages received from ManagerController
+	inline int get_id() { return id; }
+	void signal_stop();
 	void start();
 	void stop();
 };

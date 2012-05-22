@@ -27,16 +27,31 @@ void Manager::run() {
 	while (true) {
 				
 		if (workers_waiting.size() == num_workers) {
-			// all workers are waiting, so this is the end ...
-			while (workers_waiting.empty() == false) {
-				event = workers_waiting.front(); // the related event
+			// all workers are waiting
+			
+			Work* work = ManagerController::blocking_get_work(this);
+
+			if (!work) { // every manager was waiting and there was
+						// no work, so STOP ALL MY WORKERS
+				while (workers_waiting.empty() == false) {
+					event = workers_waiting.front();
+					workers_waiting.pop();
+					worker = event->get_sender();
+					worker->assign_work_and_resume(NULL);
+					delete event;	
+				}
+				printf("Manager %d: bye!\n", id);
+				break;
+			}
+			else { // satisfies the oldest GetJob
+				event = workers_waiting.front();
 				workers_waiting.pop();
 				worker = event->get_sender();
-				worker->assign_work_and_resume(NULL);
+				worker->assign_work_and_resume(work);
 				delete event;
 			}
+			
 			pthread_mutex_unlock(&mutex);
-			break;
 		}
 		else {
 			if (event_queue.empty()) {
@@ -68,6 +83,7 @@ void Manager::handle_event(WorkerEvent* event) {
 
 	if (event->get_type() == PostWork) {
 		log << "PostWork event received... ";
+		printf("Manager %d: New work!!\n", id);
 		if (workers_waiting.empty()) {
 			ManagerController::post_work(event->get_work());
 			log << "Work posted.";
@@ -89,6 +105,7 @@ void Manager::handle_event(WorkerEvent* event) {
 		work = ManagerController::get_work();
 		if (!work) {
 			log << "No work. Worker is gonna wait.\n";
+			event->get_sender()->say("waiting...");
 			workers_waiting.push(event);	
 		}
 		else {
@@ -106,9 +123,10 @@ void Manager::handle_event(WorkerEvent* event) {
 
 Manager::Manager(int workers) : num_workers(workers) {
 	id = instances++;
+	stop_signal = false;
+
 	char file_name[20];
-	sprintf(file_name, "Manager%d.log", id);
-	printf("%s\n", file_name);
+	sprintf(file_name, "logs/Manager%d.log", id);
 	log.open(file_name, ifstream::out);
 
 	pthread_mutex_init(&mutex, NULL);
@@ -154,6 +172,14 @@ void Manager::start() {
 	pthread_create(&thread, NULL, run_manager, this); 
 }
 
+void Manager::signal_stop() {
+	pthread_mutex_lock(&mutex);
+	stop_signal = true;
+	pthread_cond_signal(&event_cond);
+	pthread_mutex_unlock(&mutex);
+}
+
+// called from ManagerController
 void Manager::stop() {
 	// join my own thread
 	pthread_join(thread, NULL);

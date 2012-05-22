@@ -1,7 +1,9 @@
 #include "Worker.h"
 #include "Manager.h"
+#include "ManagerController.h"
 #include "Work.h"
 #include <cstdio>
+#include <cstdlib>
 
 int Worker::instances = 0;
 
@@ -17,13 +19,14 @@ void Worker::run() {
 		manager->request_work_and_wait(this);
 		
 		if (!current) {
+			say("going home.");
 			break;
 		}
 
-		printf("VP %d is running a job with cost %d\n", id, current->amount);
+		say("Working!");
+
 		should_create_more_work = current->run();
 		if (should_create_more_work) {
-			printf("Worker %d: New Work!!!\n", id);
 			manager->post_work(new Work());
 		}
 	}
@@ -31,6 +34,14 @@ void Worker::run() {
 
 Worker::Worker(Manager* m) : manager(m) {
 	id = instances++;
+
+	int i, num_tabs = id*2;
+	tabs = (char*) malloc((num_tabs+1)*sizeof(char));
+	for (i = 0; i < num_tabs; ++i) {
+		tabs[i] = '\t';
+	}
+	tabs[i] = '\0';
+
 	pthread_mutex_init(&mutex, NULL);
 	pthread_mutex_lock(&mutex);
 	current = NULL;
@@ -43,18 +54,14 @@ Worker::~Worker()  {
 }
 
 void Worker::start() {
-	printf("Starting Worker %d in ", id);
-	// if (id == 0) { // main worker
-	// 	// set specific data
-	// 	printf("main thread.\n")
-	// 	return;
-	// }
-	// else {
-	// 	pthread_create(&thread, NULL, run_worker, this);
-	// 	printf("a new thread (%lu).\n", (long) thread);
-	// }
+	if (id == 0) {
+		ManagerController::set_main_worker(this);
+		puts("Woker 0 will run in main thread");
+		return;
+	}
 	pthread_create(&thread, NULL, run_worker, this);
-	printf("a new thread (%lu).\n", (long) thread);
+	printf("Starting Worker %d in a new thread (%lu).\n",
+		id, (long) thread);
 }
 
 void Worker::stop() {
@@ -63,6 +70,10 @@ void Worker::stop() {
 
 void Worker::block() {
 	pthread_mutex_lock(&mutex);
+}
+
+void Worker::say(const char* str) {
+	//printf("%sW%d is %s\n", tabs, id, str);
 }
 
 // this is called from a Manager thread

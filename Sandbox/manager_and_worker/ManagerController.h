@@ -11,7 +11,9 @@ class ManagerController {
 	static list<Manager*> managers;
 	static queue<Work*> work_pool;
 	static pthread_mutex_t mutex; // to allow multiple manager threads
+	static pthread_cond_t cond;
 	static Worker* main_worker;
+	static int num_managers, managers_waiting;
 
 	// constructors hidden to avoid instantiation
 	ManagerController();
@@ -31,6 +33,7 @@ public:
 	// messages to be received from a Manager
 	static void set_main_worker(Worker* w);
 	static Work* get_work();
+	static Work* blocking_get_work(Manager* sender);
 	static void post_work(Work* w);
 
 	/* data */

@@ -62,9 +62,10 @@ void VirtualProcessor::suspend_current_job_and_run_another(Job* another) {
 VirtualProcessor::VirtualProcessor(Daemon* m) : daemon(m) {
 	id = instance_counter++;
 	current_job = NULL;
+	job_counter = 0;
 
 	// initializing my tabs string
-	int i, num_tabs = id*3;
+	int i, num_tabs = id*2;
 	tabs = (char*) malloc((num_tabs+1)*sizeof(char));
 	for (i = 0; i < num_tabs; ++i) {
 		tabs[i] = '\t';
@@ -93,8 +94,11 @@ void VirtualProcessor::run() {
 			break;
 		}
 
-		say("Running!");
+		say("running");
 		current_job->run();
+		// current_job->compare_and_swap_state(running, finished);
+		// daemon->end_of_job(this, current_job);
+		current_job = NULL;
 	}
 }
 

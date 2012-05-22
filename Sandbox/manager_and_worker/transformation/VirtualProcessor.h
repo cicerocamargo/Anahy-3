@@ -60,7 +60,7 @@ public:
 
 	static void associate_vp_with_current_thread(void* vp_obj);
 	
-	// messages to be received from athread API
+	// messages to be received from AnahyVM
 	static VirtualProcessor* get_current_vp(); // class method!
 	JobHandle create_new_job(pfunc function, void* args, JobAttributes* attr);
 	// void* join_job(JobHandle handle);

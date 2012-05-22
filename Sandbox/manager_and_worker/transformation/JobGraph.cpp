@@ -14,10 +14,10 @@ JobGraph::~JobGraph() {
 void JobGraph::insert(Job* job) {
 	job_map[ job->get_id() ] = job;
 
-	if (!job->get_parent()) {
+	//if (!job->get_parent()) {
 		// it is a root job
 		root_jobs.push_back(job);
-	}
+	//}
 }
 
 void JobGraph::erase(Job* job) {

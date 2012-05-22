@@ -6,18 +6,23 @@
 list<Manager*> ManagerController::managers;
 queue<Work*> ManagerController::work_pool;
 pthread_mutex_t ManagerController::mutex;
+pthread_cond_t ManagerController::cond;
 Worker* ManagerController::main_worker = 0;
+int ManagerController::managers_waiting = 0;
+int ManagerController::num_managers = 0;
 
 // messages from main
 
-void ManagerController::init(int num_managers, int workers_per_manager,
+void ManagerController::init(int _num_managers, int workers_per_manager,
 		int initial_work) {
+	num_managers = _num_managers;
 	
 	for (int i = 0; i < num_managers; ++i) {
 		// create managers
 		managers.push_back(new Manager(workers_per_manager));
 	}
 
+	pthread_cond_init(&cond, NULL);
 	pthread_mutex_init(&mutex, NULL);
 	pthread_mutex_lock(&mutex);
 
@@ -66,6 +71,7 @@ void ManagerController::terminate() {
 	managers.clear();
 
 	pthread_mutex_destroy(&mutex);
+	pthread_cond_destroy(&cond);
 }
 
 Worker* ManagerController::get_main_worker() {
@@ -95,10 +101,42 @@ Work* ManagerController::get_work() {
 	return w;
 }
 
+Work* ManagerController::blocking_get_work(Manager* sender) {
+	Work* w = NULL;
+	pthread_mutex_lock(&mutex);
+	managers_waiting++;
+
+	printf("num_managers = %d\n", num_managers);
+	while (true) {
+		if (managers_waiting == num_managers) {
+			printf("Manager %d is the last blocked!\n", sender->get_id());
+			pthread_cond_broadcast(&cond);
+			break;	
+		}
+
+		if(work_pool.empty() == false) {
+			w = work_pool.front();
+			work_pool.pop();
+			managers_waiting--;
+			break;
+			printf("Manager %d continuing!\n", sender->get_id());
+		}
+		else {	// there's no work but some worker
+				// can still generate work
+			printf("Manager %d blocked!\n", sender->get_id());
+			pthread_cond_wait(&cond, &mutex);
+		}
+	}
+
+	pthread_mutex_unlock(&mutex);
+	return w;
+}
+
 void ManagerController::post_work(Work* w) {
 	pthread_mutex_lock(&mutex);
 
 	work_pool.push(w);
+	pthread_cond_signal(&cond);
 
 	pthread_mutex_unlock(&mutex);
 

@@ -35,7 +35,7 @@ void Worker::run() {
 Worker::Worker(Manager* m) : manager(m) {
 	id = instances++;
 
-	int i, num_tabs = id*3;
+	int i, num_tabs = id*2;
 	tabs = (char*) malloc((num_tabs+1)*sizeof(char));
 	for (i = 0; i < num_tabs; ++i) {
 		tabs[i] = '\t';
@@ -73,7 +73,7 @@ void Worker::block() {
 }
 
 void Worker::say(const char* str) {
-	printf("%sWorker %d is %s\n", tabs, id, str);
+	//printf("%sW%d is %s\n", tabs, id, str);
 }
 
 // this is called from a Manager thread

@@ -26,15 +26,31 @@ void Manager::run() {
 	pthread_mutex_lock(&mutex);
 	while (true) {
 				
-		if (stop_signal && workers_waiting.size() == num_workers) {
-			// all workers are waiting, so this is the end ...
-			while (workers_waiting.empty() == false) {
-				event = workers_waiting.front(); // the related event
+		if (workers_waiting.size() == num_workers) {
+			// all workers are waiting
+			printf("Manager %d: all workers waiting...\n", id);
+
+			Work* work = ManagerController::blocking_get_work(this);
+
+			if (!work) { // every manager was waiting and there was
+						// no work, so STOP ALL MY WORKERS
+				while (workers_waiting.empty() == false) {
+					event = workers_waiting.front();
+					workers_waiting.pop();
+					worker = event->get_sender();
+					worker->assign_work_and_resume(NULL);
+					delete event;	
+				}
+				printf("Manager %d: bye!\n", id);
+			}
+			else { // satisfies the oldest GetJob
+				event = workers_waiting.front();
 				workers_waiting.pop();
 				worker = event->get_sender();
-				worker->assign_work_and_resume(NULL);
+				worker->assign_work_and_resume(work);
 				delete event;
 			}
+			
 			pthread_mutex_unlock(&mutex);
 			break;
 		}
@@ -68,6 +84,7 @@ void Manager::handle_event(WorkerEvent* event) {
 
 	if (event->get_type() == PostWork) {
 		log << "PostWork event received... ";
+		printf("Manager %d: New work!!\n", id);
 		if (workers_waiting.empty()) {
 			ManagerController::post_work(event->get_work());
 			log << "Work posted.";

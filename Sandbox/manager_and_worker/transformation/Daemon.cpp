@@ -91,6 +91,24 @@ void Daemon::handle_event(VPEvent* event) {
 			delete event;				
 		}
 	}
+	else if (event->get_type() == NewJob) {
+		log << "NewJob event received... ";
+		if (vps_waiting.empty()) {
+			AnahyVM::post_job(event->get_job());
+			log << "Job posted.";
+			delete event;
+		}
+		else {
+			unhandled = vps_waiting.front();
+			vps_waiting.pop();
+			vp = unhandled->get_sender();
+			vp->set_current_job(event->get_job());
+			vp->resume();
+			log << "Bypassing AnahyVM! Job assigned to VP " << vp->get_id() << "\n";
+			delete event;
+			delete unhandled;
+		}
+	}
 	else {
 		log << "Unknown event...\n";
 		fprintf(stderr, "Unknown event...\n");

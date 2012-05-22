@@ -10,6 +10,6 @@ int fib(int n) {
 }
 
 bool Work::run() {
-	fib(38+amount);
+	fib(37+amount);
 	return amount == 2 ? true : false;
 }

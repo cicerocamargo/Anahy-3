@@ -12,16 +12,16 @@ VirtualProcessor* AnahyVM::main_vp = 0;
 
 /* PRIVATE METHODS */
 
-int fib(int n) {
-	return n < 2 ? n : (fib(n-1) + fib(n-2));
-}
+// int fib(int n) {
+// 	return n < 2 ? n : (fib(n-1) + fib(n-2));
+// }
 
-void* run_fib(void* args) {
-	fib(40);
-	JobHandle handle;
-	AnahyVM::create(&handle, NULL, run_fib, NULL);
-	AnahyVM::join(handle, NULL);
-}
+// void* run_fib(void* args) {
+// 	fib(40);
+// 	JobHandle handle;
+// 	AnahyVM::create(&handle, NULL, run_fib, NULL);
+// 	AnahyVM::join(handle, NULL);
+// }
 
 void AnahyVM::start_vm() {
 	list<Daemon*>::iterator it;
@@ -71,11 +71,11 @@ void AnahyVM::init(int num_daemons, int vps_per_daemon) {
 								// to wait for the VP 0 to be associated
 								// with the main thread
 
-	for (int i = 0; i < 20; ++i) {
-		// initial work
-		JobId job_id(0, i);
-		graph.insert(new Job(job_id, NULL, NULL, 0, run_fib, NULL));		
-	}
+	// for (int i = 0; i < 20; ++i) {
+	// 	// initial work
+	// 	JobId job_id(0, i);
+	// 	graph.insert(new Job(job_id, NULL, NULL, 0, run_fib, NULL));		
+	// }
 
 	start_vm();
 }
@@ -132,6 +132,33 @@ void AnahyVM::set_main_vp(VirtualProcessor* vp) {
 	pthread_mutex_unlock(&mutex);
 }
 
+// When every VP is blocked on a GetJob,
+// Daemon sends this message to wait for a job.
+void AnahyVM::blocking_get_job(Daemon* sender) {
+	Job* j = get_job(NULL);
+	Daemon* d;
+
+	if (!j) {
+		daemons_waiting.push(sender);
+
+		if (daemons_waiting.size() == num_daemons) {
+			// time to everyone die :)
+			while (!daemons_waiting.empty()) {
+				d = daemons_waiting.front();
+				daemons_waiting.pop();
+				sender->set_temp_job(NULL);
+				sender->resume();
+			}
+			return;
+		}
+
+		sender->block();
+	}
+	else {
+		sender->set_temp_job(j);	
+	}
+}
+
 Job* AnahyVM::get_job(Job* joined_job) {
 	Job* j;
 	pthread_mutex_lock(&mutex);
@@ -142,10 +169,14 @@ Job* AnahyVM::get_job(Job* joined_job) {
 	return j;
 }
 
-void AnahyVM::post_job(Job* new_job) {
+void AnahyVM::post_job(Job* new_job, bool scheduled) {
 	pthread_mutex_lock(&mutex);
 
 	graph.insert(new_job);
+	if (!scheduled && !daemons_waiting.empty()) {
+		Daemon* d = daemons_waiting.front();
+		d->set_job_and_resume();
+	}
 
 	pthread_mutex_unlock(&mutex);
 }

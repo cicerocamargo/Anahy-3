@@ -106,7 +106,8 @@ Work* ManagerController::blocking_get_work(Manager* sender) {
 	pthread_mutex_lock(&mutex);
 	managers_waiting++;
 
-	printf("num_managers = %d\n", num_managers);
+	printf("num_managers = %d\t managers_waiting = %d\t",
+		num_managers, managers_waiting);
 	while (true) {
 		if (managers_waiting == num_managers) {
 			printf("Manager %d is the last blocked!\n", sender->get_id());
@@ -118,8 +119,10 @@ Work* ManagerController::blocking_get_work(Manager* sender) {
 			w = work_pool.front();
 			work_pool.pop();
 			managers_waiting--;
+			printf("Manager %d will resume!\t", sender->get_id());
+			printf("num_managers = %d\t managers_waiting = %d\t work = %p\n",
+				num_managers, managers_waiting, w);
 			break;
-			printf("Manager %d continuing!\n", sender->get_id());
 		}
 		else {	// there's no work but some worker
 				// can still generate work

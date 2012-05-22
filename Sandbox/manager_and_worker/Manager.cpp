@@ -28,8 +28,7 @@ void Manager::run() {
 				
 		if (workers_waiting.size() == num_workers) {
 			// all workers are waiting
-			printf("Manager %d: all workers waiting...\n", id);
-
+			
 			Work* work = ManagerController::blocking_get_work(this);
 
 			if (!work) { // every manager was waiting and there was
@@ -42,6 +41,7 @@ void Manager::run() {
 					delete event;	
 				}
 				printf("Manager %d: bye!\n", id);
+				break;
 			}
 			else { // satisfies the oldest GetJob
 				event = workers_waiting.front();
@@ -52,7 +52,6 @@ void Manager::run() {
 			}
 			
 			pthread_mutex_unlock(&mutex);
-			break;
 		}
 		else {
 			if (event_queue.empty()) {

@@ -9,7 +9,7 @@ class Job;
 class VirtualProcessor;
 
 class Daemon {
-	enum VPEventType { GetJob, NewJob };
+	enum VPEventType { GetJob, NewJob, EndOfJob, DestroyJob };
 
 	class VPEvent {
 		VPEventType type;
@@ -39,9 +39,14 @@ class Daemon {
 	vector<VirtualProcessor*> vps;
 	queue<VPEvent*> event_queue, vps_waiting;
 	
-	static void* run_daemon(void*);
-	void run();
+	void start_my_vps();
+	void stop_my_vps();
 	void handle_event(VPEvent* event);
+	void answer_oldest_vp_waiting(Job* job);
+
+	static void* run_daemon(void* arg);
+
+	void run(); // main Daemon loop
 
 public:
 	

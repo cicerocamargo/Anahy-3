@@ -5,8 +5,13 @@
 #include <cstdio>
 #include <cstdlib>
 
+/* STATIC MEMBERS */
+
+uint AnahyVM::num_daemons = 0;
+uint AnahyVM::daemons_waiting = 0;
 list<Daemon*> AnahyVM::daemons;
 pthread_mutex_t AnahyVM::mutex;
+pthread_cond_t AnahyVM::cond;
 JobGraph AnahyVM::graph;
 VirtualProcessor* AnahyVM::main_vp = 0;
 
@@ -57,7 +62,8 @@ void AnahyVM::stop_vm() {
 
 // messages received from the API
 
-void AnahyVM::init(int num_daemons, int vps_per_daemon) {
+void AnahyVM::init(int _num_daemons, int vps_per_daemon) {
+	num_daemons = _num_daemons;
 	VirtualProcessor::init_pthread_key();
 
 	for (int i = 0; i < num_daemons; ++i) {
@@ -65,6 +71,7 @@ void AnahyVM::init(int num_daemons, int vps_per_daemon) {
 		daemons.push_back(new Daemon(vps_per_daemon));
 	}
 
+	pthread_cond_init(&cond, NULL);
 	pthread_mutex_init(&mutex, NULL);
 	pthread_mutex_lock(&mutex); // since the main thread has the VM's lock,
 								// it can block itself in the next call
@@ -90,6 +97,7 @@ void AnahyVM::terminate() {
 	}
 	daemons.clear();
 
+	pthread_cond_destroy(&cond);
 	pthread_mutex_destroy(&mutex);
 	VirtualProcessor::delete_pthread_key();
 }
@@ -134,29 +142,33 @@ void AnahyVM::set_main_vp(VirtualProcessor* vp) {
 
 // When every VP is blocked on a GetJob,
 // Daemon sends this message to wait for a job.
-void AnahyVM::blocking_get_job(Daemon* sender) {
-	Job* j = get_job(NULL);
-	Daemon* d;
+Job* AnahyVM::blocking_get_job() {
+	Job* job = NULL;
+	pthread_mutex_lock(&mutex);
+	daemons_waiting++;
 
-	if (!j) {
-		daemons_waiting.push(sender);
-
-		if (daemons_waiting.size() == num_daemons) {
-			// time to everyone die :)
-			while (!daemons_waiting.empty()) {
-				d = daemons_waiting.front();
-				daemons_waiting.pop();
-				sender->set_temp_job(NULL);
-				sender->resume();
-			}
-			return;
+	while (true) {
+		if (daemons_waiting == num_daemons) {
+			printf("All daemons_waiting...\n");
+			pthread_cond_broadcast(&cond);
+			break;	
 		}
 
-		sender->block();
+		job = graph.find_a_ready_job(NULL);
+		if(job) {
+			printf("Daemon resuming...\n");
+			daemons_waiting--;
+			break;
+		}
+		else {	// there's no work but some worker
+				// can still generate work
+			printf("Daemon Blocked! Daemons_waiting = %d\n", daemons_waiting);
+			pthread_cond_wait(&cond, &mutex);
+		}
 	}
-	else {
-		sender->set_temp_job(j);	
-	}
+
+	pthread_mutex_unlock(&mutex);
+	return job;
 }
 
 Job* AnahyVM::get_job(Job* joined_job) {
@@ -169,13 +181,14 @@ Job* AnahyVM::get_job(Job* joined_job) {
 	return j;
 }
 
+// scheduled indicates if the job was already destined
+// to a VP before daemon posted it in the graph
 void AnahyVM::post_job(Job* new_job, bool scheduled) {
 	pthread_mutex_lock(&mutex);
 
 	graph.insert(new_job);
-	if (!scheduled && !daemons_waiting.empty()) {
-		Daemon* d = daemons_waiting.front();
-		d->set_job_and_resume();
+	if (!scheduled && daemons_waiting) {
+		pthread_cond_signal(&cond);
 	}
 
 	pthread_mutex_unlock(&mutex);

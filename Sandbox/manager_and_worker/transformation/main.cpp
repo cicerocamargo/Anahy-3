@@ -34,11 +34,11 @@ int main(int argc, char const *argv[])
 	log.open("main.log", fstream::out);
 	srand(time(NULL));
 
-	int managers = atoi(argv[1]);
-	int workers_per_manager = atoi(argv[2]);
+	int daemons = atoi(argv[1]);
+	int vps_per_daemon = atoi(argv[2]);
 	int n = atoi(argv[3]);
 
-	AnahyVM::init(managers, workers_per_manager);
+	AnahyVM::init(daemons, vps_per_daemon);
 	
 	JobHandle handle;
 	AnahyVM::create(&handle, NULL, run_fib_, (void*) new int(n));

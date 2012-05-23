@@ -4,12 +4,15 @@
 
 /* STATIC MEMBERS' ITIALIZATIONS */
 AnahyVM* AnahyVM::unique_instance = NULL;
+JobGraph AnahyVM::graph;
 
 /* PRIVATE METHODS */
 AnahyVM::AnahyVM(uint _num_daemons, uint _vps_per_daemon,
 	uint _scheduling_function, uint mode_operation) :
 	num_daemons(_num_daemons) , vps_per_daemon(_vps_per_daemon)
 {
+	graph = new JobGraph();
+
 	for (uint i = 0; i < num_daemons; ++i) {
 		daemons.push_back(new Daemon(vps_per_daemon));
 	}
@@ -70,35 +73,18 @@ void AnahyVM::shut_down() {
 // insert a new job in the graph
 void AnahyVM::insert_job(Job* job) {
 
-	if (job->get_parent() == NULL) {
-		// so this is a ROOT job
-		root_jobs.push_back(job);
-	}
-	job_map[job->get_id()] = job;
+	graph.insert(job);
 }
 
 // removes a job from the graph
 void AnahyVM::remove_job(Job* job) {
-	JobId id = job->get_id();
-
-	// erase from the map
-	job_map.erase(id); 
-
-	// erase from the root list
-	list<Job*>::iterator it;
-	for(it = root_jobs.begin(); it != root_jobs.end(); it++) {
-		if (id == (*it)->get_id()) {
-			it = root_jobs.erase(it);
-			break;
-		}
-	}
+	graph.erase(job);
 }
 
 // uses the scheduling function to find
 // the most suitable ready job in the graph
 Job* AnahyVM::find_a_ready_job(Job* job) {
-	return root_jobs.front();
-	//return scheduling_function(root_jobs, job);
+	graph.find_a_ready_job(job);
 }
 
 

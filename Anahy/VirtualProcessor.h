@@ -2,6 +2,7 @@
 #define VIRTUALPROCESSOR_H
 
 #include <pthread.h>
+#include <stdlib.h>
 #include <stack>
 #include "definitions.h"
 #include "JobId.h"

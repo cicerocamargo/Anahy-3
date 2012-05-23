@@ -134,18 +134,15 @@ void* VirtualProcessor::join_job(JobHandle handle) {
 
 	bool done = false;
 	do {
-		JobState state = joined->compare_and_swap_state(ready, running);
-
-		if (state == running) {
+		JobState state = joined->get_state();
+		if(!__sync_bool_compare_and_swap(&state, ready, running)) {
 			// if the joined job was already running ...
 			// try to help its execution
 			suspend_current_job_and_try_to_help(joined);
 		}
 		else {
 			// if the job was ready for execution or already finished
-			if (state == ready) {
-				suspend_current_job_and_run_another(joined);
-			}
+			suspend_current_job_and_run_another(joined);
 			
 			result = joined->get_retval();
 

@@ -29,20 +29,6 @@ void Job::run() {
     retval = (temp ? temp : NULL);
 }
 
-// self explanatory ...
-JobState Job::compare_and_swap_state(JobState target_value, JobState new_value) {
-	pthread_mutex_lock(&mutex);
-
-	JobState retval = state;
-	if (state == target_value) {
-		state = new_value;
-	}
-
-	pthread_mutex_unlock(&mutex);
-
-	return retval;
-}
-
 // drecement atomically the number of joins that
 // the job has to receive and return the value
 int Job::dec_join_counter() {

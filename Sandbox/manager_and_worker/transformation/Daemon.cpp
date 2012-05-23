@@ -19,7 +19,7 @@ void Daemon::answer_oldest_vp_waiting(Job* job) {
 	VirtualProcessor* vp;
 
 	event = vps_waiting.front();
-	vps_waiting.pop();
+	vps_waiting.pop_front();
 	vp = event->get_sender();
 	vp->set_current_job(job);	// send a NULL job to
 								// break VP loop
@@ -66,7 +66,7 @@ void Daemon::run() {
 			if (!job) { // time to stop
 				printf("Daemon %d: will stop!\n", id);
 				while (vps_waiting.empty() == false) {
-					answer_oldest_vp_waiting(NULL);
+					answer_oldest_vp_waiting(job);
 				}
 				pthread_mutex_unlock(&mutex);
 				break;
@@ -103,11 +103,11 @@ void Daemon::handle_get_job(VPEvent* event) {
 	log << "GetJob event received from VP "
 		<< event->get_sender()->get_id() << " ... ";
 
-	job = AnahyVM::get_job(NULL);
+	job = AnahyVM::get_job(event->get_job());
 	if (!job) {
 		log << "No job. VP is gonna wait.\n";
 		event->get_sender()->say("waiting...");
-		vps_waiting.push(event);	
+		vps_waiting.push_back(event);	
 	}
 	else {
 		VirtualProcessor* vp = event->get_sender();
@@ -134,7 +134,7 @@ void Daemon::handle_new_job(VPEvent* event) {
 	else {
 		AnahyVM::post_job(event->get_job(), true);
 		unhandled = vps_waiting.front();
-		vps_waiting.pop();
+		vps_waiting.pop_front();
 		vp = unhandled->get_sender();
 		vp->set_current_job(event->get_job());
 		vp->resume();
@@ -151,13 +151,25 @@ void Daemon::handle_end_of_job(VPEvent* event) {
 
 	log << "EndOfJob event received from VP "
 		<< event->get_sender()->get_id() << "\n";
+
+	list<VPEvent*>::iterator it;
+	for (it = vps_waiting.begin(); it != vps_waiting.end(); ++it) {
+		if ((*it)->get_job() == event->get_job()) {
+			// found a VP waiting for the job that just ended !!
+			vp = (*it)->get_sender();
+			it = vps_waiting.erase(it);
+			break;
+		}
+	}
+
+	vp->resume();
 }
 
 void Daemon::handle_destroy_job(VPEvent* event) {
-	VirtualProcessor* vp;
-	Job* job;
-	VPEvent* unhandled;
-	
+	log << "DestroyJob event received from VP "
+		<< event->get_sender()->get_id() << "\n";
+
+	AnahyVM::erase_job(event->get_job());
 }
 
 void Daemon::handle_event(VPEvent* event) {

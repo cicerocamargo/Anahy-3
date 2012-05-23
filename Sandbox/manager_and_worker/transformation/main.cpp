@@ -2,7 +2,9 @@
 #include <cstdlib>
 #include <ctime>
 #include <fstream>
+#include <iostream>
 #include "AnahyVM.h"
+#include "JobAttributes.h"
 
 using namespace std;
 
@@ -13,20 +15,39 @@ int fib_(int n) {
 }
 
 void* run_fib_(void* args) {
-	int n = *((int*) args);
-	
+	int* _n = ((int*) args);
+	int n = *(_n);
+	int res;
+
 	if (n > 40) {
 		log << "evaluating fib " << n << "\n";
+		
 		JobHandle m1, m2;
-		AnahyVM::create(&m1, NULL, run_fib_, (void*) new int(n-1));
-		log << "\tcreated fib " << n-1 << "\n";
+		JobAttributes attr;
+		attr.set_initialized(true);
+		attr.set_num_joins(1);
+		AnahyVM::create(&m1, &attr, run_fib_, (void*) new int(n-1));
 		AnahyVM::create(&m2, NULL, run_fib_, (void*) new int(n-2));
+
+		log << "\tcreated fib " << n-1 << "\n";
 		log << "\tcreated fib " << n-2 << "\n";
+
+		int* fib_m1 = new int();
+		int* fib_m2 = new int();
+		AnahyVM::join(m1, (void**) &fib_m1);
+		AnahyVM::join(m2, (void**) &fib_m2);
+		res = *fib_m1 + *fib_m2;
+
+		delete fib_m1;
+		delete fib_m2;
 	}	
 	else {
 		log << "Running fib " << n << "\n";
-		fib_(n);
+		res = fib_(n);
 	}
+
+	delete _n;
+	return (void*) new int(res);
 }
 
 int main(int argc, char const *argv[])
@@ -42,9 +63,16 @@ int main(int argc, char const *argv[])
 	
 	JobHandle handle;
 	AnahyVM::create(&handle, NULL, run_fib_, (void*) new int(n));
-	AnahyVM::join(handle, NULL);
+	int* result = new int();
+	AnahyVM::join(handle, (void**) &result);
 
 	AnahyVM::terminate();	
 	log.close();
+
+	cout << endl << (*result) << endl;
+	delete result;
+
+	//cout << fib_(atoi(argv[3])) << endl;
+
 	return 0;
 }

@@ -1,33 +1,35 @@
-#include "JobAttributes.h"
+#ifndef JOBATTRIBUTES_H
+#define JOBATTRIBUTES_H
 
-JobAttributes JobAttributes::execution_cost;
+#include "definitions.h"
 
-JobAttributes::JobAttributes(uint _max_joins, bool _initialized, 
-		JobAttributes_State _attr_state, int _job_cost) : 
-	max_joins(_max_joins),
-	initialized(_initialized),
-	attr_state(_attr_state),
-	job_cost(_job_cost)
-{
+enum JobAttributes_State { 
+	ATHREAD_CREATE_JOINABLE, //default
+	ATHREAD_CREATE_DETACHED
+};
 
-}
+class JobAttributes {
 
-uint JobAttributes::get_max_joins() const {
-	return max_joins;
-}
+	int num_joins;
+	bool initialized;
+	JobAttributes_State detach_state;
+	int job_cost;
 
-bool JobAttributes::get_initialized() const {
-	return initialized;
-}
+public:
+	JobAttributes();
 
-JobAttributes_State JobAttributes::get_JobAttributes_State() {
-	return attr_state;
-}
+	bool dec_join_counter();
 
-int JobAttributes::get_Job_cost() const {
-	return execution_cost;
-}
+	//getters and setters
+	void set_num_joins(int _num_joins);
+	void set_detach_state(JobAttributes_State _detach_state);
+	void set_job_cost(int _job_cost);
+	void set_initialized(bool _initialized);
 
-int JobAttributes::get_execution_cost() const {
-	return execution_cost;
-}
+	int get_num_joins() const;
+	bool get_initialized() const;
+	JobAttributes_State get_JobAttributes_State();
+	int get_job_cost() const;
+};
+
+#endif

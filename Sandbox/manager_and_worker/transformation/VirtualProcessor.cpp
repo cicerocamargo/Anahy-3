@@ -21,7 +21,7 @@ void* VirtualProcessor::call_vp_run(void* arg) {
 	return NULL;
 }
 
-/*
+
 // 'job' was not Finished, so I'll ask daemon for a Ready job related to it
 void VirtualProcessor::suspend_current_job_and_try_to_help(Job* joined) {
 	context_stack.push(current_job); // save context
@@ -29,6 +29,10 @@ void VirtualProcessor::suspend_current_job_and_try_to_help(Job* joined) {
 
 	if (current_job != context_stack.top()) { // daemon updated my current job
 		current_job->run();
+		/*if (!current_job->compare_and_swap_state(running, finished)) {
+			printf("deu zebra no VP::...help()!!!\n");
+			abort();
+		}*/
 		daemon->end_of_job(this, current_job); // notify daemon
 		current_job = context_stack.top(); // restore stacked context
 	}
@@ -47,6 +51,10 @@ void VirtualProcessor::suspend_current_job_and_run_another(Job* another) {
 	current_job = another; // update current_job
 	
 	current_job->run();
+	/*if (!current_job->compare_and_swap_state(running, finished)) {
+		printf("deu zebra no VP::...another()!!!\n");
+		abort();
+	}*/
 	daemon->end_of_job(this, current_job); // notify daemon
 	
 	current_job = context_stack.top(); // restore stacked context
@@ -54,7 +62,7 @@ void VirtualProcessor::suspend_current_job_and_run_another(Job* another) {
 	
 }
 
-*/
+
 
 /* PUBLIC */
 
@@ -96,7 +104,10 @@ void VirtualProcessor::run() {
 
 		say("running");
 		current_job->run();
-		// current_job->compare_and_swap_state(running, finished);
+		/*if (!current_job->compare_and_swap_state(running, finished)) {
+			printf("deu zebra no VP::run()!!!\n");
+			abort();
+		}*/
 		daemon->end_of_job(this, current_job);
 		current_job = NULL;
 	}
@@ -126,12 +137,46 @@ VirtualProcessor* VirtualProcessor::get_current_vp() { // class method!
 JobHandle VirtualProcessor::create_new_job(pfunc function, void* args,
 		JobAttributes* attr) {
 	JobId job_id(id, job_counter++);
+
+	if (attr) {
+		if (!attr->get_initialized()) {
+			//sprintf(stderr, "job attributes must be initialized\n");
+			attr = new JobAttributes();
+		}
+	} else {
+		attr = new JobAttributes();
+	}
+
 	Job* job = new Job(job_id, current_job, this, attr, function, args);
 	daemon->new_job(this, job);
 	JobHandle handle;
 	handle.pointer = job;
 	handle.id = job_id;
 	return handle;
+}
+
+void* VirtualProcessor::join_job(JobHandle handle) {
+	while (true) {
+		if (handle.pointer->compare_and_swap_state(ready, running)) {
+			// we are going to run the joined job... Hurray !!
+			suspend_current_job_and_run_another(handle.pointer);
+			break;
+		}
+		else {
+			if (handle.pointer->compare_and_swap_state(finished, finished)) {
+				break;
+			}
+			else {
+				suspend_current_job_and_try_to_help(handle.pointer);
+			}
+		}
+	}
+
+	if (handle.pointer->dec_join_counter()) {
+		//printf("\t\t\t\t\t\t\t\t\t\t\t\tAQUI!\n");
+		daemon->destroy_job(this, handle.pointer);
+	}
+	return handle.pointer->get_retval();
 }
 
 // called from Daemon Thread

@@ -1,11 +1,10 @@
 #ifndef ANAHYVM_H
 #define ANAHYVM_H
 
-#include <map>
-#include <list>
 #include <pthread.h>
 
 #include "definitions.h"
+#include "JobGraph.h"
 #include "VirtualProcessor.h"
 #include "Job.h"
 #include "JobId.h"
@@ -20,9 +19,8 @@ class AnahyVM {
 	// function to be used in "Job* find_a_ready_job(Job* job)"
 	sfunc scheduling_function;
 	
-	// graph variables
-	list<Job*> root_jobs;
-	map<JobId, Job*> job_map;
+	//pointer to graph	
+	static JobGraph graph;
 
 	static AnahyVM* unique_instance; // singleton
 

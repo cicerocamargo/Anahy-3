@@ -3,7 +3,7 @@
 #include <queue>
 #include <stdio.h>
 #include <unistd.h>
-#include <string.h>
+#include <stdlib.h>
 #include "definitions.h"
 #include "athread.h"
 #include "JobAttributes.h"
@@ -14,14 +14,10 @@
 void help() {
 	printf("\nOptions:\n");
 	printf("	-h show this help message.\n");
-	printf("	-d # set daemos' number to the environment;\n\t\t\t\t
-		   Default is 1.\n");
-	printf("	-v # set virtual processors' number per daemon to the environment;\n\t\t\t\t
-		   Default is 1.\n");
-	printf("	-s # set the scheduling function to execute the tasks\n\t\t\t\t
-		   0-sched0; 1-sched1; 2-sched2; 3-sched3.\n");
-	printf("	-m # specifies the operation mode.\n\t\t\t\t
-		   1-PASSIVE; 2-NORMAL; 3-AGRESSIVE.\n");
+	printf("	-d # set daemos' number to the environment;\n\t\t\t\tDefault is 1.\n");
+	printf("	-v # set virtual processors' number per daemon to the environment;\n\t\t\t\tDefault is 1.\n");
+	printf("	-s # set the scheduling function to execute the tasks\n\t\t\t\t0-sched0; 1-sched1; 2-sched2; 3-sched3.\n");
+	printf("	-m # specifies the operation mode.\n\t\t\t\t1-PASSIVE; 2-NORMAL; 3-AGRESSIVE.\n");
 	printf("\n");
 }
 
@@ -72,7 +68,7 @@ void aInit(int argc, char** argv) {
 }
 
 void aTerminate() {
-	Anahy::shut_down();
+	AnahyVM::shut_down();
 }
 
 void athread_exit(void* value_ptr) {
@@ -83,7 +79,15 @@ void athread_exit(void* value_ptr) {
 
 int athread_create(athread_t* thid, athread_attr_t* attr, pfunc function, void* args) {
 	VirtualProcessor* current_vp = VirtualProcessor::get_current_vp();
-	JobHandle handle = current_vp->create_job(function, args, (JobAttributes) *attr);
+	if (attr) {
+		if (!attr->get_initialized()) {
+			//sprintf(stderr, "job attributes must be initialized\n");
+			athread_attr_init(attr);
+		}
+	} else {
+		athread_attr_init(attr);
+	}
+	JobHandle handle = current_vp->create_new_job(function, args, attr);
 	*thid = handle;
 	return 0;
 }
@@ -96,41 +100,53 @@ int athread_join(athread_t thid, void** result) {
 
 int athread_attr_init(athread_attr_t* attr) {
 	//initialize all the job attributes as default
-	JobAttributes* attr_t = new JobAttributes(1, true, ATHREAD_CREATE_JOINABLE, 0);
-	*attr = attr_t;
+	JobAttributes* attr_t = new JobAttributes();
+	attr = attr_t;
 	return 0;
 }
 
 int athread_attr_destroy(athread_attr_t* attr) {
-	attr->initialized = false;
+	attr->set_initialized(false);
+	delete attr;
 	return 0;
 }
 
-int athread_attr_setdetached(athread_attr_t* attr, int _detach_state) {
-	if (!(detach_state & (ATHREAD_CREATE_JOINABLE | ATHREAD_CREATE_DETACHED))) {
+int athread_attr_setdetached(athread_attr_t* attr, JobAttributes_State _detach_state) {
+	if (!(attr->get_JobAttributes_State() & (ATHREAD_CREATE_JOINABLE | ATHREAD_CREATE_DETACHED))) {
 		return -1;
 	} else {
-		attr->detach_state = _detach_state;
+		attr->set_detach_state(_detach_state);
 		return 0;
 	}
 }
 
-int athread_attr_getdetached(athread_attr_t* attr, int* _detach_state) {
+int athread_attr_getdetached(athread_attr_t* attr, JobAttributes_State* _detach_state) {
 	*_detach_state = attr->get_JobAttributes_State();
 	return 0;
 }
 
-int athread_attr_setjoinnumber(athread_attr_t* attr, int _max_joins) {
-	attr->max_joins = _max_joins;
+int athread_attr_setjoinnumber(athread_attr_t* attr, int _num_joins) {
+	if (_num_joins < 0) {
+		return -1;
+	}
+	attr->set_num_joins(_num_joins);
 	return 0;
 }
 
-int athread_attr_getjoinnumber(athread_attr_t* attr, int* _max_joins) {
-	*_max_joins = attr->get_max_joins();
+int athread_attr_getjoinnumber(athread_attr_t* attr, int* _num_joins) {
+	*_num_joins = attr->get_num_joins();
 	return 0;	
 }
 
 int athread_attr_setjobcost(athread_attr_t* attr, int _job_cost) {
-	attr->job_cost = _job_cost;
+	if (_job_cost < 0) {
+		return -1;
+	}
+	attr->set_job_cost(_job_cost);
+	return 0;
+}
+
+int athread_attr_setjobcost(athread_attr_t* attr, int* _job_cost) {
+	*_job_cost = attr->get_job_cost();
 	return 0;
 }

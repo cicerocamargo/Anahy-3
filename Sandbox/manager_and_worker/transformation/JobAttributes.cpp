@@ -1,19 +1,35 @@
 #include "JobAttributes.h"
 
-JobAttributes JobAttributes::execution_cost;
-
-JobAttributes::JobAttributes(uint _max_joins, bool _initialized, 
-		JobAttributes_State _attr_state, int _job_cost) : 
-	max_joins(_max_joins),
-	initialized(_initialized),
-	attr_state(_attr_state),
-	job_cost(_job_cost)
-{
-
+JobAttributes::JobAttributes() {
+	set_initialized(true);
+	set_num_joins(1);
+	set_detach_state(ATHREAD_CREATE_JOINABLE);
+	set_job_cost(0);
 }
 
-uint JobAttributes::get_max_joins() const {
-	return max_joins;
+bool JobAttributes::dec_join_counter() {
+	if(__sync_bool_compare_and_swap(&num_joins, num_joins, num_joins - 1))
+	return __sync_bool_compare_and_swap(&num_joins, 0, -1);
+}
+
+void JobAttributes::set_num_joins(int _num_joins) {
+	num_joins = _num_joins;
+}
+
+void JobAttributes::set_detach_state(JobAttributes_State _detach_state) {
+	detach_state = _detach_state;
+}
+
+void JobAttributes::set_job_cost(int _job_cost) {
+	job_cost = _job_cost;
+}
+
+void JobAttributes::set_initialized(bool _initialized) {
+	initialized = _initialized;
+}
+
+int JobAttributes::get_num_joins() const {
+	return num_joins;
 }
 
 bool JobAttributes::get_initialized() const {
@@ -21,13 +37,9 @@ bool JobAttributes::get_initialized() const {
 }
 
 JobAttributes_State JobAttributes::get_JobAttributes_State() {
-	return attr_state;
+	return detach_state;
 }
 
-int JobAttributes::get_Job_cost() const {
-	return execution_cost;
-}
-
-int JobAttributes::get_execution_cost() const {
-	return execution_cost;
+int JobAttributes::get_job_cost() const {
+	return job_cost;
 }

@@ -1,35 +1,45 @@
 #include <pthread.h>
+#include <cstdlib>
 #include <iostream>
+
+using namespace std;
 
 #define DISPLAY(a) std::cout << #a << ": " << (a) << std::endl
 
-int x = 4;
-const int num_threads = x;
+enum State { ready, running, finished };
+
+State st = ready;
+
+int fib_(int n) {
+	return n < 2 ? n : (fib_(n-1) + fib_(n-2));
+}
 
 void* atomic_decrement(void* args) {
-	if (__sync_bool_compare_and_swap(&x, x, x-1)) {
-		if (__sync_bool_compare_and_swap(&x, 0, -1)) {
-			std::cout << "zerei x!" << std::endl;
-		}
-	}
-	else {
-		std::cout << "Deu zebra :P" << std::endl;
+	fib_(30);
+
+	int* i = ((int*) args);
+
+	if (__sync_bool_compare_and_swap(&st, ready, running)) {
+		cout << "VP " << (*i) << " vai executar o Job!" << endl;
 	}
 	return NULL;
 }
 
 int main(int argc, char const *argv[]) {
+	int vps = atoi(argv[1]);
+	const int num_threads = vps;
+
 	pthread_t th_array[num_threads];
-	DISPLAY(x);
+	
 
 	for (int i = 0; i < num_threads; ++i) {
-		pthread_create(&th_array[i], NULL, atomic_decrement, NULL);
+		pthread_create(&th_array[i], NULL, atomic_decrement, new int(i));
 	}
 
 	for (int i = 0; i < num_threads; ++i) {
 		pthread_join(th_array[i], NULL);
 	}
 
-	DISPLAY(x);	
+	
 	return 0;
 }

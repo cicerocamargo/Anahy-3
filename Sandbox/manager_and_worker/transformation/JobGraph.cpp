@@ -1,6 +1,7 @@
 #include "JobGraph.h"
 #include "JobId.h"
 #include "Job.h"
+#include <cstdio>
 
 JobGraph::JobGraph() {
 
@@ -12,36 +13,57 @@ JobGraph::~JobGraph() {
 }
 
 void JobGraph::insert(Job* job) {
-	job_map[ job->get_id() ] = job;
 
-	//if (!job->get_parent()) {
-		// it is a root job
+	if (!job->get_parent()) {
+		//It's a root job so...
 		root_jobs.push_back(job);
-	//}
+	}
+	else {
+		job_map[ job->get_id() ] = job;
+	}
 }
 
 void JobGraph::erase(Job* job) {
-	job_map.erase(job->get_id());
-	
-	if (!job->get_parent()) {
-		// it is a root job
+	JobId id = job->get_id();
 
+	if (!job->get_parent()) {
+		// it's a root job
 		list<Job*>::iterator it;
 		for (it = root_jobs.begin(); it != root_jobs.end(); ++it) {
 			if (*it == job) {
 				it = root_jobs.erase(it);
-				delete job;
 				break;
 			}	
 		}
-	}	
+	}
+	else {
+		//  it's NOT a root job
+		job_map.erase(job->get_id());
+	}
+
+	//delete job;
+	printf("Job ");
+	id.display();
+	printf(" nao existe mais!\n");
 }
 
 Job* JobGraph::find_a_ready_job(Job* starting_job) {
-	Job* j = NULL;
-	if (root_jobs.empty() == false) {
-		j = root_jobs.front();
-		root_jobs.pop_front();	
+	set<Job*> children;
+	// temp code
+	list<Job*> job_list = root_jobs;
+	list<Job*>::iterator it;
+	for (it = job_list.begin(); it != job_list.end(); ++it) {
+		if ((*it)->compare_and_swap_state(ready, running)) {
+			return *it;
+		}
+		else {
+			children = (*it)->get_children();
+			if (!children.empty()){
+				job_list.insert(job_list.end(), children.begin(), children.end());
+			}
+			it = job_list.erase(it);
+		}
 	}
-	return j; // stub
+
+	return NULL;
 }

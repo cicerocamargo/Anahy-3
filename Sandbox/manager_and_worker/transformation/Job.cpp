@@ -1,6 +1,7 @@
 #include "Job.h"
 #include "VirtualProcessor.h"
 #include <cstdio>
+#include <cstdlib>
 
 
 // private method
@@ -21,11 +22,24 @@ Job::Job (JobId _id, Job* _parent, VirtualProcessor* _creator,
         parent->add_child(this);
     }
 	state = ready;
+	pthread_mutex_init(&mutex, NULL);
+}
+
+Job::~Job() {
+	//delete attributes;
+	// children.clear() e agora Mr M?
+	parent->remove_child(this);
 }
 
 void Job::run() {
     void* temp = (function)(data);
     retval = (temp ? temp : NULL);
+    //compare_and_swap_state(running, finished);
+
+    if (compare_and_swap_state(running, finished)) {
+		printf("deu zebra AFU!!!!!\n");
+		abort();
+	}
 }
 
 // the return value indicates operation's success (true) or failure
@@ -38,6 +52,17 @@ bool Job::compare_and_swap_state(JobState target_value, JobState new_value) {
 // reached ZERO
 bool Job::dec_join_counter() {
 	return attributes->dec_join_counter();
+}
+
+void Job::remove_child(Job* child) {
+	pthread_mutex_lock(&mutex);
+
+	if (children.find(child) == children.end()) {
+		printf("Mas por que?\n");
+	}
+	//children.erase(child);
+
+	pthread_mutex_unlock(&mutex);
 }
 
 // auxiliary function

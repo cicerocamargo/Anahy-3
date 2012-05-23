@@ -9,7 +9,7 @@ void Job::add_child(Job* child) {
 }
 
 Job::Job (JobId _id, Job* _parent, VirtualProcessor* _creator, 
-		JobAttributes _attributes, pfunc _function, void* _data) :
+		JobAttributes* _attributes, pfunc _function, void* _data) :
 	id(_id),
 	parent(_parent),
 	creator(_creator),
@@ -29,30 +29,20 @@ void Job::run() {
     retval = (temp ? temp : NULL);
 }
 
-// self explanatory ...
-JobState Job::compare_and_swap_state(JobState target_value, JobState new_value) {
-	pthread_mutex_lock(&mutex);
-
-	JobState retval = state;
-	if (state == target_value) {
-		state = new_value;
-	}
-
-	pthread_mutex_unlock(&mutex);
-
-	return retval;
-}
-
 // drecement atomically the number of joins that
 // the job has to receive and return the value
-uint Job::dec_join_counter() {
+int Job::dec_join_counter() {
 	pthread_mutex_lock(&mutex);
-
-	// change attributes ???
-	
-	pthread_mutex_lock(&mutex);
-
-	return 0;
+	int number_of_joins = attributes->get_num_joins();
+	if(number_of_joins > 0) {
+		number_of_joins--;
+		attributes->set_num_joins(number_of_joins);
+		pthread_mutex_unlock(&mutex);
+		return number_of_joins;
+	}
+	//fprintf(stderr, "number of joins must be greater than 0\n");
+	pthread_mutex_unlock(&mutex);
+	return -1;
 }
 
 // auxiliary function
@@ -113,6 +103,6 @@ JobState Job::get_state() const {
     return state;
 }
 
-JobAttributes Job::get_attributes() const {
+JobAttributes* Job::get_attributes() const {
 	return attributes;
 }

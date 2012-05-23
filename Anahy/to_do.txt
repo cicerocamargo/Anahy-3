@@ -1,3 +1,1 @@
-- implementar os atributos do Job
 - implementar funções de escalonamento
-- implementar um método estático VP* VP::get_current_vp() para a classe VP, para tirar aquela bagunça das funções da API.

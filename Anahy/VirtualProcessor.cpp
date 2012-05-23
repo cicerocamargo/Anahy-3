@@ -1,11 +1,9 @@
 #include "VirtualProcessor.h"
 
-
 /**** STATIC MEMBERS' ITIALIZATIONS ****/
 
 uint VirtualProcessor::instance_counter = 0;
 pthread_key_t VirtualProcessor::key;
-
 
 /**** PRIVATE METHODS' DEFINITIONS ****/
 
@@ -25,7 +23,6 @@ void VirtualProcessor::run() {
 			// I should stop!
 			return;
 		}
-
 		current_job->run();
 		daemon->end_of_job(this, current_job);
 		current_job = NULL;
@@ -49,7 +46,6 @@ void VirtualProcessor::suspend_current_job_and_try_to_help(Job* joined) {
 	
 	context_stack.pop();
 }
-
 
 // run another job keeping track of the suspended job
 void VirtualProcessor::suspend_current_job_and_run_another(Job* another) {
@@ -96,14 +92,14 @@ VirtualProcessor::~VirtualProcessor() {
 
 // message received from a daemon object and daemon thread
 void VirtualProcessor::start() {
-	printf("Starting VP %d\n", id);
+	//printf("Starting VP %d\n", id);
 	pthread_create(&thread, NULL, call_vp_run, (void*)this);
 }
 
 // message received from a daemon object and daemon thread
 void VirtualProcessor::stop() {
 	pthread_join(thread, NULL);
-	printf("Stopping VP %d ...\n", id);
+	//printf("Stopping VP %d ...\n", id);
 }
 
 // message received from a daemon object but from my thread
@@ -122,7 +118,7 @@ VirtualProcessor* VirtualProcessor::get_current_vp() { // class method!
 	return (VirtualProcessor*) pthread_getspecific(key);
 }
 
-JobHandle VirtualProcessor::create_new_job(pfunc function, void* args, JobAttributes attr) {
+JobHandle VirtualProcessor::create_new_job(pfunc function, void* args, JobAttributes* attr) {
 	JobId job_id(id, job_counter++);
 	Job* job = new Job(job_id, current_job, this, attr, function, args);
 	daemon->new_job(this, job);
@@ -131,30 +127,32 @@ JobHandle VirtualProcessor::create_new_job(pfunc function, void* args, JobAttrib
 	handle.id = job_id;
 }
 
+//we need to change this method
 void* VirtualProcessor::join_job(JobHandle handle) {
 	Job* joined = handle.pointer;
 	void* result;
 
 	bool done = false;
 	do {
-		JobState state = joined->compare_and_swap_state(ready, running);
-
-		if (state == running) {
+		JobState state = joined->get_state();
+		if(!__sync_bool_compare_and_swap(&state, ready, running)) {
 			// if the joined job was already running ...
 			// try to help its execution
 			suspend_current_job_and_try_to_help(joined);
 		}
 		else {
 			// if the job was ready for execution or already finished
-			if (state == ready) {
-				suspend_current_job_and_run_another(joined);
-			}
+			suspend_current_job_and_run_another(joined);
 			
 			result = joined->get_retval();
 
-			/* if (joined->dec_join_counter() == 0) {
-				delete job;
-			} */
+			/* dec_join_counter will return 0 if num_joins was equal 1
+			   and it could be decremented, otherwise it'll return a
+			   negative value
+			*/
+			if (joined->dec_join_counter() < 0) {
+				delete joined;
+			}
 
 			done = true;
 		}

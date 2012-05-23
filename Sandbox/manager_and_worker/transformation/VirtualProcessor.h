@@ -38,8 +38,8 @@ class VirtualProcessor {
 											// set thread specific data as this
 											// and call this->run() (vp_obj is 'this')
 
-//	void suspend_current_job_and_try_to_help(Job* joined);
-//	void suspend_current_job_and_run_another(Job* another);
+	void suspend_current_job_and_try_to_help(Job* joined);
+	void suspend_current_job_and_run_another(Job* another);
 
 public:
 
@@ -63,7 +63,7 @@ public:
 	// messages to be received from AnahyVM
 	static VirtualProcessor* get_current_vp(); // class method!
 	JobHandle create_new_job(pfunc function, void* args, JobAttributes* attr);
-	// void* join_job(JobHandle handle);
+	void* join_job(JobHandle handle);
 	
 	// messages to be received from a Daemon
 	void start();

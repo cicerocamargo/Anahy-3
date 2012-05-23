@@ -17,17 +17,6 @@ VirtualProcessor* AnahyVM::main_vp = 0;
 
 /* PRIVATE METHODS */
 
-// int fib(int n) {
-// 	return n < 2 ? n : (fib(n-1) + fib(n-2));
-// }
-
-// void* run_fib(void* args) {
-// 	fib(40);
-// 	JobHandle handle;
-// 	AnahyVM::create(&handle, NULL, run_fib, NULL);
-// 	AnahyVM::join(handle, NULL);
-// }
-
 void AnahyVM::start_vm() {
 	list<Daemon*>::iterator it;
 
@@ -74,12 +63,6 @@ void AnahyVM::init(int _num_daemons, int vps_per_daemon) {
 								// to wait for the VP 0 to be associated
 								// with the main thread
 
-	// for (int i = 0; i < 20; ++i) {
-	// 	// initial work
-	// 	JobId job_id(0, i);
-	// 	graph.insert(new Job(job_id, NULL, NULL, 0, run_fib, NULL));		
-	// }
-
 	start_vm();
 }
 
@@ -123,6 +106,12 @@ void AnahyVM::join(JobHandle handle, void** result) {
 	}
 	else {
 		printf("Join from VP %u\n", vp->get_id());
+		
+		void* temp = vp->join_job(handle);
+
+		if(result) {
+			*result = temp;
+		}
 	}
 }
 

@@ -1,5 +1,6 @@
 #include <pthread.h>
 #include <queue>
+#include <list>
 #include <vector>
 #include <fstream>
 
@@ -37,7 +38,8 @@ class Daemon {
 	
 	int num_vps;
 	vector<VirtualProcessor*> vps;
-	queue<VPEvent*> event_queue, vps_waiting;
+	queue<VPEvent*> event_queue;
+	list<VPEvent*> vps_waiting;
 	
 	void start_my_vps();
 	void stop_my_vps();

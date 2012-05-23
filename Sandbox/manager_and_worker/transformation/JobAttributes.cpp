@@ -1,6 +1,5 @@
 #include "JobAttributes.h"
 
-/*
 JobAttributes JobAttributes::execution_cost;
 
 JobAttributes::JobAttributes(uint _max_joins, bool _initialized, 
@@ -32,4 +31,3 @@ int JobAttributes::get_Job_cost() const {
 int JobAttributes::get_execution_cost() const {
 	return execution_cost;
 }
-*/

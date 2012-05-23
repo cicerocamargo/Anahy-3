@@ -43,10 +43,6 @@ void AnahyVM::start_vm() {
 void AnahyVM::stop_vm() {
 	list<Daemon*>::iterator it;
 
-	for (it = daemons.begin(); it != daemons.end(); ++it) {
-		(*it)->signal_stop();
-	}
-
 	main_vp->run(); // this allows the main VP to help the execution of
 					// remaining jobs and the Daemon to know that the
 					// main VP is also idle when there's no work

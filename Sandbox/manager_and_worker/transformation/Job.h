@@ -37,8 +37,8 @@ public:
 	void run(); // to be called from a VP
 	
 	// atomic operations
-	JobState compare_and_swap_state(JobState target_value, JobState new_value);  
-	uint dec_join_counter();
+	bool compare_and_swap_state(JobState target_value, JobState new_value);  
+	bool dec_join_counter();
 
 	void display(int num_tabs=0);
 

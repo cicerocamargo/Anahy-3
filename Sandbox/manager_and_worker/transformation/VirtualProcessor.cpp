@@ -87,7 +87,7 @@ VirtualProcessor::~VirtualProcessor()  {
 void VirtualProcessor::run() {
 	bool should_create_more_work = false;
 	while (true) {
-		daemon->get_job(this);
+		daemon->get_job(this, NULL);
 		
 		if (!current_job) {
 			say("going home.");
@@ -97,7 +97,7 @@ void VirtualProcessor::run() {
 		say("running");
 		current_job->run();
 		// current_job->compare_and_swap_state(running, finished);
-		// daemon->end_of_job(this, current_job);
+		daemon->end_of_job(this, current_job);
 		current_job = NULL;
 	}
 }
@@ -127,7 +127,7 @@ JobHandle VirtualProcessor::create_new_job(pfunc function, void* args,
 		JobAttributes* attr) {
 	JobId job_id(id, job_counter++);
 	Job* job = new Job(job_id, current_job, this, attr, function, args);
-	daemon->new_job(job);
+	daemon->new_job(this, job);
 	JobHandle handle;
 	handle.pointer = job;
 	handle.id = job_id;

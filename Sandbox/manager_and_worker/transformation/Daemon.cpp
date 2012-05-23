@@ -123,11 +123,12 @@ void Daemon::handle_new_job(VPEvent* event) {
 	Job* job;
 	VPEvent* unhandled;
 
-	log << "NewJob event received... ";
+	log << "NewJob event received from VP "
+		<< event->get_sender()->get_id() << " ... ";
 
 	if (vps_waiting.empty()) {
 		AnahyVM::post_job(event->get_job(), false);
-		log << "Job posted.";
+		log << "Job posted.\n";
 		delete event;
 	}
 	else {
@@ -146,7 +147,10 @@ void Daemon::handle_new_job(VPEvent* event) {
 void Daemon::handle_end_of_job(VPEvent* event) {
 	VirtualProcessor* vp;
 	Job* job;
-	VPEvent* unhandled;	
+	VPEvent* unhandled;
+
+	log << "EndOfJob event received from VP "
+		<< event->get_sender()->get_id() << "\n";
 }
 
 void Daemon::handle_destroy_job(VPEvent* event) {
@@ -206,34 +210,39 @@ Daemon::~Daemon() {
 	log.close();
 }
 
-// called from a vp thread
-void Daemon::get_job(VirtualProcessor* sender) {
+void Daemon::push_new_event(VPEvent* event) {
 	pthread_mutex_lock(&mutex);
-	event_queue.push(new VPEvent(GetJob, sender, NULL));
+	event_queue.push(event);
 	pthread_cond_signal(&event_cond); // wake daemon
 	pthread_mutex_unlock(&mutex);
+}
+
+// called from a vp thread
+void Daemon::get_job(VirtualProcessor* sender, Job* job) {
+	push_new_event(new VPEvent(GetJob, sender, job));
 	sender->block(); // block vp thread
 }
 
 // called from a vp thread
-void Daemon::new_job(Job* job) {
-	pthread_mutex_lock(&mutex);
-	event_queue.push(new VPEvent(NewJob, NULL, job));
-	pthread_cond_signal(&event_cond);
-	pthread_mutex_unlock(&mutex);
+void Daemon::new_job(VirtualProcessor* sender, Job* job) {
+	push_new_event(new VPEvent(NewJob, sender, job));
 }
 
+// called from a vp thread
+void Daemon::end_of_job(VirtualProcessor* sender, Job* job) {
+	push_new_event(new VPEvent(EndOfJob, sender, job));
+}
+
+// called from a vp thread
+void Daemon::destroy_job(VirtualProcessor* sender, Job* job) {
+	push_new_event(new VPEvent(DestroyJob, sender, job));
+}
+
+// called from AnahyVM
 void Daemon::start() {
 	log << "Starting Daemon...\n";
 	// create my own thread
 	pthread_create(&thread, NULL, run_daemon, this); 
-}
-
-void Daemon::signal_stop() {
-	pthread_mutex_lock(&mutex);
-	stop_signal = true;
-	pthread_cond_signal(&event_cond);
-	pthread_mutex_unlock(&mutex);
 }
 
 // called from AnahyVM

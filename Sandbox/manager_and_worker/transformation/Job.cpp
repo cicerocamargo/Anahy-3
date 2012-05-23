@@ -21,7 +21,6 @@ Job::Job (JobId _id, Job* _parent, VirtualProcessor* _creator,
         parent->add_child(this);
     }
 	state = ready;
-	pthread_mutex_init(&mutex, NULL);
 }
 
 void Job::run() {
@@ -29,30 +28,16 @@ void Job::run() {
     retval = (temp ? temp : NULL);
 }
 
-// self explanatory ...
-JobState Job::compare_and_swap_state(JobState target_value, JobState new_value) {
-	pthread_mutex_lock(&mutex);
-
-	JobState retval = state;
-	if (state == target_value) {
-		state = new_value;
-	}
-
-	pthread_mutex_unlock(&mutex);
-
-	return retval;
+// the return value indicates operation's success (true) or failure
+bool Job::compare_and_swap_state(JobState target_value, JobState new_value) {
+	return __sync_bool_compare_and_swap (&state, target_value, new_value);
 }
 
 // drecement atomically the number of joins that
-// the job has to receive and return the value
-uint Job::dec_join_counter() {
-	pthread_mutex_lock(&mutex);
-
-	// change attributes ???
-	
-	pthread_mutex_lock(&mutex);
-
-	return 0;
+// the job is to receive and return true, if the counter
+// reached ZERO
+bool Job::dec_join_counter() {
+	return attributes->dec_join_counter();
 }
 
 // auxiliary function

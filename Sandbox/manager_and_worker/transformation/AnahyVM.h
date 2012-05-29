@@ -5,9 +5,10 @@
 #include <queue>
 #include <pthread.h>
 #include "Job.h"
+#include "Daemon.h"
+
 using namespace std;
 
-class Daemon;
 class VirtualProcessor;
 class JobGraph;
 class Job;
@@ -40,10 +41,12 @@ public:
 
 
 	// messages to be received from a Daemon
-	static Job* get_job(Job* joined_job);
-	static Job* blocking_get_job();
-	static void post_job(Job* new_job, bool scheduled);
+	static Job* get_job(VPEvent event);
+	static Job* blocking_get_job(Daemon* d);
+	static void post_job(VPEvent event, bool scheduled);
 	static void erase_job(Job* joined_job);
+	static void forward_to_other_daemons(VPEvent event);
+	static void forward_end_of_job(VPEvent event);
 	static void set_main_vp(VirtualProcessor* vp);
 };
 

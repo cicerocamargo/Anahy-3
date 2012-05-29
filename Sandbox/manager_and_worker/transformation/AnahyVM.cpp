@@ -1,5 +1,4 @@
 #include "AnahyVM.h"
-#include "Daemon.h"
 #include "VirtualProcessor.h"
 #include "JobGraph.h"
 #include <cstdio>
@@ -8,8 +7,8 @@
 /* STATIC MEMBERS */
 
 uint AnahyVM::num_daemons = 0;
-uint AnahyVM::daemons_waiting = 0;
 list<Daemon*> AnahyVM::daemons;
+uint AnahyVM::daemons_waiting = 0;
 pthread_mutex_t AnahyVM::mutex;
 pthread_cond_t AnahyVM::cond;
 JobGraph AnahyVM::graph;
@@ -127,53 +126,60 @@ void AnahyVM::set_main_vp(VirtualProcessor* vp) {
 
 // When every VP is blocked on a GetJob,
 // Daemon sends this message to wait for a job.
-Job* AnahyVM::blocking_get_job() {
+Job* AnahyVM::get_job(VPEvent event) {
 	Job* job = NULL;
 	pthread_mutex_lock(&mutex);
-	daemons_waiting++;
-
-	while (true) {
-		if (daemons_waiting == num_daemons) {
-			printf("All daemons_waiting...\n");
-			pthread_cond_broadcast(&cond);
-			break;	
-		}
-
-		job = graph.find_a_ready_job(NULL);
-		if(job) {
-			printf("Daemon resuming...\n");
-			daemons_waiting--;
-			break;
-		}
-		else {	// there's no work but some worker
-				// can still generate work
-			printf("Daemon Blocked! Daemons_waiting = %d\n", daemons_waiting);
-			pthread_cond_wait(&cond, &mutex);
-		}
-	}
+	
+	job = graph.find_a_ready_job(event.get_job());
 
 	pthread_mutex_unlock(&mutex);
 	return job;
 }
 
-Job* AnahyVM::get_job(Job* joined_job) {
-	Job* j;
+Job* AnahyVM::blocking_get_job(Daemon* sender) {
+	Job* job;
 	pthread_mutex_lock(&mutex);
 
-	j = graph.find_a_ready_job(joined_job);
-		
+	job = graph.find_a_ready_job(NULL);
+	
+	if (!job) {
+				
+		daemons_waiting++;
+		if (daemons_waiting == num_daemons) {
+			printf("Daemon %d eh oultimo a bloquear!!\n", sender->get_id());
+			list<Daemon*>::iterator it;
+			for (it = daemons.begin(); it != daemons.end(); ++it) {
+				(*it)->set_should_stop();
+			}
+			daemons_waiting = 0;
+			pthread_cond_broadcast(&cond);
+			
+		}
+		else {
+			printf("Daemon %d bloqueado!\n", sender->get_id());
+			pthread_cond_wait(&cond, &mutex);
+			// someone pushed on the event queue OR
+			// changed the should_stop var of the
+			// Daemon who called this
+		}
+	}
+
 	pthread_mutex_unlock(&mutex);
-	return j;
+
+	return job;
 }
 
 // scheduled indicates if the job was already destined
 // to a VP before daemon posted it in the graph
-void AnahyVM::post_job(Job* new_job, bool scheduled) {
+void AnahyVM::post_job(VPEvent event, bool scheduled) {
 	pthread_mutex_lock(&mutex);
 
-	graph.insert(new_job);
+	graph.insert(event.get_job());
 	if (!scheduled && daemons_waiting) {
-		pthread_cond_signal(&cond);
+		// send this event to another daemon waiting
+		printf("Novo Job no grafo! O evento serah encaminhado para os daemons esperando\n");
+		forward_to_other_daemons(event);
+		pthread_cond_broadcast(&cond);
 	}
 
 	pthread_mutex_unlock(&mutex);
@@ -184,5 +190,27 @@ void AnahyVM::erase_job(Job* joined_job) {
 
 	graph.erase(joined_job);
 
+	pthread_mutex_unlock(&mutex);
+}
+
+
+void AnahyVM::forward_to_other_daemons(VPEvent event){
+	printf("Encaminhando evento %d do Daemon %d para os outros\n",
+		event.get_type(), event.get_origin()->get_id());
+	
+	event.set_fwd_true();
+	list<Daemon*>::iterator it;
+	for (it = daemons.begin(); it != daemons.end(); ++it) {
+		if (*it != event.get_origin()) {
+			(*it)->push_event(event);
+		}
+	}
+	daemons_waiting = 0;
+}
+
+void AnahyVM::forward_end_of_job(VPEvent event) {
+	pthread_mutex_lock(&mutex);
+	forward_to_other_daemons(event);
+	pthread_cond_broadcast(&cond);
 	pthread_mutex_unlock(&mutex);
 }

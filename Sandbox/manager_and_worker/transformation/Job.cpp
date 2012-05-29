@@ -32,11 +32,16 @@ Job::~Job() {
 }
 
 void Job::run() {
+	if (!compare_and_swap_state(running, running)) {
+		printf("Alguem esta executando um job sem alterar seu estado...\n");
+		abort();
+	}
+
     void* temp = (function)(data);
     retval = (temp ? temp : NULL);
     //compare_and_swap_state(running, finished);
 
-    if (compare_and_swap_state(running, finished)) {
+    if (compare_and_swap_state(running, finished) == false) {
 		printf("deu zebra AFU!!!!!\n");
 		abort();
 	}

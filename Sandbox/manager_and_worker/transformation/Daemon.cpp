@@ -2,7 +2,6 @@
 #include "AnahyVM.h"
 #include "Job.h"
 #include "VirtualProcessor.h"
-//#include "VPEvent.h"
 #include <cstdio>
 #include <cstdlib>
 
@@ -15,16 +14,15 @@ void* Daemon::run_daemon(void* arg) {
 }
 
 void Daemon::answer_oldest_vp_waiting(Job* job) {
-	VPEvent* event;
+	// job's state has already been set to running
 	VirtualProcessor* vp;
 
-	event = vps_waiting.front();
+	VPEvent event = vps_waiting.front();
 	vps_waiting.pop_front();
-	vp = event->get_sender();
+	vp = event.get_sender();
 	vp->set_current_job(job);	// send a NULL job to
 								// break VP loop
 	vp->resume();
-	delete event;
 }
 
 void Daemon::start_my_vps() {
@@ -51,7 +49,52 @@ void Daemon::stop_my_vps() {
 }
 
 void Daemon::run() {
-	VPEvent* event;
+	should_stop = false;
+
+	start_my_vps();
+
+	pthread_mutex_lock(&mutex);
+	while (true) {
+		if (event_queue.empty()) {
+			if (vps_waiting.size() == num_vps) {
+				// all vps are waiting
+				pthread_mutex_unlock(&mutex);
+
+				Job* j = AnahyVM::blocking_get_job(this);
+
+				if (should_stop) {
+					while (!vps_waiting.empty()) {
+						answer_oldest_vp_waiting(NULL);
+					}
+					break;
+				}
+
+				if (j) {
+					answer_oldest_vp_waiting(j);
+				}
+
+				pthread_mutex_lock(&mutex);
+			}
+			else {
+				pthread_cond_wait(&event_cond, &mutex);
+			}
+		}
+		else {
+			VPEvent event = event_queue.front();
+			event_queue.pop();
+
+			pthread_mutex_unlock(&mutex);
+			handle_event(event);
+
+			pthread_mutex_lock(&mutex);
+		}
+	}
+
+	stop_my_vps();
+}
+
+/*void Daemon::run() {
+	VPEvent event;
 	Job* job;
 
 	start_my_vps();
@@ -93,88 +136,91 @@ void Daemon::run() {
 	}
 
 	stop_my_vps();
-}
+}*/
 
-void Daemon::handle_get_job(VPEvent* event) {
+void Daemon::handle_get_job(VPEvent event) {
 	VirtualProcessor* vp;
 	Job* job;
-	VPEvent* unhandled;
 
 	log << "GetJob event received from VP "
-		<< event->get_sender()->get_id() << " ... ";
+		<< event.get_sender()->get_id() << " ... ";
 
-	job = AnahyVM::get_job(event->get_job());
+	job = AnahyVM::get_job(event);
 	if (!job) {
 		log << "No job. VP is gonna wait.\n";
-		event->get_sender()->say("waiting...");
+		event.get_sender()->say("waiting...");
 		vps_waiting.push_back(event);	
 	}
 	else {
-		VirtualProcessor* vp = event->get_sender();
+		// here job's state is running
+		VirtualProcessor* vp = event.get_sender();
 		vp->set_current_job(job);
 		vp->resume();
-		log << "Job assigned!\n";
-		delete event;				
+		log << "Job assigned!\n";				
 	}
 }
 
-void Daemon::handle_new_job(VPEvent* event) {
-	VirtualProcessor* vp;
+void Daemon::handle_new_job(VPEvent event) {
 	Job* job;
-	VPEvent* unhandled;
 
+	if (event.get_fwd()) printf("Daemon %d recebeu um New Job FWD!\n", id);
 	log << "NewJob event received from VP "
-		<< event->get_sender()->get_id() << " ... ";
+		<< event.get_sender()->get_id() << " ... ";
 
-	if (vps_waiting.empty()) {
-		AnahyVM::post_job(event->get_job(), false);
-		log << "Job posted.\n";
-		delete event;
+	job = event.get_job();
+	if (!vps_waiting.empty() && job->compare_and_swap_state(ready, running)) {
+		if (event.get_fwd() == false) {
+			AnahyVM::post_job(event, true);
+		}
+		answer_oldest_vp_waiting(job);
 	}
 	else {
-		AnahyVM::post_job(event->get_job(), true);
-		unhandled = vps_waiting.front();
-		vps_waiting.pop_front();
-		vp = unhandled->get_sender();
-		vp->set_current_job(event->get_job());
-		vp->resume();
-		log << "Bypassing AnahyVM! Job assigned to VP " << vp->get_id() << "\n";
-		delete event;
-		delete unhandled;
+		if (!vps_waiting.empty()) {
+			printf("Daemon %d New Job mas nao conseguiu escalonar\n", id);
+		}
+		if (event.get_fwd() == false) {
+			AnahyVM::post_job(event, false);
+		}
+		log << "Job posted.\n";
 	}
 }
 
-void Daemon::handle_end_of_job(VPEvent* event) {
+void Daemon::handle_end_of_job(VPEvent event) {
 	VirtualProcessor* vp;
-	Job* job;
-	VPEvent* unhandled;
+	Job* job = event.get_job();
+
+	if (event.get_fwd()) {
+		printf("Daemon %d recebeu um End Of Job FWD!\n", id);
+	}
 
 	log << "EndOfJob event received from VP "
-		<< event->get_sender()->get_id() << "\n";
+		<< event.get_sender()->get_id() << "\n";
 
-	list<VPEvent*>::iterator it;
-	for (it = vps_waiting.begin(); it != vps_waiting.end(); ++it) {
-		if ((*it)->get_job() == event->get_job()) {
-			// found a VP waiting for the job that just ended !!
-			vp = (*it)->get_sender();
-			it = vps_waiting.erase(it);
-			break;
-		}
+	if (event.get_fwd() == false) {
+		AnahyVM::forward_end_of_job(event);
 	}
 
-	vp->resume();
+	list<VPEvent>::iterator it;
+	for (it = vps_waiting.begin(); it != vps_waiting.end(); ++it) {
+		if ((*it).get_job() == job) {
+			// found a VP waiting for the job that just ended !!
+			vp = (*it).get_sender();
+			it = vps_waiting.erase(it);
+			vp->resume();
+		}
+	}	
 }
 
-void Daemon::handle_destroy_job(VPEvent* event) {
+void Daemon::handle_destroy_job(VPEvent event) {
 	log << "DestroyJob event received from VP "
-		<< event->get_sender()->get_id() << "\n";
+		<< event.get_sender()->get_id() << "\n";
 
-	AnahyVM::erase_job(event->get_job());
+	AnahyVM::erase_job(event.get_job());
 }
 
-void Daemon::handle_event(VPEvent* event) {
+void Daemon::handle_event(VPEvent event) {
 
-	switch (event->get_type()) {
+	switch (event.get_type()) {
 		case GetJob:
 			handle_get_job(event);
 			break;
@@ -187,6 +233,9 @@ void Daemon::handle_event(VPEvent* event) {
 		case DestroyJob:
 			handle_destroy_job(event);
 			break;
+		case EndOfProgram:
+			should_stop = true;
+			break;
 		default:
 			log << "Unknown event...\n";
 			fprintf(stderr, "Unknown event...\n");
@@ -196,7 +245,6 @@ void Daemon::handle_event(VPEvent* event) {
 
 Daemon::Daemon(int n_vps) : num_vps(n_vps) {
 	id = instances++;
-	stop_signal = false;
 
 	char file_name[20];
 	sprintf(file_name, "logs/Daemon%d.log", id);
@@ -222,7 +270,7 @@ Daemon::~Daemon() {
 	log.close();
 }
 
-void Daemon::push_new_event(VPEvent* event) {
+void Daemon::push_event(VPEvent event) {
 	pthread_mutex_lock(&mutex);
 	event_queue.push(event);
 	pthread_cond_signal(&event_cond); // wake daemon
@@ -231,23 +279,27 @@ void Daemon::push_new_event(VPEvent* event) {
 
 // called from a vp thread
 void Daemon::get_job(VirtualProcessor* sender, Job* job) {
-	push_new_event(new VPEvent(GetJob, sender, job));
+	VPEvent e(GetJob, sender, this, job);
+	push_event(e);
 	sender->block(); // block vp thread
 }
 
 // called from a vp thread
 void Daemon::new_job(VirtualProcessor* sender, Job* job) {
-	push_new_event(new VPEvent(NewJob, sender, job));
+	VPEvent e(NewJob, sender, this, job);
+	push_event(e);
 }
 
 // called from a vp thread
 void Daemon::end_of_job(VirtualProcessor* sender, Job* job) {
-	push_new_event(new VPEvent(EndOfJob, sender, job));
+	VPEvent e(EndOfJob, sender, this, job);
+	push_event(e);
 }
 
 // called from a vp thread
 void Daemon::destroy_job(VirtualProcessor* sender, Job* job) {
-	push_new_event(new VPEvent(DestroyJob, sender, job));
+	VPEvent e(DestroyJob, sender, this, job);
+	push_event(e);
 }
 
 // called from AnahyVM

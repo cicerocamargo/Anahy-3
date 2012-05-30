@@ -18,7 +18,6 @@ class VirtualProcessor {
 								// got in 'static get_current_vp' from API
 	
 	uint id; // a unique id for this VP
-	char* tabs; // for logging
 	ulong job_counter; // the number of jobs created by this VP
 	Job* current_job; // the job that is running at the moment
 
@@ -46,8 +45,7 @@ public:
 	VirtualProcessor(Daemon* m);
 	~VirtualProcessor();
 
-	void run(); // called from call_vp_run
-				// main VP loop
+	void run(); // called from call_vp_run (begins the VP loop)
 
 	// two class methods to initialize and destroy the pthread_key
 	// they should be called once, before any VP is created and after any VP is destroyed
@@ -71,8 +69,6 @@ public:
 	void block(); // from my thread
 	void resume();
 	
-	void say(const char* str); // for log messages
-
 	/* getters and setters */
 	Job* get_current_job() const;
 	void set_current_job(Job* new_value);

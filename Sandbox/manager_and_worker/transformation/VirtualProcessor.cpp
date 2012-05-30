@@ -29,15 +29,11 @@ void VirtualProcessor::suspend_current_job_and_try_to_help(Job* joined) {
 
 	if (current_job != context_stack.top()) { // daemon updated my current job
 		current_job->run();
-		/*if (!current_job->compare_and_swap_state(running, finished)) {
-			printf("deu zebra no VP::...help()!!!\n");
-			abort();
-		}*/
 		daemon->end_of_job(this, current_job); // notify daemon
 		current_job = context_stack.top(); // restore stacked context
 	}
 	
-	// when daemon don't change the current job and resume me
+	// here, if daemon didn't change the current job and resumed me
 	// (so I got here without executing the IF statement)
 	// means that 'joined' got finished before a ready job was available
 	
@@ -49,20 +45,14 @@ void VirtualProcessor::suspend_current_job_and_try_to_help(Job* joined) {
 void VirtualProcessor::suspend_current_job_and_run_another(Job* another) {
 	context_stack.push(current_job); // save context
 	current_job = another; // update current_job
-	
+
 	current_job->run();
-	/*if (!current_job->compare_and_swap_state(running, finished)) {
-		printf("deu zebra no VP::...another()!!!\n");
-		abort();
-	}*/
 	daemon->end_of_job(this, current_job); // notify daemon
-	
+
 	current_job = context_stack.top(); // restore stacked context
 	context_stack.pop();
 	
 }
-
-
 
 /* PUBLIC */
 
@@ -72,22 +62,12 @@ VirtualProcessor::VirtualProcessor(Daemon* m) : daemon(m) {
 	current_job = NULL;
 	job_counter = 0;
 
-	// initializing my tabs string
-	int i, num_tabs = id*2;
-	tabs = (char*) malloc((num_tabs+1)*sizeof(char));
-	for (i = 0; i < num_tabs; ++i) {
-		tabs[i] = '\t';
-	}
-	tabs[i] = '\0';
-
 	pthread_mutex_init(&mutex, NULL);
 	pthread_mutex_lock(&mutex);
 }
 
 // called from Daemon Thread
 VirtualProcessor::~VirtualProcessor()  {
-	puts("VirtualProcessor object deleted!");
-	free(tabs);
 	pthread_mutex_unlock(&mutex);
 	pthread_mutex_destroy(&mutex);
 }
@@ -98,16 +78,10 @@ void VirtualProcessor::run() {
 		daemon->get_job(this, NULL);
 		
 		if (!current_job) {
-			say("going home.");
 			break;
 		}
 
-		say("running");
 		current_job->run();
-		/*if (!current_job->compare_and_swap_state(running, finished)) {
-			printf("deu zebra no VP::run()!!!\n");
-			abort();
-		}*/
 		daemon->end_of_job(this, current_job);
 		current_job = NULL;
 	}
@@ -140,7 +114,6 @@ JobHandle VirtualProcessor::create_new_job(pfunc function, void* args,
 
 	if (attr) {
 		if (!attr->get_initialized()) {
-			//sprintf(stderr, "job attributes must be initialized\n");
 			attr = new JobAttributes();
 		}
 	} else {
@@ -156,27 +129,27 @@ JobHandle VirtualProcessor::create_new_job(pfunc function, void* args,
 }
 
 void* VirtualProcessor::join_job(JobHandle handle) {
+	Job* joined = handle.pointer;
 	while (true) {
-		if (handle.pointer->compare_and_swap_state(ready, running)) {
+		if (joined->compare_and_swap_state(ready, running)) {
 			// we are going to run the joined job... Hurray !!
-			suspend_current_job_and_run_another(handle.pointer);
+			suspend_current_job_and_run_another(joined);
 			break;
 		}
 		else {
-			if (handle.pointer->compare_and_swap_state(finished, finished)) {
+			if (joined->compare_and_swap_state(finished, finished)) {
 				break;
 			}
 			else {
-				suspend_current_job_and_try_to_help(handle.pointer);
+				suspend_current_job_and_try_to_help(joined);
 			}
 		}
 	}
 
-	if (handle.pointer->dec_join_counter()) {
-		//printf("\t\t\t\t\t\t\t\t\t\t\t\tAQUI!\n");
+	if (joined->dec_join_counter()) {
 		daemon->destroy_job(this, handle.pointer);
 	}
-	return handle.pointer->get_retval();
+	return joined->get_retval();
 }
 
 // called from Daemon Thread
@@ -184,7 +157,6 @@ void VirtualProcessor::start() {
 	// call this->run() in a new thread,
 	// and put this in the thread specific memory
 	pthread_create(&thread, NULL, call_vp_run, this);
-	printf("Starting a VP %d on thread (%lu).\n", id, (long) thread);
 }
 
 // called from Daemon Thread
@@ -201,16 +173,6 @@ void VirtualProcessor::block() {
 void VirtualProcessor::resume() {
 	pthread_mutex_unlock(&mutex);	// unblock this vp's thread
 }
-
-void VirtualProcessor::say(const char* str) {
-	printf("%sVP %d is %s ", tabs, id, str);
-	if (current_job) {
-		current_job->get_id().display();
-	}
-	printf("\n");
-}
-
-// this is called from a Daemon thread
 
 /* getters and setters */
 

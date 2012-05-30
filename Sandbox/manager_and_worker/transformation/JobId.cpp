@@ -22,6 +22,7 @@ bool JobId::operator==(const JobId& id) const {
  	return (vp_id == id.vp_id && serial_number == id.serial_number);
 }
 
+// display a job id
 void JobId::display() {
 	printf("vp%djob%lu", vp_id, serial_number);
 }

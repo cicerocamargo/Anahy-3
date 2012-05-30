@@ -32,19 +32,9 @@ Job::~Job() {
 }
 
 void Job::run() {
-	if (!compare_and_swap_state(running, running)) {
-		printf("Alguem esta executando um job sem alterar seu estado...\n");
-		abort();
-	}
-
     void* temp = (function)(data);
     retval = (temp ? temp : NULL);
-    //compare_and_swap_state(running, finished);
-
-    if (compare_and_swap_state(running, finished) == false) {
-		printf("deu zebra AFU!!!!!\n");
-		abort();
-	}
+    compare_and_swap_state(running, finished);
 }
 
 // the return value indicates operation's success (true) or failure
@@ -62,44 +52,9 @@ bool Job::dec_join_counter() {
 void Job::remove_child(Job* child) {
 	pthread_mutex_lock(&mutex);
 
-	if (children.find(child) == children.end()) {
-		printf("Mas por que?\n");
-	}
-	//children.erase(child);
-
+	// IMPLEMENT!
+	
 	pthread_mutex_unlock(&mutex);
-}
-
-// auxiliary function
-void print_tabs(int num_tabs) {
-	for (uint i = 0; i < num_tabs; i++) {
-		printf("\t");
-	}
-}
-
-void Job::display(int num_tabs) {
-	print_tabs(num_tabs);
-	printf("Job: ");
-	id.display();
-	printf("\n");
-	if (parent) {
-		print_tabs(num_tabs);
-		printf("My Parent: ");
-		(parent->get_id()).display();
-		printf("\n");
-	}
-	print_tabs(num_tabs);
-	printf("Creator: VP%u\n", creator->get_id());
-	print_tabs(num_tabs);
-	printf("State: %d\n", state);
-
-	if (!children.empty()) {
-		set<Job*>::iterator it;
-		printf("My children:\n");
-		for (it = children.begin(); it != children.end(); it++) {
-			(*it)->display(num_tabs+1);
-		}
-	}
 }
 
 // getters and setters
@@ -130,4 +85,37 @@ JobState Job::get_state() const {
 
 JobAttributes* Job::get_attributes() const {
 	return attributes;
+}
+
+// auxiliary function
+void print_tabs(int num_tabs) {
+	for (uint i = 0; i < num_tabs; i++) {
+		printf("\t");
+	}
+}
+
+// display job info
+void Job::display(int num_tabs) {
+	print_tabs(num_tabs);
+	printf("Job: ");
+	id.display();
+	printf("\n");
+	if (parent) {
+		print_tabs(num_tabs);
+		printf("My Parent: ");
+		(parent->get_id()).display();
+		printf("\n");
+	}
+	print_tabs(num_tabs);
+	printf("Creator: VP%u\n", creator->get_id());
+	print_tabs(num_tabs);
+	printf("State: %d\n", state);
+
+	if (!children.empty()) {
+		set<Job*>::iterator it;
+		printf("My children:\n");
+		for (it = children.begin(); it != children.end(); it++) {
+			(*it)->display(num_tabs+1);
+		}
+	}
 }

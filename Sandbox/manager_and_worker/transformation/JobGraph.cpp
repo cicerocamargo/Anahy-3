@@ -41,10 +41,7 @@ void JobGraph::erase(Job* job) {
 		job_map.erase(job->get_id());
 	}
 
-	//delete job;
-	printf("Job ");
-	id.display();
-	printf(" nao existe mais!\n");
+	// delete job;
 }
 
 Job* JobGraph::find_a_ready_job(Job* starting_job) {

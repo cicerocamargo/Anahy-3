@@ -37,7 +37,6 @@ void AnahyVM::stop_vm() {
 
 	for (it = daemons.begin(); it != daemons.end(); ++it) {
 		(*it)->stop(); // stop daemons (who stop their VPs)
-		printf("Thread of daemon %d joined!\n", (*it)->get_id());
 	}
 }
 
@@ -85,32 +84,17 @@ void AnahyVM::create(JobHandle* handle, JobAttributes* attr,
 	pfunc function, void* args) {
 
 	VirtualProcessor* vp = VirtualProcessor::get_current_vp();
-
-	if(!vp) {
-		puts("erro!");
-		exit(1);
-	}
-	else {
-		printf("Create from VP %u\n", vp->get_id());
-		*handle = vp->create_new_job(function, args, attr);
-	}
+	*handle = vp->create_new_job(function, args, attr);
+	
 }
 
 void AnahyVM::join(JobHandle handle, void** result) {
 	VirtualProcessor* vp = VirtualProcessor::get_current_vp();
 
-	if(!vp) {
-		puts("erro!");
-		exit(1);
-	}
-	else {
-		printf("Join from VP %u\n", vp->get_id());
-		
-		void* temp = vp->join_job(handle);
+	void* temp = vp->join_job(handle);
 
-		if(result) {
-			*result = temp;
-		}
+	if(result) {
+		*result = temp;
 	}
 }
 
@@ -146,7 +130,6 @@ Job* AnahyVM::blocking_get_job(Daemon* sender) {
 				
 		daemons_waiting++;
 		if (daemons_waiting == num_daemons) {
-			printf("Daemon %d eh oultimo a bloquear!!\n", sender->get_id());
 			list<Daemon*>::iterator it;
 			for (it = daemons.begin(); it != daemons.end(); ++it) {
 				(*it)->set_should_stop();
@@ -156,7 +139,6 @@ Job* AnahyVM::blocking_get_job(Daemon* sender) {
 			
 		}
 		else {
-			printf("Daemon %d bloqueado!\n", sender->get_id());
 			pthread_cond_wait(&cond, &mutex);
 			// someone pushed on the event queue OR
 			// changed the should_stop var of the
@@ -177,7 +159,6 @@ void AnahyVM::post_job(VPEvent event, bool scheduled) {
 	graph.insert(event.get_job());
 	if (!scheduled && daemons_waiting) {
 		// send this event to another daemon waiting
-		printf("Novo Job no grafo! O evento serah encaminhado para os daemons esperando\n");
 		forward_to_other_daemons(event);
 		pthread_cond_broadcast(&cond);
 	}
@@ -195,9 +176,6 @@ void AnahyVM::erase_job(Job* joined_job) {
 
 
 void AnahyVM::forward_to_other_daemons(VPEvent event){
-	printf("Encaminhando evento %d do Daemon %d para os outros\n",
-		event.get_type(), event.get_origin()->get_id());
-	
 	event.set_fwd_true();
 	list<Daemon*>::iterator it;
 	for (it = daemons.begin(); it != daemons.end(); ++it) {

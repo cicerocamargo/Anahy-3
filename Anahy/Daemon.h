@@ -1,63 +1,90 @@
 #ifndef DAEMON_H
 #define DAEMON_H
 
-#include "definitions.h"
+#include <pthread.h>
 #include <queue>
 #include <list>
-#include <pthread.h>
+#include <vector>
+#include <fstream>
 
 using namespace std;
 
-class AnahyVM;
-class VPEvent;
+class Job;
+class Daemon;
 class VirtualProcessor;
 
+enum VPEventType { GetJob, NewJob, EndOfJob, DestroyJob,
+		EndOfProgram };
+
+class VPEvent {
+	VPEventType type;
+	VirtualProcessor* sender;
+	Daemon* origin;
+	Job* job;
+	bool fwd;
+	
+public:
+	inline VPEvent(VPEventType _type, VirtualProcessor* _sender,
+			Daemon* _origin, Job* _job, bool _fwd=false)
+	:	type(_type), sender(_sender),
+		origin(_origin), job(_job), fwd(_fwd) {}
+
+	inline VPEventType get_type() { return type; }
+	inline VirtualProcessor* get_sender() { return sender; }
+	inline Daemon* get_origin() { return origin; }
+	inline Job* get_job() { return job; }
+	inline bool get_fwd() { return fwd; }
+	inline void set_fwd_true() { fwd = true; }
+};
+
+
 class Daemon {
-	static uint instance_counter;	// tracks how many Daemon objects
-									// have been created so far
-	
-	uint id; // a unique id for this Daemon
-	pthread_t thread; // the thread that will run this daemon
+	static int instances;
+	int id;
 
-	uint num_processors; // number of processors to be launched from this daemon
-	uint processors_waiting;
-	list<VirtualProcessor*> processors;
+	fstream log;
+	bool should_stop;
 
-	// structures to store and
-	// safely handle VP events
-	queue<VPEvent*> event_queue;
-	list<VPEvent*> suspended_events;
-	pthread_mutex_t queue_mutex;
-	pthread_cond_t event_condition;
+	pthread_t thread;
+	pthread_mutex_t mutex;
+	pthread_cond_t event_cond;
 	
+	int num_vps;
+	vector<VirtualProcessor*> vps;
+	queue<VPEvent> event_queue;
+	list<VPEvent> vps_waiting;
 	
-	AnahyVM* anahy; // a pointer to the VM object
+	void start_my_vps();
+	void stop_my_vps();
+	void handle_event(VPEvent event);
+	void handle_get_job(VPEvent event);
+	void handle_new_job(VPEvent event);
+	void handle_end_of_job(VPEvent event);
+	void handle_destroy_job(VPEvent event);
 	
-	bool anahy_stop; 	// signal that AnahyVM changes
-						// when daemon should to stop
-	
-	// some private methods
-	static void* call_daemon_run(void* daemon_obj);
-	void run();
-	void push_vp_event(VPEvent* event);
-	void handle_vp_event(VPEvent* sched_op);
+	void answer_oldest_vp_waiting(Job* job);
+
+	static void* run_daemon(void* arg);
+
+	void run(); // main Daemon loop
 
 public:
-	Daemon(uint _num_processors); // default constructor
-	virtual ~Daemon();
+	
+	Daemon(int vps);
+	~Daemon();
 
-	// messages to be received from anahy
+	// messages received from a vp
+	void get_job(VirtualProcessor* sender, Job* job);
+	void new_job(VirtualProcessor* sender, Job* job);
+	void end_of_job(VirtualProcessor* sender, Job* job);
+	void destroy_job(VirtualProcessor* sender, Job* job);
+
+	// messages received from AnahyVM
+	void push_event(VPEvent event);
+	inline int get_id() { return id; }
+	inline void set_should_stop() { should_stop = true; }
 	void start();
 	void stop();
-
-	// messages to be received from a VP
-	void new_job(VirtualProcessor* sender, Job* job);	// sender created Job 'job', and I
-														// should insert in Anahy's graph
-	void get_job(VirtualProcessor* sender, Job* job);	// sender wants a Ready Job that 
-														// should be searched apart from 'job'
-	void end_of_job(VirtualProcessor* sender, Job* job); // sender finished Job 'job'
-	void destroy_job(VirtualProcessor* sender, Job* job);	// sender did the last join on
-															// Job 'job'
 };
 
 #endif

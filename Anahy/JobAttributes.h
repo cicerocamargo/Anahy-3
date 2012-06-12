@@ -17,7 +17,8 @@ class JobAttributes {
 
 public:
 	JobAttributes();
-	~JobAttributes();
+
+	bool dec_join_counter();
 
 	//getters and setters
 	void set_num_joins(int _num_joins);

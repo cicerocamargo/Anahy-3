@@ -1,101 +1,194 @@
 #include "AnahyVM.h"
+#include "VirtualProcessor.h"
+#include "JobGraph.h"
 #include <cstdio>
 #include <cstdlib>
 
-/* STATIC MEMBERS' ITIALIZATIONS */
-AnahyVM* AnahyVM::unique_instance = NULL;
+/* STATIC MEMBERS */
+
+uint AnahyVM::num_daemons = 0;
+list<Daemon*> AnahyVM::daemons;
+uint AnahyVM::daemons_waiting = 0;
+pthread_mutex_t AnahyVM::mutex;
+pthread_cond_t AnahyVM::cond;
 JobGraph AnahyVM::graph;
+VirtualProcessor* AnahyVM::main_vp = 0;
 
 /* PRIVATE METHODS */
-AnahyVM::AnahyVM(uint _num_daemons, uint _vps_per_daemon,
-	uint _scheduling_function, uint mode_operation) :
-	num_daemons(_num_daemons) , vps_per_daemon(_vps_per_daemon)
-{
-	graph = new JobGraph();
 
-	for (uint i = 0; i < num_daemons; ++i) {
+void AnahyVM::start_vm() {
+	list<Daemon*>::iterator it;
+
+	for (it = daemons.begin(); it != daemons.end(); ++it) {
+		(*it)->start(); // start daemons
+	}
+	pthread_mutex_lock(&mutex);	// wait for VP 0 to be set
+								// by daemon 0
+	VirtualProcessor::associate_vp_with_current_thread((void*) main_vp);
+	pthread_mutex_unlock(&mutex);
+}
+
+void AnahyVM::stop_vm() {
+	list<Daemon*>::iterator it;
+
+	main_vp->run(); // this allows the main VP to help the execution of
+					// remaining jobs and the Daemon to know that the
+					// main VP is also idle when there's no work
+
+	for (it = daemons.begin(); it != daemons.end(); ++it) {
+		(*it)->stop(); // stop daemons (who stop their VPs)
+	}
+}
+
+
+/* PUBLIC METHODS */
+
+// messages received from the API
+
+void AnahyVM::init(int _num_daemons, int vps_per_daemon) {
+	num_daemons = _num_daemons;
+	VirtualProcessor::init_pthread_key();
+
+	for (int i = 0; i < num_daemons; ++i) {
+		// create daemon objects
 		daemons.push_back(new Daemon(vps_per_daemon));
 	}
+
+	//pthread_cond_init(&cond, NULL);
+	pthread_mutex_init(&mutex, NULL);
+	pthread_mutex_lock(&mutex); // since the main thread has the VM's lock,
+								// it can block itself in the next call
+								// to wait for the VP 0 to be associated
+								// with the main thread
+
+	start_vm();
 }
 
-AnahyVM::~AnahyVM() {
+void AnahyVM::terminate() {
+	stop_vm();
+	
 	list<Daemon*>::iterator it;
-	for (it = daemons.begin(); it != daemons.end(); it++) {
-		delete (*it);
+
+	for (it = daemons.begin(); it != daemons.end(); ++it) {
+		delete *it; // destroy daemon
 	}
 	daemons.clear();
+
+	//pthread_cond_destroy(&cond);
+	//pthread_mutex_destroy(&mutex);
+	VirtualProcessor::delete_pthread_key();
 }
 
-void AnahyVM::start() {
-	list<Daemon*>::iterator it;
-	for (it = daemons.begin(); it != daemons.end(); it++) {
-		(*it)->start();
-	}
-}
 
-void AnahyVM::stop() {
-	list<Daemon*>::iterator it;
-	for (it = daemons.begin(); it != daemons.end(); it++) {
-		(*it)->stop();
-	}
-}
+void AnahyVM::create(JobHandle* handle, JobAttributes* attr,
+	pfunc function, void* args) {
 
-/* PUBLIC METHODS' DEFINITIONS */
-
-AnahyVM* AnahyVM::get_instance_handler() {
-	return unique_instance;
-}
-
-// messages to be received directly from the API
-void AnahyVM::boot(uint num_daemons, uint vps_per_daemon, uint scheduling_function, uint mode_operation) {
-	puts("Booting AnahyVM...");
-
-	VirtualProcessor::init_pthread_key(); // before anything
-	if (!unique_instance) {
-		// create AnahyVM, who creates Daemons, who creates VPs
-		unique_instance = new AnahyVM(num_daemons, vps_per_daemon,
-			scheduling_function, mode_operation);
-	}
-	unique_instance->start(); // start VM!
+	VirtualProcessor* vp = VirtualProcessor::get_current_vp();
+	*handle = vp->create_new_job(function, args, attr);
 	
-	puts("Done!");
 }
 
-void AnahyVM::shut_down() {
-	puts("Shuting AnahyVM down...");
-	unique_instance->stop(); // stop VM ...
-	delete unique_instance;
-	VirtualProcessor::delete_pthread_key(); // after anything
+void AnahyVM::join(JobHandle handle, void** result) {
+	VirtualProcessor* vp = VirtualProcessor::get_current_vp();
+
+	void* temp = vp->join_job(handle);
+
+	if(result) {
+		*result = temp;
+	}
 }
 
-// MESSAGES TO BE RECEIVED FROM A DAEMON
+// messages received from a daemon threads
 
-// insert a new job in the graph
-void AnahyVM::insert_job(Job* job) {
-
-	graph.insert(job);
+// Daemon 0 call this method to signal the main
+// thread that VP 0 is already associated with
+// the main thread (with //pthread_setspecific)
+void AnahyVM::set_main_vp(VirtualProcessor* vp) {
+	main_vp = vp;
+	pthread_mutex_unlock(&mutex);
 }
 
-// removes a job from the graph
-void AnahyVM::remove_job(Job* job) {
-	graph.erase(job);
+// When every VP is blocked on a GetJob,
+// Daemon sends this message to wait for a job.
+Job* AnahyVM::get_job(VPEvent event) {
+	Job* job = NULL;
+	//pthread_mutex_lock(&mutex);
+	
+	job = graph.find_a_ready_job(event.get_job());
+
+	//pthread_mutex_unlock(&mutex);
+	return job;
 }
 
-// uses the scheduling function to find
-// the most suitable ready job in the graph
-Job* AnahyVM::find_a_ready_job(Job* job) {
-	graph.find_a_ready_job(job);
+Job* AnahyVM::blocking_get_job(Daemon* sender) {
+	Job* job;
+	//pthread_mutex_lock(&mutex);
+
+	job = graph.find_a_ready_job(NULL);
+	
+	if (!job) {
+				
+		daemons_waiting++;
+		if (daemons_waiting == num_daemons) {
+			list<Daemon*>::iterator it;
+			for (it = daemons.begin(); it != daemons.end(); ++it) {
+				(*it)->set_should_stop();
+			}
+			daemons_waiting = 0;
+			//pthread_cond_broadcast(&cond);
+			
+		}
+		else {
+			//pthread_cond_wait(&cond, &mutex);
+			// someone pushed on the event queue OR
+			// changed the should_stop var of the
+			// Daemon who called this
+		}
+	}
+
+	//pthread_mutex_unlock(&mutex);
+
+	return job;
+}
+
+// scheduled indicates if the job was already destined
+// to a VP before daemon posted it in the graph
+void AnahyVM::post_job(VPEvent event, bool scheduled) {
+	//pthread_mutex_lock(&mutex);
+
+	graph.insert(event.get_job());
+	if (!scheduled && daemons_waiting) {
+		// send this event to another daemon waiting
+		forward_to_other_daemons(event);
+		//pthread_cond_broadcast(&cond);
+	}
+
+	//pthread_mutex_unlock(&mutex);
+}
+
+void AnahyVM::erase_job(Job* joined_job) {
+	//pthread_mutex_lock(&mutex);
+
+	graph.erase(joined_job);
+
+	//pthread_mutex_unlock(&mutex);
 }
 
 
-void AnahyVM::create_dummy_job(pfunc func, void* args) {
-	// JobId id(666,999);
-	// Job* parent = NULL;
-	// JobAttributes attr = 0;
-	// VirtualProcessor* vp = NULL;
+void AnahyVM::forward_to_other_daemons(VPEvent event){
+	event.set_fwd_true();
+	list<Daemon*>::iterator it;
+	for (it = daemons.begin(); it != daemons.end(); ++it) {
+		if (*it != event.get_origin()) {
+			(*it)->push_event(event);
+		}
+	}
+	daemons_waiting = 0;
+}
 
-	// Job* j = new Job(id, parent, vp, attr, func, args);
-
-	// root_jobs.push_back(j);
-	// job_map[id] = j;
+void AnahyVM::forward_end_of_job(VPEvent event) {
+	//pthread_mutex_lock(&mutex);
+	forward_to_other_daemons(event);
+	//pthread_cond_broadcast(&cond);
+	//pthread_mutex_unlock(&mutex);
 }

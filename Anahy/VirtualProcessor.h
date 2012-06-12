@@ -1,26 +1,21 @@
-#ifndef VIRTUALPROCESSOR_H
-#define VIRTUALPROCESSOR_H
-
 #include <pthread.h>
-#include <stdlib.h>
 #include <stack>
 #include "definitions.h"
-#include "JobId.h"
-#include "Job.h"
-#include "Daemon.h"
+#include "JobAttributes.h"
 
+using namespace std;
+
+class Daemon;
+class Job;
+class JobHandle;
 
 class VirtualProcessor {
-
-	//tracks how many VP objects have been created 
-	static uint instance_counter;
-
-	/* a key to store an VP object
-	   in and retrieve it from a pthread
-	   is set in 'call_vp_run' and
-	   got in 'static get_current_vp' from API
-	*/
-	static pthread_key_t key;
+	static uint instance_counter;	// tracks how many VP objects
+									// have been created
+	static pthread_key_t key;	// a key to store an VP object
+								// in and retrieve it from a pthread
+								// is set in 'call_vp_run' and
+								// got in 'static get_current_vp' from API
 	
 	uint id; // a unique id for this VP
 	ulong job_counter; // the number of jobs created by this VP
@@ -35,24 +30,22 @@ class VirtualProcessor {
 	pthread_t thread; // my thread
 	pthread_mutex_t mutex; // where I wait for daemon answers
 	
+
 // some private methods
 
-	/* called from 'this->thread'
-	   set thread specific data as this
-	   and call this->run() (vp_obj is 'this')
-	*/
-	static void* call_vp_run(void* vp_obj);
-
-	void run(); // called from call_vp_run
-				// main VP loop
+	static void* call_vp_run(void* vp_obj); // called from 'this->thread'
+											// set thread specific data as this
+											// and call this->run() (vp_obj is 'this')
 
 	void suspend_current_job_and_try_to_help(Job* joined);
 	void suspend_current_job_and_run_another(Job* another);
 
 public:
 
-	VirtualProcessor(Daemon* _daemon);
-	virtual ~VirtualProcessor();
+	VirtualProcessor(Daemon* m);
+	~VirtualProcessor();
+
+	void run(); // called from call_vp_run (begins the VP loop)
 
 	// two class methods to initialize and destroy the pthread_key
 	// they should be called once, before any VP is created and after any VP is destroyed
@@ -60,25 +53,25 @@ public:
 	static void init_pthread_key();
 	static void delete_pthread_key();
 	
-	//just to fill pthread_key_create requirements
-	static void call_vp_destructor(void *vp_obj);
+	static void call_vp_destructor(void *vp_obj);	// just to fill pthread_key_create
+													// requirements
 
-	// messages to be received from a Daemon
-	void start();
-	void stop();
-	void block();
-	void resume();
+	static void associate_vp_with_current_thread(void* vp_obj);
 	
-	// messages to be received from athread API
+	// messages to be received from AnahyVM
 	static VirtualProcessor* get_current_vp(); // class method!
 	JobHandle create_new_job(pfunc function, void* args, JobAttributes* attr);
 	void* join_job(JobHandle handle);
-		
+	
+	// messages to be received from a Daemon
+	void start();
+	void stop();
+	void block(); // from my thread
+	void resume();
+	
 	/* getters and setters */
 	Job* get_current_job() const;
 	void set_current_job(Job* new_value);
 	uint get_id() const;
 	ulong get_job_counter() const;
 };
-
-#endif

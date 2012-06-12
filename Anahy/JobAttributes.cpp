@@ -7,6 +7,11 @@ JobAttributes::JobAttributes() {
 	set_job_cost(0);
 }
 
+bool JobAttributes::dec_join_counter() {
+	if(__sync_bool_compare_and_swap(&num_joins, num_joins, num_joins - 1))
+	return __sync_bool_compare_and_swap(&num_joins, 0, -1);
+}
+
 void JobAttributes::set_num_joins(int _num_joins) {
 	num_joins = _num_joins;
 }

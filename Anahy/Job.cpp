@@ -1,6 +1,7 @@
 #include "Job.h"
 #include "VirtualProcessor.h"
 #include <cstdio>
+#include <cstdlib>
 
 
 // private method
@@ -24,57 +25,36 @@ Job::Job (JobId _id, Job* _parent, VirtualProcessor* _creator,
 	pthread_mutex_init(&mutex, NULL);
 }
 
+Job::~Job() {
+	//delete attributes;
+	// children.clear() e agora Mr M?
+	parent->remove_child(this);
+}
+
 void Job::run() {
     void* temp = (function)(data);
     retval = (temp ? temp : NULL);
+    compare_and_swap_state(running, finished);
+}
+
+// the return value indicates operation's success (true) or failure
+bool Job::compare_and_swap_state(JobState target_value, JobState new_value) {
+	return __sync_bool_compare_and_swap (&state, target_value, new_value);
 }
 
 // drecement atomically the number of joins that
-// the job has to receive and return the value
-int Job::dec_join_counter() {
+// the job is to receive and return true, if the counter
+// reached ZERO
+bool Job::dec_join_counter() {
+	return attributes->dec_join_counter();
+}
+
+void Job::remove_child(Job* child) {
 	pthread_mutex_lock(&mutex);
-	int number_of_joins = attributes->get_num_joins();
-	if(number_of_joins > 0) {
-		number_of_joins--;
-		attributes->set_num_joins(number_of_joins);
-		pthread_mutex_unlock(&mutex);
-		return number_of_joins;
-	}
-	//fprintf(stderr, "number of joins must be greater than 0\n");
+
+	// IMPLEMENT!
+	
 	pthread_mutex_unlock(&mutex);
-	return -1;
-}
-
-// auxiliary function
-void print_tabs(int num_tabs) {
-	for (uint i = 0; i < num_tabs; i++) {
-		printf("\t");
-	}
-}
-
-void Job::display(int num_tabs) {
-	print_tabs(num_tabs);
-	printf("Job: ");
-	id.display();
-	printf("\n");
-	if (parent) {
-		print_tabs(num_tabs);
-		printf("My Parent: ");
-		(parent->get_id()).display();
-		printf("\n");
-	}
-	print_tabs(num_tabs);
-	printf("Creator: VP%u\n", creator->get_id());
-	print_tabs(num_tabs);
-	printf("State: %d\n", state);
-
-	if (!children.empty()) {
-		set<Job*>::iterator it;
-		printf("My children:\n");
-		for (it = children.begin(); it != children.end(); it++) {
-			(*it)->display(num_tabs+1);
-		}
-	}
 }
 
 // getters and setters
@@ -105,4 +85,37 @@ JobState Job::get_state() const {
 
 JobAttributes* Job::get_attributes() const {
 	return attributes;
+}
+
+// auxiliary function
+void print_tabs(int num_tabs) {
+	for (uint i = 0; i < num_tabs; i++) {
+		printf("\t");
+	}
+}
+
+// display job info
+void Job::display(int num_tabs) {
+	print_tabs(num_tabs);
+	printf("Job: ");
+	id.display();
+	printf("\n");
+	if (parent) {
+		print_tabs(num_tabs);
+		printf("My Parent: ");
+		(parent->get_id()).display();
+		printf("\n");
+	}
+	print_tabs(num_tabs);
+	printf("Creator: VP%u\n", creator->get_id());
+	print_tabs(num_tabs);
+	printf("State: %d\n", state);
+
+	if (!children.empty()) {
+		set<Job*>::iterator it;
+		printf("My children:\n");
+		for (it = children.begin(); it != children.end(); it++) {
+			(*it)->display(num_tabs+1);
+		}
+	}
 }

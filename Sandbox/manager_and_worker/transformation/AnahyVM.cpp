@@ -54,7 +54,7 @@ void AnahyVM::init(int _num_daemons, int vps_per_daemon) {
 		daemons.push_back(new Daemon(vps_per_daemon));
 	}
 
-	pthread_cond_init(&cond, NULL);
+	//pthread_cond_init(&cond, NULL);
 	pthread_mutex_init(&mutex, NULL);
 	pthread_mutex_lock(&mutex); // since the main thread has the VM's lock,
 								// it can block itself in the next call
@@ -74,8 +74,8 @@ void AnahyVM::terminate() {
 	}
 	daemons.clear();
 
-	pthread_cond_destroy(&cond);
-	pthread_mutex_destroy(&mutex);
+	//pthread_cond_destroy(&cond);
+	//pthread_mutex_destroy(&mutex);
 	VirtualProcessor::delete_pthread_key();
 }
 
@@ -102,7 +102,7 @@ void AnahyVM::join(JobHandle handle, void** result) {
 
 // Daemon 0 call this method to signal the main
 // thread that VP 0 is already associated with
-// the main thread (with pthread_setspecific)
+// the main thread (with //pthread_setspecific)
 void AnahyVM::set_main_vp(VirtualProcessor* vp) {
 	main_vp = vp;
 	pthread_mutex_unlock(&mutex);
@@ -112,17 +112,17 @@ void AnahyVM::set_main_vp(VirtualProcessor* vp) {
 // Daemon sends this message to wait for a job.
 Job* AnahyVM::get_job(VPEvent event) {
 	Job* job = NULL;
-	pthread_mutex_lock(&mutex);
+	//pthread_mutex_lock(&mutex);
 	
 	job = graph.find_a_ready_job(event.get_job());
 
-	pthread_mutex_unlock(&mutex);
+	//pthread_mutex_unlock(&mutex);
 	return job;
 }
 
 Job* AnahyVM::blocking_get_job(Daemon* sender) {
 	Job* job;
-	pthread_mutex_lock(&mutex);
+	//pthread_mutex_lock(&mutex);
 
 	job = graph.find_a_ready_job(NULL);
 	
@@ -135,18 +135,18 @@ Job* AnahyVM::blocking_get_job(Daemon* sender) {
 				(*it)->set_should_stop();
 			}
 			daemons_waiting = 0;
-			pthread_cond_broadcast(&cond);
+			//pthread_cond_broadcast(&cond);
 			
 		}
 		else {
-			pthread_cond_wait(&cond, &mutex);
+			//pthread_cond_wait(&cond, &mutex);
 			// someone pushed on the event queue OR
 			// changed the should_stop var of the
 			// Daemon who called this
 		}
 	}
 
-	pthread_mutex_unlock(&mutex);
+	//pthread_mutex_unlock(&mutex);
 
 	return job;
 }
@@ -154,24 +154,24 @@ Job* AnahyVM::blocking_get_job(Daemon* sender) {
 // scheduled indicates if the job was already destined
 // to a VP before daemon posted it in the graph
 void AnahyVM::post_job(VPEvent event, bool scheduled) {
-	pthread_mutex_lock(&mutex);
+	//pthread_mutex_lock(&mutex);
 
 	graph.insert(event.get_job());
 	if (!scheduled && daemons_waiting) {
 		// send this event to another daemon waiting
 		forward_to_other_daemons(event);
-		pthread_cond_broadcast(&cond);
+		//pthread_cond_broadcast(&cond);
 	}
 
-	pthread_mutex_unlock(&mutex);
+	//pthread_mutex_unlock(&mutex);
 }
 
 void AnahyVM::erase_job(Job* joined_job) {
-	pthread_mutex_lock(&mutex);
+	//pthread_mutex_lock(&mutex);
 
 	graph.erase(joined_job);
 
-	pthread_mutex_unlock(&mutex);
+	//pthread_mutex_unlock(&mutex);
 }
 
 
@@ -187,8 +187,8 @@ void AnahyVM::forward_to_other_daemons(VPEvent event){
 }
 
 void AnahyVM::forward_end_of_job(VPEvent event) {
-	pthread_mutex_lock(&mutex);
+	//pthread_mutex_lock(&mutex);
 	forward_to_other_daemons(event);
-	pthread_cond_broadcast(&cond);
-	pthread_mutex_unlock(&mutex);
+	//pthread_cond_broadcast(&cond);
+	//pthread_mutex_unlock(&mutex);
 }

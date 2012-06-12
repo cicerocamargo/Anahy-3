@@ -144,10 +144,6 @@ void Daemon::handle_end_of_job(VPEvent event) {
 	}	
 }
 
-void Daemon::handle_destroy_job(VPEvent event) {
-	AnahyVM::erase_job(event.get_job());
-}
-
 void Daemon::handle_event(VPEvent event) {
 
 	switch (event.get_type()) {
@@ -161,7 +157,7 @@ void Daemon::handle_event(VPEvent event) {
 			handle_end_of_job(event);
 			break;
 		case DestroyJob:
-			handle_destroy_job(event);
+			AnahyVM::erase_job(event.get_job());
 			break;
 		default:
 			fprintf(stderr, "Unknown event on Daemon %d\n", id);
@@ -198,31 +194,6 @@ void Daemon::push_event(VPEvent event) {
 	event_queue.push(event);
 	pthread_cond_signal(&event_cond); // wake daemon
 	pthread_mutex_unlock(&mutex);
-}
-
-// called from a vp thread
-void Daemon::get_job(VirtualProcessor* sender, Job* job) {
-	VPEvent e(GetJob, sender, this, job);
-	push_event(e);
-	sender->block(); // block vp thread
-}
-
-// called from a vp thread
-void Daemon::new_job(VirtualProcessor* sender, Job* job) {
-	VPEvent e(NewJob, sender, this, job);
-	push_event(e);
-}
-
-// called from a vp thread
-void Daemon::end_of_job(VirtualProcessor* sender, Job* job) {
-	VPEvent e(EndOfJob, sender, this, job);
-	push_event(e);
-}
-
-// called from a vp thread
-void Daemon::destroy_job(VirtualProcessor* sender, Job* job) {
-	VPEvent e(DestroyJob, sender, this, job);
-	push_event(e);
 }
 
 // called from AnahyVM

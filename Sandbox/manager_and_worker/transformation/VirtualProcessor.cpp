@@ -25,11 +25,16 @@ void* VirtualProcessor::call_vp_run(void* arg) {
 // 'job' was not Finished, so I'll ask daemon for a Ready job related to it
 void VirtualProcessor::suspend_current_job_and_try_to_help(Job* joined) {
 	context_stack.push(current_job); // save context
-	daemon->get_job(this, joined); // ask daemon and wait
+	//daemon->get_job(this, joined); // ask daemon and wait
+	VPEvent event(GetJob, this, daemon, joined);
+	daemon->push_event(event);
+	block();
 
 	if (current_job != context_stack.top()) { // daemon updated my current job
 		current_job->run();
-		daemon->end_of_job(this, current_job); // notify daemon
+		//daemon->end_of_job(this, current_job); // notify daemon
+		VPEvent event(EndOfJob, this, daemon, current_job);
+		daemon->push_event(event);
 		current_job = context_stack.top(); // restore stacked context
 	}
 	
@@ -47,8 +52,9 @@ void VirtualProcessor::suspend_current_job_and_run_another(Job* another) {
 	current_job = another; // update current_job
 
 	current_job->run();
-	daemon->end_of_job(this, current_job); // notify daemon
-
+	//daemon->end_of_job(this, current_job); // notify daemon
+	VPEvent event(EndOfJob, this, daemon, current_job);
+	daemon->push_event(event);
 	current_job = context_stack.top(); // restore stacked context
 	context_stack.pop();
 	
@@ -75,14 +81,19 @@ VirtualProcessor::~VirtualProcessor()  {
 void VirtualProcessor::run() {
 	bool should_create_more_work = false;
 	while (true) {
-		daemon->get_job(this, NULL);
-		
+		//daemon->get_job(this, NULL);
+		VPEvent event(GetJob, this, daemon, NULL);
+		daemon->push_event(event);
+		block();
 		if (!current_job) {
 			break;
 		}
 
 		current_job->run();
-		daemon->end_of_job(this, current_job);
+		//daemon->get_job(this, current_job);
+		VPEvent event(GetJob, this, daemon, current_job);
+		daemon->push_event(event);
+		block();
 		current_job = NULL;
 	}
 }
@@ -121,7 +132,9 @@ JobHandle VirtualProcessor::create_new_job(pfunc function, void* args,
 	}
 
 	Job* job = new Job(job_id, current_job, this, attr, function, args);
-	daemon->new_job(this, job);
+	//daemon->new_job(this, job);
+	VPEvent event(NewJob, this, daemon, job);
+	daemon->push_event(event);
 	JobHandle handle;
 	handle.pointer = job;
 	handle.id = job_id;
@@ -147,7 +160,9 @@ void* VirtualProcessor::join_job(JobHandle handle) {
 	}
 
 	if (joined->dec_join_counter()) {
-		daemon->destroy_job(this, handle.pointer);
+		//daemon->destroy_job(this, handle.pointer);
+		VPEvent event(DestroyJob, this, daemon, handle.pointer);
+		daemon->push_event(event);
 	}
 	return joined->get_retval();
 }

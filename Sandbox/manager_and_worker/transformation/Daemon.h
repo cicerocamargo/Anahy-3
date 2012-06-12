@@ -60,7 +60,6 @@ class Daemon {
 	void handle_get_job(VPEvent event);
 	void handle_new_job(VPEvent event);
 	void handle_end_of_job(VPEvent event);
-	void handle_destroy_job(VPEvent event);
 	
 	void answer_oldest_vp_waiting(Job* job);
 

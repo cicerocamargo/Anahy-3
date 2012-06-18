@@ -1,0 +1,4 @@
+bool Job::dec_join_counter() => INT Job::dec_join_counter();
+void Job::remove_child(Job* child) => IMPLEMENTAR!
+void JobGraph::erase(Job* job) e Job::~Job()
+VirtualProcessor::create_new_job(...) => questão dos atributos nulos

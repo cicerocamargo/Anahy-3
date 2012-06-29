@@ -3,7 +3,6 @@
 #include <cstdio>
 #include <cstdlib>
 
-
 // private method
 void Job::add_child(Job* child) {
 	children.insert(child);
@@ -22,13 +21,14 @@ Job::Job (JobId _id, Job* _parent, VirtualProcessor* _creator,
         parent->add_child(this);
     }
 	state = ready;
-	pthread_mutex_init(&mutex, NULL);
+	//pthread_mutex_init(&mutex, NULL);
 }
 
 Job::~Job() {
 	//delete attributes;
 	// children.clear() e agora Mr M?
-	parent->remove_child(this);
+	if(parent)
+		parent->remove_child(this);
 }
 
 void Job::run() {
@@ -77,6 +77,10 @@ Job* Job::get_parent() const {
 
 VirtualProcessor* Job::get_creator() const {
     return creator;
+}
+
+VirtualProcessor* get_thief_vp() const {
+	return thief_vp;
 }
 
 JobState Job::get_state() const {

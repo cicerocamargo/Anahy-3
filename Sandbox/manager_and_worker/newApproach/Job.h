@@ -11,7 +11,7 @@ using namespace std;
 
 class VirtualProcessor;
 
-enum JobState {ready, running, finished};
+enum JobState {ready, running, finished, stolen};
 
 class Job {
 
@@ -19,6 +19,7 @@ class Job {
 	Job* parent;
 	set<Job*> children;
 	VirtualProcessor* creator;
+	VirtualProcessor* thief_vp;
 	JobState state;
 	JobAttributes* attributes;
 	
@@ -26,7 +27,7 @@ class Job {
 	void* data;
 	void* retval; // return value of 'function'
 	
-	pthread_mutex_t mutex;
+	//pthread_mutex_t mutex; For what this is used?
 
 	void add_child(Job* child); // called from the constructor
 	Job(Job&); // to avoid copy construction
@@ -50,6 +51,7 @@ public:
 	Job* get_parent() const;
 	inline set<Job*>& get_children() { return children; }
 	VirtualProcessor* get_creator() const;
+	VirtualProcessor* get_thief_vp() const;
 	JobState get_state() const;
 	JobAttributes* get_attributes() const;
 	void* get_retval() const;
@@ -58,7 +60,7 @@ public:
 
 struct JobHandle {
 	Job* pointer;
-	JobId id;
+	//JobId id;
 };
 
 #endif

@@ -52,6 +52,7 @@ public:
 	inline set<Job*>& get_children() { return children; }
 	VirtualProcessor* get_creator() const;
 	VirtualProcessor* get_thief_vp() const;
+	void set_thief_vp(VirtualProcessor* vp);
 	JobState get_state() const;
 	JobAttributes* get_attributes() const;
 	void* get_retval() const;
@@ -60,7 +61,6 @@ public:
 
 struct JobHandle {
 	Job* pointer;
-	//JobId id;
 };
 
 #endif

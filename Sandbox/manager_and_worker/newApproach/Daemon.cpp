@@ -14,21 +14,28 @@ list<VirtualProcessor*> Daemon::vps_waiting;
 int Daemon::num_vps = 0;
 int Daemon::num_vps_waiting = 0;
 
-void Daemon::start_my_vps() {
+void Daemon::start() {
 	list<VirtualProcessor*>::iterator it;
 
 	for (it = vps.begin(); it != vps.end(); ++it) {
 		if((*it)->get_id() == 0) {
 			set_main_vp(*it);
 		} else {
-			(*it)->start(); // start daemons
+			(*it)->start(); // start vps
 		}
 	}
+	pthread_mutex_lock(&mutex);
+	//is this really necessary, now?
+	VirtualProcessor::associate_vp_with_current_thread((void*) main_vp);
+	pthread_mutex_unlock(&mutex);
 }
 
-void Daemon::stop_my_vps() {
+void Daemon::stop() {
 	list<VirtualProcessor*>::iterator it;
-
+	/* this allows the main VP to help the execution of
+	 * remaining jobs and the Daemon to know that the
+	 * main VP is also idle when there's no work
+	 */
 	main_vp->run();
 
 	for (it = vps.begin(); it != vps.end(); ++it) {
@@ -38,13 +45,17 @@ void Daemon::stop_my_vps() {
 	}
 }
 
+Daemon::Daemon() {
+
+}
+
 //here the interface begins to be described
 void Daemon::init(int _num_vps) {
 	num_vps = _num_vps;
 	VirtualProcessor::init_pthread_key();
 
 	for(int i = 0; i < num_vps; ++i) {
-		vps.push_back(new VirtualProcessor(this));
+		vps.push_back(new VirtualProcessor());
 	}
 
 	pthread_mutex_init(&mutex, NULL);
@@ -53,9 +64,6 @@ void Daemon::init(int _num_vps) {
 	* to wait for the VP 0 to be associated
 	* with the main thread*/
 	pthread_mutex_lock(&mutex);	// wait for VP 0 to be set
-								// by daemon 0
-	VirtualProcessor::associate_vp_with_current_thread((void*) main_vp);
-	pthread_mutex_unlock(&mutex);
 
 	start();
 }
@@ -70,8 +78,8 @@ void Daemon::terminate() {
 	}
 	vps.clear();
 
-	//pthread_cond_destroy(&cond);
-	//pthread_mutex_destroy(&mutex);
+	pthread_cond_destroy(&cond);
+	pthread_mutex_destroy(&mutex);
 	VirtualProcessor::delete_pthread_key();
 }
 
@@ -95,12 +103,6 @@ void Daemon::join(JobHandle handle, void** result) {
 void Daemon::set_main_vp(VirtualProcessor* vp) {
 	main_vp = vp;
 	pthread_mutex_unlock(&mutex);
-}
-
-void* Daemon::run_daemon(void* arg) {
-	Daemon* d = (Daemon*) arg;
-	d->run();
-	return NULL;
 }
 
 void Daemon::answer_oldest_vp_waiting(Job* job) {
@@ -155,6 +157,3 @@ void Daemon::answer_oldest_vp_waiting(Job* job) {
 // 			pthread_mutex_lock(&mutex);
 // 		}
 // 	}
-
-// 	stop_my_vps();
-// }

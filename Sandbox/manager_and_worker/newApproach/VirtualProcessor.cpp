@@ -1,8 +1,8 @@
 #include "VirtualProcessor.h"
 #include "Daemon.h"
-//#include "AnahyVM.h" This no longer exist
 #include "Job.h"
 #include "JobAttributes.h"
+#include "JobId.h"
 #include <cstdio>
 #include <cstdlib>
 
@@ -20,50 +20,47 @@ void* VirtualProcessor::call_vp_run(void* arg) {
 	return NULL;
 }
 
-// // 'job' was not Finished, so I'll ask daemon for a Ready job related to it
-// void VirtualProcessor::suspend_current_job_and_try_to_help(Job* joined) {
-// 	context_stack.push(current_job); // save context
+// 'job' was not Finished, so I'll ask daemon for a Ready job related to it
+void VirtualProcessor::suspend_current_job_and_try_to_help(Job* joined) {
+	context_stack.push(get_current_job()); // save context
 
-// 	VPEvent event(GetJob, this, daemon, joined);
-// 	daemon->push_event(event);
-// 	block();
+	set_current_job(get_job());
+	block();
 
-// 	if (current_job != context_stack.top()) { // daemon updated my current job
-// 		current_job->run();
+	if (get_current_job() != context_stack.top()) { // daemon updated my current job
+		current_job->run();
 
-// 		VPEvent event(EndOfJob, this, daemon, current_job);
-// 		daemon->push_event(event);
-// 		current_job = context_stack.top(); // restore stacked context
-// 	}
+		erase_job(get_current_job());
+		set_current_job(context_stack.top()); // restore stacked context
+	}
 	
-// 	// here, if daemon didn't change the current job and resumed me
-// 	// (so I got here without executing the IF statement)
-// 	// means that 'joined' got finished before a ready job was available
+	// here, if daemon didn't change the current job and resumed me
+	// (so I got here without executing the IF statement)
+	// means that 'joined' got finished before a ready job was available
 	
-// 	context_stack.pop();
-// }
+	context_stack.pop();
+}
 
 
-// // run another job keeping track of the suspended job
-// void VirtualProcessor::suspend_current_job_and_run_another(Job* another) {
-// 	context_stack.push(current_job); // save context
-// 	current_job = another; // update current_job
+// run another job keeping track of the suspended job
+void VirtualProcessor::suspend_current_job_and_run_another(Job* another) {
+	context_stack.push(get_current_job()); // save context
+	set_current_job(another); // update current_job
 
-// 	current_job->run();
+	current_job->run();
 
-// 	VPEvent event(EndOfJob, this, daemon, current_job);
-// 	daemon->push_event(event);
-// 	current_job = context_stack.top(); // restore stacked context
-// 	context_stack.pop();
+	erase_job(get_current_job());
+	set_current_job(context_stack.top()); // restore stacked context
+	context_stack.pop();
 	
-// }
+}
 
 /* PUBLIC */
 
 // called from Daemon Thread
-VirtualProcessor::VirtualProcessor(Daemon* m) : daemon(m) {
+VirtualProcessor::VirtualProcessor() {
 	id = instance_counter++;
-	current_job = NULL;
+	set_current_job(NULL);
 	job_counter = 0;
 
 	pthread_mutex_init(&mutex, NULL);
@@ -77,16 +74,15 @@ VirtualProcessor::~VirtualProcessor()  {
 }
 
 void VirtualProcessor::run() {
-	
-	Job* job;
-	while (true) {
-		if(!local_jobs.size()) {
-			//IMPLEMENT WORK STEALING
+	while(true) {
+		get_job();
+		block();
+		if(!get_current_job()) {
+			break;
 		}
-		current_job = local_jobs.pop_front();
 		current_job->run();
-		
-		current_job = NULL;
+		erase_job(get_current_job());
+		set_current_job(NULL);
 	}
 }
 
@@ -111,6 +107,30 @@ VirtualProcessor* VirtualProcessor::get_current_vp() { // class method!
 	return (VirtualProcessor*) pthread_getspecific(key);
 }
 
+void VirtualProcessor::insert_job(Job* job) {
+	pthread_mutex_lock(&mutex);
+	graph.insert(job);
+	pthread_mutex_unlock(&mutex);
+}
+
+Job* VirtualProcessor::get_job() {
+	Job* job = NULL;
+	pthread_mutex_lock(&mutex);
+
+	job = graph.find_a_ready_job(job);
+
+	pthread_mutex_unlock(&mutex);
+	resume();
+}
+
+void VirtualProcessor::erase_job(Job* joined_job) {
+	pthread_mutex_lock(&mutex);
+
+	graph.erase(joined_job);
+
+	pthread_mutex_unlock(&mutex);
+}
+
 JobHandle VirtualProcessor::create_new_job(pfunc function, void* args,
 		JobAttributes* attr) {
 	JobId job_id(id, job_counter++);
@@ -123,13 +143,12 @@ JobHandle VirtualProcessor::create_new_job(pfunc function, void* args,
 		attr = new JobAttributes();
 	}
 
-	Job* job = new Job(job_id, current_job, this, attr, function, args);
+	Job* job = new Job(job_id, get_current_job(), this, attr, function, args);
 	
-	local_jobs.push_back(job);
+	insert_job(job);
 
 	JobHandle handle;
 	handle.pointer = job;
-	handle.id = job_id;
 	return handle;
 }
 
@@ -152,8 +171,7 @@ void* VirtualProcessor::join_job(JobHandle handle) {
 	}
 
 	if (joined->dec_join_counter()) {
-		VPEvent event(DestroyJob, this, daemon, handle.pointer);
-		daemon->push_event(event);
+		erase_job(joined);
 	}
 	return joined->get_retval();
 }
@@ -178,24 +196,6 @@ void VirtualProcessor::block() {
 // called from Daemon Thread
 void VirtualProcessor::resume() {
 	pthread_mutex_unlock(&mutex);	// unblock this vp's thread
-}
-
-/* getters and setters */
-
-Job* VirtualProcessor::get_current_job() const {
-	return current_job;
-}
-
-VirtualProcessor* VirtualProcessor::get_thief_vp() const {
-	return thief_vp;
-}
-
-void VirtualProcessor::set_thief_vp(VirtualProcessor* vp) {
-	thief_vp = vp;
-}
-
-void VirtualProcessor::set_current_job(Job* new_value) {
-	current_job = new_value;
 }
 
 uint VirtualProcessor::get_id() const {

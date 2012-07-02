@@ -50,11 +50,11 @@ bool Job::dec_join_counter() {
 }
 
 void Job::remove_child(Job* child) {
-	pthread_mutex_lock(&mutex);
+	//pthread_mutex_lock(&mutex);
 
 	// IMPLEMENT!
 	
-	pthread_mutex_unlock(&mutex);
+	//pthread_mutex_unlock(&mutex);
 }
 
 // getters and setters
@@ -79,12 +79,16 @@ VirtualProcessor* Job::get_creator() const {
     return creator;
 }
 
-VirtualProcessor* get_thief_vp() const {
+VirtualProcessor* Job::get_thief_vp() const {
 	return thief_vp;
 }
 
 JobState Job::get_state() const {
     return state;
+}
+
+void Job::set_thief_vp(VirtualProcessor* vp) {
+	thief_vp = vp;
 }
 
 JobAttributes* Job::get_attributes() const {

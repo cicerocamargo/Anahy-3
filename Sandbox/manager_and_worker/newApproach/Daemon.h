@@ -3,8 +3,6 @@
 
 #include <pthread.h>
 #include <list>
-#include <vector>
-#include <fstream>
 
 #include "Job.h"
 
@@ -25,22 +23,20 @@ class Daemon {
 	static pthread_mutex_t mutex;
 	static pthread_cond_t cond;
 		
-	list<VirtualProcessor*> vps_waiting;
-	
-	void start_my_vps();
-	void stop_my_vps();
+
+	static list<VirtualProcessor*> vps_waiting;
 
 	void answer_oldest_vp_waiting(Job* job);
 
-	static void* run_daemon(void* arg);
+	//static void* run_daemon(void* arg);
 
 	void run(); // main Daemon loop
 
-	Daemon(int vps);
+	Daemon();
 	Daemon(Daemon&);
 	~Daemon();
-	void star_my_vps();
-	void stop_my_vps();
+	static void start();
+	static void stop();
 
 public:
 	// this implements the user interface
@@ -50,9 +46,7 @@ public:
 		pfunc function, void* args);
 	static void join(JobHandle handle, void** result);
 
-	static void set_main_vp(VirtualProcessor* vp);
-	inline void set_should_stop() { should_stop = true; }
-	
+	static void set_main_vp(VirtualProcessor* vp);	
 };
 
 #endif

@@ -16,27 +16,26 @@ class Daemon {
 	
 	static VirtualProcessor* main_vp;
 	static list<VirtualProcessor*> vps;
-	//static list<Job*> terminated_jobs; //we've got to discuss it
+	
 	static int num_vps, num_vps_waiting;
 	int id;
 
 	static pthread_mutex_t mutex;
 	static pthread_cond_t cond;
 		
-
-	static list<VirtualProcessor*> vps_waiting;
+	static list<VirtualProcessor*> vps_waiting_for_a_job();
 
 	void answer_oldest_vp_waiting(Job* job);
 
-	//static void* run_daemon(void* arg);
+	static void* run_daemon(void* arg);
 
 	void run(); // main Daemon loop
 
 	Daemon();
 	Daemon(Daemon&);
 	~Daemon();
-	static void start();
-	static void stop();
+	static void start_my_vps();
+	static void stop_my_vps();
 
 public:
 	// this implements the user interface
@@ -46,7 +45,12 @@ public:
 		pfunc function, void* args);
 	static void join(JobHandle handle, void** result);
 
-	static void set_main_vp(VirtualProcessor* vp);	
+	static void set_main_vp(VirtualProcessor* vp);
+
+	Job* get_a_stolen_job(VirtualProcessor* vp);
+
+	void start();
+	void stop();
 };
 
 #endif

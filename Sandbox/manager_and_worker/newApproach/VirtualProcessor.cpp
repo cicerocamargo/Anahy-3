@@ -21,7 +21,7 @@ void* VirtualProcessor::call_vp_run(void* arg) {
 }
 
 // 'job' was not Finished, so I'll ask daemon for a Ready job related to it
-void VirtualProcessor::suspend_current_job_and_try_to_help(Job* joined) {
+/*void VirtualProcessor::suspend_current_job_and_try_to_help(Job* joined) {
 	context_stack.push(get_current_job()); // save context
 
 	set_current_job(get_job());
@@ -53,7 +53,7 @@ void VirtualProcessor::suspend_current_job_and_run_another(Job* another) {
 	set_current_job(context_stack.top()); // restore stacked context
 	context_stack.pop();
 	
-}
+}*/
 
 /* PUBLIC */
 
@@ -65,6 +65,7 @@ VirtualProcessor::VirtualProcessor() {
 
 	pthread_mutex_init(&mutex, NULL);
 	pthread_mutex_lock(&mutex);
+	pthread_cond_init(&cond, NULL);
 }
 
 // called from Daemon Thread
@@ -75,10 +76,14 @@ VirtualProcessor::~VirtualProcessor()  {
 
 void VirtualProcessor::run() {
 	while(true) {
-		get_job();
+		set_current_job(get_ready_job());
 		block();
 		if(!get_current_job()) {
-			break;
+			Daemon::get_a_stolen_job(this);
+			pthread_cond_wait(&cond, &mutex); //waiting for a job
+			if(!get_current_job()) {
+				break;
+			}
 		}
 		current_job->run();
 		erase_job(get_current_job());
@@ -108,27 +113,20 @@ VirtualProcessor* VirtualProcessor::get_current_vp() { // class method!
 }
 
 void VirtualProcessor::insert_job(Job* job) {
-	pthread_mutex_lock(&mutex);
-	graph.insert(job);
-	pthread_mutex_unlock(&mutex);
+	
+	//IMPLEMENT
 }
 
-Job* VirtualProcessor::get_job() {
-	Job* job = NULL;
-	pthread_mutex_lock(&mutex);
+Job* VirtualProcessor::get_ready_job() {
+	
+	//IMPLEMENT
 
-	job = graph.find_a_ready_job(job);
-
-	pthread_mutex_unlock(&mutex);
 	resume();
 }
 
 void VirtualProcessor::erase_job(Job* joined_job) {
-	pthread_mutex_lock(&mutex);
-
-	graph.erase(joined_job);
-
-	pthread_mutex_unlock(&mutex);
+	
+	//IMPLEMENT
 }
 
 JobHandle VirtualProcessor::create_new_job(pfunc function, void* args,
@@ -155,19 +153,9 @@ JobHandle VirtualProcessor::create_new_job(pfunc function, void* args,
 void* VirtualProcessor::join_job(JobHandle handle) {
 	Job* joined = handle.pointer;
 	while (true) {
-		if (joined->compare_and_swap_state(ready, running)) {
-			// we are going to run the joined job... Hurray !!
-			suspend_current_job_and_run_another(joined);
-			break;
-		}
-		else {
-			if (joined->compare_and_swap_state(finished, finished)) {
-				break;
-			}
-			else {
-				suspend_current_job_and_try_to_help(joined);
-			}
-		}
+
+		//IMPLEMENT
+
 	}
 
 	if (joined->dec_join_counter()) {

@@ -36,14 +36,15 @@ class VirtualProcessor {
 	
 	pthread_t thread; // my thread
 	pthread_mutex_t mutex; // where I wait for daemon answers
+	pthread_cond_t cond;
 
 	/* called from 'this->thread' to set thread
 	 * specific data as this and call this->run() (vp_obj is 'this')
 	*/
 	static void* call_vp_run(void* vp_obj);
-	//I don't if this is necessary now
-	void suspend_current_job_and_try_to_help(Job* joined);
-	void suspend_current_job_and_run_another(Job* another);
+	//I don't know if this is necessary now
+	//void suspend_current_job_and_try_to_help(Job* joined);
+	//void suspend_current_job_and_run_another(Job* another);
 
 public:
 

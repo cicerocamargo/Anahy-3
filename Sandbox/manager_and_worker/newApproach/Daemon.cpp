@@ -14,7 +14,13 @@ list<VirtualProcessor*> Daemon::vps_waiting;
 int Daemon::num_vps = 0;
 int Daemon::num_vps_waiting = 0;
 
-void Daemon::start() {
+void* Daemon::run_daemon(void* arg) {
+	Daemon* d = (Daemon*) arg;
+	d->run();
+	return NULL;
+}
+
+void Daemon::start_my_vps() {
 	list<VirtualProcessor*>::iterator it;
 
 	for (it = vps.begin(); it != vps.end(); ++it) {
@@ -30,7 +36,7 @@ void Daemon::start() {
 	pthread_mutex_unlock(&mutex);
 }
 
-void Daemon::stop() {
+void Daemon::stop_my_vps() {
 	list<VirtualProcessor*>::iterator it;
 	/* this allows the main VP to help the execution of
 	 * remaining jobs and the Daemon to know that the
@@ -69,7 +75,7 @@ void Daemon::init(int _num_vps) {
 }
 
 void Daemon::terminate() {
-	stop();
+	stop_my_vps();
 
 	list<VirtualProcessor*>::iterator it;
 
@@ -116,10 +122,13 @@ void Daemon::answer_oldest_vp_waiting(Job* job) {
 	vp->resume();
 }
 
-// void Daemon::run() {
-// 	should_stop = false;
+Job* get_a_stolen_job(VirtualProcessor* vp) {
 
-// 	start_my_vps();
+}
+
+ void Daemon::run() {
+
+ 	start_my_vps();
 
 // 	pthread_mutex_lock(&mutex);
 // 	while (true) {
@@ -157,3 +166,16 @@ void Daemon::answer_oldest_vp_waiting(Job* job) {
 // 			pthread_mutex_lock(&mutex);
 // 		}
 // 	}
+}
+
+// called from AnahyVM
+void Daemon::start() {
+	// create my own thread
+	pthread_create(&thread, NULL, run_daemon, this); 
+}
+
+// called from AnahyVM
+void Daemon::stop() {
+	// join my own thread
+	pthread_join(thread, NULL);
+}

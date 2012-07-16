@@ -65,68 +65,51 @@ VirtualProcessor::VirtualProcessor() {
 
 	pthread_mutex_init(&mutex, NULL);
 	pthread_mutex_lock(&mutex);
-	pthread_cond_init(&cond, NULL);
 }
 
 // called from Daemon Thread
 VirtualProcessor::~VirtualProcessor()  {
 	pthread_mutex_unlock(&mutex);
 	pthread_mutex_destroy(&mutex);
+
 }
 
 void VirtualProcessor::run() {
+	
+	pthread_mutex_lock(&mutex);
 	while(true) {
+		
 		set_current_job(get_ready_job());
-		block();
+		
 		if(!get_current_job()) {
-			Daemon::get_a_stolen_job(this);
-			pthread_cond_wait(&cond, &mutex); //waiting for a job
-			if(!get_current_job()) {
-				break;
-			}
+			Daemon::waiting_for_a_job(this);
+			block();
+		} else {
+			pthread_mutex_unlock(&mutex);
+			current_job->run();
+			erase_job(get_current_job());
+			set_current_job(NULL);
 		}
-		current_job->run();
-		erase_job(get_current_job());
-		set_current_job(NULL);
 	}
-}
-
-/**** STATIC METHODS ****/
-
-void VirtualProcessor::init_pthread_key() {
-	pthread_key_create(&key, call_vp_destructor);
-}
-
-void VirtualProcessor::delete_pthread_key() {
-	pthread_key_delete(key);
-}
-
-// dummy functon to fill pthread_key_create(...) requirements
-void VirtualProcessor::call_vp_destructor(void *vp_obj) { }
-
-void VirtualProcessor::associate_vp_with_current_thread(void* vp_obj) {
-	pthread_setspecific(key, vp_obj);
-}
-
-VirtualProcessor* VirtualProcessor::get_current_vp() { // class method!
-	return (VirtualProcessor*) pthread_getspecific(key);
 }
 
 void VirtualProcessor::insert_job(Job* job) {
 	
-	//IMPLEMENT
+	graph.insert(job);
 }
 
-Job* VirtualProcessor::get_ready_job() {
-	
-	//IMPLEMENT
+Job* VirtualProcessor::get_ready_job(Job* _starting_job) {
+	pthread_mutex_lock(&mutex_vp);
+	Job* job = NULL;
 
-	resume();
+	job = graph.find_a_ready_job(_starting_job);
+	pthread_mutex_unlock(&mutex_vp);
+	return job;
 }
 
 void VirtualProcessor::erase_job(Job* joined_job) {
 	
-	//IMPLEMENT
+	graph.erase(joined_job);
 }
 
 JobHandle VirtualProcessor::create_new_job(pfunc function, void* args,
@@ -178,12 +161,12 @@ void VirtualProcessor::stop() {
 
 // called from a daemon Object
 void VirtualProcessor::block() {
-	pthread_mutex_lock(&mutex);
+	pthread_mutex_lock(&mutex_vp);
 }
 
 // called from Daemon Thread
 void VirtualProcessor::resume() {
-	pthread_mutex_unlock(&mutex);	// unblock this vp's thread
+	pthread_mutex_unlock(&mutex_vp);	// unblock this vp's thread
 }
 
 uint VirtualProcessor::get_id() const {
@@ -192,4 +175,25 @@ uint VirtualProcessor::get_id() const {
 
 ulong VirtualProcessor::get_job_counter() const {
 	return job_counter;
+}
+
+/**** STATIC METHODS ****/
+
+void VirtualProcessor::init_pthread_key() {
+	pthread_key_create(&key, call_vp_destructor);
+}
+
+void VirtualProcessor::delete_pthread_key() {
+	pthread_key_delete(key);
+}
+
+// dummy functon to fill pthread_key_create(...) requirements
+void VirtualProcessor::call_vp_destructor(void *vp_obj) { }
+
+void VirtualProcessor::associate_vp_with_current_thread(void* vp_obj) {
+	pthread_setspecific(key, vp_obj);
+}
+
+VirtualProcessor* VirtualProcessor::get_current_vp() { // class method!
+	return (VirtualProcessor*) pthread_getspecific(key);
 }

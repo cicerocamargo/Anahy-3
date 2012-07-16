@@ -13,7 +13,7 @@ class Daemon;
 class Job;
 
 class Daemon {
-	
+	//bool should_stop;
 	static VirtualProcessor* main_vp;
 	static list<VirtualProcessor*> vps;
 	
@@ -23,17 +23,17 @@ class Daemon {
 	static pthread_mutex_t mutex;
 	static pthread_cond_t cond;
 		
-	static list<VirtualProcessor*> vps_waiting_for_a_job();
+	static list<VirtualProcessor*> vps_waiting;
+	static list<VirtualProcessor*> vps_running;
 
-	void answer_oldest_vp_waiting(Job* job);
+	static void answer_oldest_vp_waiting(Job* job);
 
-	static void* run_daemon(void* arg);
-
-	void run(); // main Daemon loop
+	static void run(); // main Daemon loop
 
 	Daemon();
 	Daemon(Daemon&);
 	~Daemon();
+
 	static void start_my_vps();
 	static void stop_my_vps();
 
@@ -45,12 +45,12 @@ public:
 		pfunc function, void* args);
 	static void join(JobHandle handle, void** result);
 
+	//to be called from vps
+	void waiting_for_a_job(VirtualProcessor* vp);
+
 	static void set_main_vp(VirtualProcessor* vp);
 
-	Job* get_a_stolen_job(VirtualProcessor* vp);
-
-	void start();
-	void stop();
+	static void start();
 };
 
 #endif

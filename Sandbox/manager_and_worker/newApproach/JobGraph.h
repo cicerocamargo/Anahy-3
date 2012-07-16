@@ -8,27 +8,9 @@ using namespace std;
 class Job;
 class JobId;
 
-struct Auxiliary_Cell
-{
-	struct Normal_Cell* next;
-};
-
-struct Normal_Cell
-{
-	bool first_last;
-	Job* job;
-	struct Auxiliary_Cell *next;
-};
-
-struct Cursor
-{
-	struct Normal_Cell* target, pre_cell;
-	struct Auxiliary_Cell* pre_aux;
-};
-
-
 class JobGraph {
-
+	list<Job*> root_jobs;
+	map<JobId, Job*> job_map;
 
 public:
 	JobGraph();

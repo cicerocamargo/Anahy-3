@@ -19,6 +19,7 @@ void Worker::run() {
 		manager->request_work_and_wait(this);
 		
 		if (!current) {
+			
 			say("going home.");
 			break;
 		}

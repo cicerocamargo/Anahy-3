@@ -3,7 +3,6 @@
 #include "definitions.h"
 #include "JobGraph.h"
 
-
 using namespace std;
 
 class Daemon;
@@ -36,7 +35,6 @@ class VirtualProcessor {
 	
 	pthread_t thread; // my thread
 	pthread_mutex_t mutex; // where I wait for daemon answers
-	pthread_cond_t cond;
 
 	/* called from 'this->thread' to set thread
 	 * specific data as this and call this->run() (vp_obj is 'this')
@@ -71,7 +69,7 @@ public:
 
 	//this will be complicated to do
 	void* join_job(JobHandle handle);
-	
+
 	// messages to be received from a Daemon
 	void start();
 	void stop();
@@ -79,7 +77,7 @@ public:
 	void resume();
 	
 	void insert_job(Job* job);
-	Job* get_job();
+	Job* get_ready_job();
 	void erase_job(Job* joined_job);
 
 	/* getters and setters */

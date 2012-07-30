@@ -13,12 +13,17 @@ class JobAttributes;
 class VirtualProcessor {
 	// a unique id for this VP
 	uint id;
+	static bool blocked;
+
 	//tracks how many VP objects have been created
 	static uint instance_counter;
+	
 	// this is the pointer to the graph of this vp
 	JobGraph graph;
+	
 	// the job that is running at the moment
 	Job* current_job;
+	
 	// the number of jobs created by this VP
 	ulong job_counter;
 
@@ -28,19 +33,18 @@ class VirtualProcessor {
 	 * got in 'static get_current_vp' from API
 	 */
 	static pthread_key_t key;
-	//this is the local list of ready jobs on this VP
 	
 	//to keep track of jobs blocked on this VP
 	stack<Job*> context_stack;
 	
 	pthread_t thread; // my thread
-	pthread_mutex_t mutex; // where I wait for daemon answers
+	static pthread_mutex_t mutex; // where I wait for daemon answers
 
 	/* called from 'this->thread' to set thread
 	 * specific data as this and call this->run() (vp_obj is 'this')
 	*/
 	static void* call_vp_run(void* vp_obj);
-	//I don't know if this is necessary now
+	
 	//void suspend_current_job_and_try_to_help(Job* joined);
 	//void suspend_current_job_and_run_another(Job* another);
 
@@ -63,7 +67,7 @@ public:
 
 	static void associate_vp_with_current_thread(void* vp_obj);
 	
-	// messages to be received from AnahyVM
+	// messages to be received from Daemon
 	static VirtualProcessor* get_current_vp();
 	JobHandle create_new_job(pfunc function, void* args, JobAttributes* attr);
 
@@ -77,7 +81,7 @@ public:
 	void resume();
 	
 	void insert_job(Job* job);
-	Job* get_ready_job();
+	Job* get_ready_job(Job* _starting_job);
 	void erase_job(Job* joined_job);
 
 	/* getters and setters */
@@ -85,4 +89,6 @@ public:
 	inline void set_current_job(Job* new_value) { current_job = new_value; }
 	uint get_id() const;
 	ulong get_job_counter() const;
+	inline void set_status(bool value) { blocked = value; }
+	inline bool get_status() { return blocked; }
 };

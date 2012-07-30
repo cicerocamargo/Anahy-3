@@ -1,3 +1,8 @@
+#include "Daemon"
+
+class Job;
+class VP;
+
 // this method is called from a VP thread
 void Daemon::find_a_ready_job(VP* sender) {
 	pthread_mutex_lock(&mutex);
@@ -53,7 +58,8 @@ void Daemon::run() {
  				pthread_cond_wait(&cond, &mutex);
  			}
  			else {
- 				vp = vps_waiting.pop_front();
+ 				vp = vps_waiting.front();
+ 				vps_waiting.pop_front();
  				pthread_mutex_unlock(&mutex);
  				bool job_not_found = true;
  				list<VirtualProcessor*>::iterator it;

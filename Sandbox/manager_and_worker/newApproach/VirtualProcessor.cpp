@@ -8,15 +8,16 @@
 
 /**** STATIC MEMBERS' ITIALIZATIONS ****/
 
+pthread_mutex_t VirtualProcessor::mutex;
 uint VirtualProcessor::instance_counter = 0;
 pthread_key_t VirtualProcessor::key;
-
+bool VirtualProcessor::blocked = false;
 /* PRIVATE METHODS */
 
 void* VirtualProcessor::call_vp_run(void* arg) {
 	VirtualProcessor::associate_vp_with_current_thread(arg);
-	VirtualProcessor* w = (VirtualProcessor*) arg;
-	w->run();
+	VirtualProcessor* vp = (VirtualProcessor*) arg;
+	vp->run();
 	return NULL;
 }
 
@@ -55,7 +56,17 @@ void VirtualProcessor::suspend_current_job_and_run_another(Job* another) {
 	
 }*/
 
-/* PUBLIC */
+/**** STATIC METHODS ****/
+
+void VirtualProcessor::init_pthread_key() {
+	pthread_key_create(&key, call_vp_destructor);
+}
+
+void VirtualProcessor::delete_pthread_key() {
+	pthread_key_delete(key);
+}
+
+/**** PUBLIC METHODS ****/
 
 // called from Daemon Thread
 VirtualProcessor::VirtualProcessor() {
@@ -71,45 +82,33 @@ VirtualProcessor::VirtualProcessor() {
 VirtualProcessor::~VirtualProcessor()  {
 	pthread_mutex_unlock(&mutex);
 	pthread_mutex_destroy(&mutex);
-
 }
 
 void VirtualProcessor::run() {
-	
-	pthread_mutex_lock(&mutex);
+	Job* job = NULL;
 	while(true) {
-		
-		set_current_job(get_ready_job());
-		
-		if(!get_current_job()) {
+		job = get_ready_job(NULL);
+		if (!job) {
+			/* the vp need ask a new job to Daemon */
 			Daemon::waiting_for_a_job(this);
-			block();
-		} else {
-			pthread_mutex_unlock(&mutex);
+		}
+		if (get_current_job()) {
+			current_job->compare_and_swap_state(ready, running);
 			current_job->run();
-			erase_job(get_current_job());
 			set_current_job(NULL);
 		}
 	}
 }
 
-void VirtualProcessor::insert_job(Job* job) {
-	
-	graph.insert(job);
+// dummy functon to fill pthread_key_create(...) requirements
+void VirtualProcessor::call_vp_destructor(void *vp_obj) { }
+
+void VirtualProcessor::associate_vp_with_current_thread(void* vp_obj) {
+	pthread_setspecific(key, vp_obj);
 }
 
-Job* VirtualProcessor::get_ready_job(Job* _starting_job) {
-	pthread_mutex_lock(&mutex_vp);
-	Job* job = NULL;
-
-	job = graph.find_a_ready_job(_starting_job);
-	pthread_mutex_unlock(&mutex_vp);
-	return job;
-}
-
-void VirtualProcessor::erase_job(Job* joined_job) {
-	
-	graph.erase(joined_job);
+VirtualProcessor* VirtualProcessor::get_current_vp() { // class method!
+	return (VirtualProcessor*) pthread_getspecific(key);
 }
 
 JobHandle VirtualProcessor::create_new_job(pfunc function, void* args,
@@ -127,6 +126,13 @@ JobHandle VirtualProcessor::create_new_job(pfunc function, void* args,
 	Job* job = new Job(job_id, get_current_job(), this, attr, function, args);
 	
 	insert_job(job);
+	/* if I'm on waiting list, I've got to ask to Daemon
+	to remove me from there, because a new job has posted
+	on my local list
+	*/
+	if(get_status()) {
+		Daemon::remove_vp_from_waiting_list(this);
+	}
 
 	JobHandle handle;
 	handle.pointer = job;
@@ -135,14 +141,20 @@ JobHandle VirtualProcessor::create_new_job(pfunc function, void* args,
 
 void* VirtualProcessor::join_job(JobHandle handle) {
 	Job* joined = handle.pointer;
+	VirtualProcessor* vp_thief;
+	/*(job->get_vp_thief() == NULL) means this job hasn't stolen */
+	vp_thief = joined->get_vp_thief();
 	while (true) {
-
-		//IMPLEMENT
 
 	}
 
 	if (joined->dec_join_counter()) {
-		erase_job(joined);
+		if(vp_thief) {
+			vp_thief->erase_job(joined);
+		}
+		else {
+			erase_job(joined);
+		}
 	}
 	return joined->get_retval();
 }
@@ -161,12 +173,40 @@ void VirtualProcessor::stop() {
 
 // called from a daemon Object
 void VirtualProcessor::block() {
-	pthread_mutex_lock(&mutex_vp);
+	set_status(true);
+	pthread_mutex_lock(&mutex);
 }
 
 // called from Daemon Thread
 void VirtualProcessor::resume() {
-	pthread_mutex_unlock(&mutex_vp);	// unblock this vp's thread
+	set_status(false);
+	pthread_mutex_unlock(&mutex);	// unblock this vp's thread
+}
+
+void VirtualProcessor::insert_job(Job* job) {
+	pthread_mutex_lock(&mutex);
+	
+	graph.insert(job);
+
+	pthread_mutex_unlock(&mutex);
+}
+
+Job* VirtualProcessor::get_ready_job(Job* _starting_job) {
+	pthread_mutex_lock(&mutex);
+
+	Job* job = NULL;
+	job = graph.find_a_ready_job(_starting_job);
+
+	pthread_mutex_unlock(&mutex);
+	return job;
+}
+
+void VirtualProcessor::erase_job(Job* joined_job) {
+	pthread_mutex_lock(&mutex);
+
+	graph.erase(joined_job);
+
+	pthread_mutex_unlock(&mutex);
 }
 
 uint VirtualProcessor::get_id() const {
@@ -175,25 +215,4 @@ uint VirtualProcessor::get_id() const {
 
 ulong VirtualProcessor::get_job_counter() const {
 	return job_counter;
-}
-
-/**** STATIC METHODS ****/
-
-void VirtualProcessor::init_pthread_key() {
-	pthread_key_create(&key, call_vp_destructor);
-}
-
-void VirtualProcessor::delete_pthread_key() {
-	pthread_key_delete(key);
-}
-
-// dummy functon to fill pthread_key_create(...) requirements
-void VirtualProcessor::call_vp_destructor(void *vp_obj) { }
-
-void VirtualProcessor::associate_vp_with_current_thread(void* vp_obj) {
-	pthread_setspecific(key, vp_obj);
-}
-
-VirtualProcessor* VirtualProcessor::get_current_vp() { // class method!
-	return (VirtualProcessor*) pthread_getspecific(key);
 }

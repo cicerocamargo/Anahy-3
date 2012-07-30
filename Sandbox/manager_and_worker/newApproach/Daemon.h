@@ -15,16 +15,13 @@ class Job;
 class Daemon {
 	//bool should_stop;
 	static VirtualProcessor* main_vp;
-	static list<VirtualProcessor*> vps;
-	
+		
 	static int num_vps, num_vps_waiting;
-	int id;
 
 	static pthread_mutex_t mutex;
 	static pthread_cond_t cond;
 		
-	static list<VirtualProcessor*> vps_waiting;
-	static list<VirtualProcessor*> vps_running;
+	static list<VirtualProcessor*> vps_waiting, vps_running;
 
 	static void answer_oldest_vp_waiting(Job* job);
 
@@ -45,11 +42,13 @@ public:
 		pfunc function, void* args);
 	static void join(JobHandle handle, void** result);
 
+	//void broadcast_null_job();
+
 	//to be called from vps
-	void waiting_for_a_job(VirtualProcessor* vp);
+	static void waiting_for_a_job(VirtualProcessor* vp);
+	static void remove_vp_from_waiting_list(VirtualProcessor* vp);
 
 	static void set_main_vp(VirtualProcessor* vp);
-
 	static void start();
 };
 

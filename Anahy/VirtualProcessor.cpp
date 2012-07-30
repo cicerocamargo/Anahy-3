@@ -91,7 +91,7 @@ void VirtualProcessor::run() {
 
 		current_job->run();
 		//daemon->get_job(this, current_job);
-		VPEvent event1(GetJob, this, daemon, current_job);
+		VPEvent event1(EndOfJob, this, daemon, current_job);
 		daemon->push_event(event1);
 		block();
 		current_job = NULL;

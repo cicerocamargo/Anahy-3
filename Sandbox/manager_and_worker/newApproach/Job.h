@@ -11,7 +11,7 @@ using namespace std;
 
 class VirtualProcessor;
 
-enum JobState {ready, running, finished, stolen};
+enum JobState {ready, running, finished};
 
 class Job {
 
@@ -19,7 +19,7 @@ class Job {
 	Job* parent;
 	set<Job*> children;
 	VirtualProcessor* creator;
-	VirtualProcessor* thief_vp;
+	VirtualProcessor* vp_thief;
 	JobState state;
 	JobAttributes* attributes;
 	
@@ -51,8 +51,8 @@ public:
 	Job* get_parent() const;
 	inline set<Job*>& get_children() { return children; }
 	VirtualProcessor* get_creator() const;
-	VirtualProcessor* get_thief_vp() const;
-	void set_thief_vp(VirtualProcessor* vp);
+	VirtualProcessor* get_vp_thief() const;
+	void set_vp_thief(VirtualProcessor* vp);
 	JobState get_state() const;
 	JobAttributes* get_attributes() const;
 	void* get_retval() const;

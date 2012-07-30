@@ -20,6 +20,7 @@ Job::Job (JobId _id, Job* _parent, VirtualProcessor* _creator,
     if(parent) {
         parent->add_child(this);
     }
+    vp_thief = NULL;
 	state = ready;
 	//pthread_mutex_init(&mutex, NULL);
 }
@@ -79,16 +80,16 @@ VirtualProcessor* Job::get_creator() const {
     return creator;
 }
 
-VirtualProcessor* Job::get_thief_vp() const {
-	return thief_vp;
+VirtualProcessor* Job::get_vp_thief() const {
+	return vp_thief;
 }
 
 JobState Job::get_state() const {
     return state;
 }
 
-void Job::set_thief_vp(VirtualProcessor* vp) {
-	thief_vp = vp;
+void Job::set_vp_thief(VirtualProcessor* _vp_thief) {
+	vp_thief = _vp_thief;
 }
 
 JobAttributes* Job::get_attributes() const {

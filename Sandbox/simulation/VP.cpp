@@ -1,5 +1,7 @@
 #include "VP.h"
 
+class Job;
+
 Job* VP::get_local_job() {
 	Job* j = 0;
 

@@ -21,23 +21,24 @@ void* VirtualProcessor::call_vp_run(void* arg) {
 	return NULL;
 }
 
-// 'job' was not Finished, so I'll ask daemon for a Ready job related to it
-/*void VirtualProcessor::suspend_current_job_and_try_to_help(Job* joined) {
+// 'job' was not Finished, so I'll ask for a ready child of the job (joined)
+void VirtualProcessor::suspend_current_job_and_try_to_help(Job* joined) {
 	context_stack.push(get_current_job()); // save context
 
-	set_current_job(get_job());
-	block();
-
-	if (get_current_job() != context_stack.top()) { // daemon updated my current job
-		current_job->run();
-
-		erase_job(get_current_job());
-		set_current_job(context_stack.top()); // restore stacked context
-	}
+	while(!joined->compare_and_swap_state(ready, ready)) {
+		set_current_job(get_ready_job(joined, 1));
 	
-	// here, if daemon didn't change the current job and resumed me
-	// (so I got here without executing the IF statement)
-	// means that 'joined' got finished before a ready job was available
+		if (get_current_job()) {
+			current_job->run();
+
+			erase_job(get_current_job());	
+		}
+		else {
+			/* there isn't a job to run */
+			break;
+		}
+	}
+	set_current_job(context_stack.top()); // restore stacked context
 	
 	context_stack.pop();
 }
@@ -54,7 +55,7 @@ void VirtualProcessor::suspend_current_job_and_run_another(Job* another) {
 	set_current_job(context_stack.top()); // restore stacked context
 	context_stack.pop();
 	
-}*/
+}
 
 /**** STATIC METHODS ****/
 
@@ -87,7 +88,7 @@ VirtualProcessor::~VirtualProcessor()  {
 void VirtualProcessor::run() {
 	Job* job = NULL;
 	while(true) {
-		job = get_ready_job(NULL);
+		job = get_ready_job(NULL, true);
 		if (!job) {
 			/* the vp need ask a new job to Daemon */
 			Daemon::waiting_for_a_job(this);
@@ -119,7 +120,8 @@ JobHandle VirtualProcessor::create_new_job(pfunc function, void* args,
 		if (!attr->get_initialized()) {
 			attr = new JobAttributes();
 		}
-	} else {
+	}
+	else {
 		attr = new JobAttributes();
 	}
 
@@ -145,16 +147,22 @@ void* VirtualProcessor::join_job(JobHandle handle) {
 	/*(job->get_vp_thief() == NULL) means this job hasn't stolen */
 	vp_thief = joined->get_vp_thief();
 	while (true) {
-
+		if (joined->compare_and_swap_state(ready, running)) {
+			suspend_current_job_and_run_another(joined);
+			break;
+		}
+		else {
+			if (joined->compare_and_swap_state(finished, finished)) {
+				break;
+			}
+			else {
+				suspend_current_job_and_try_to_help(joined);
+			}
+		}
 	}
 
 	if (joined->dec_join_counter()) {
-		if(vp_thief) {
-			vp_thief->erase_job(joined);
-		}
-		else {
-			erase_job(joined);
-		}
+		erase_job(joined);
 	}
 	return joined->get_retval();
 }
@@ -191,11 +199,11 @@ void VirtualProcessor::insert_job(Job* job) {
 	pthread_mutex_unlock(&mutex);
 }
 
-Job* VirtualProcessor::get_ready_job(Job* _starting_job) {
+Job* VirtualProcessor::get_ready_job(Job* _starting_job, bool normal_search) {
 	pthread_mutex_lock(&mutex);
 
 	Job* job = NULL;
-	job = graph.find_a_ready_job(_starting_job);
+	job = graph.find_a_ready_job(_starting_job, normal_search);
 
 	pthread_mutex_unlock(&mutex);
 	return job;

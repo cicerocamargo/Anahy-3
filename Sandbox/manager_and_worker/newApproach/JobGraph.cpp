@@ -44,23 +44,56 @@ void JobGraph::erase(Job* job) {
 	// delete job;
 }
 
-Job* JobGraph::find_a_ready_job(Job* starting_job) {
+/* I don't know if what I'm doing in this method is right, because it's 3 AM muda fucka LOL*/
+Job* JobGraph::find_a_ready_job(Job* starting_job, bool mode) {
 	set<Job*> children;
 	// temp code
 	list<Job*> job_list = root_jobs;
-	list<Job*>::iterator it;
-	for (it = job_list.begin(); it != job_list.end(); ++it) {
-		if ((*it)->compare_and_swap_state(ready, running)) {
-			return *it;
-		}
-		else {
-			children = (*it)->get_children();
-			if (!children.empty()){
-				job_list.insert(job_list.end(), children.begin(), children.end());
+
+	if (starting_job) {
+		set<Job*>::iterator it;
+		children = starting_job->get_children();
+
+		for (it = children.begin(); it != children.end(); ++it) {
+			if (!(*it)->get_vp_thief() && (*it)->compare_and_swap_state(ready, running)) {
+				return *it;
 			}
-			it = job_list.erase(it);
 		}
 	}
+	else {
+		/* This stretch of code is stupid, I know*/
+		if (mode) {
+			list<Job*>::iterator it;
+			/* We can't return a job that was stolen for another vp*/
+			for (it = job_list.begin(); it != job_list.end(); ++it) {
+				if (!(*it)->get_vp_thief() && (*it)->compare_and_swap_state(ready, running)) {
+					return *it;
+				}
+				else {
+					children = (*it)->get_children();
+					if (!children.empty()) {
+						job_list.insert(job_list.end(), children.begin(), children.end());
+					}
+					job_list.remove(*it);
+				}
+			}
+		}
+		else {
+			list<Job*>::reverse_iterator rit;
 
+			for (rit = job_list.rbegin(); rit != job_list.rend(); ++rit) {
+				if (!(*rit)->get_vp_thief() && (*rit)->compare_and_swap_state(ready, running)) {
+					return *rit;
+				}
+				else {
+					children = (*rit)->get_children();
+					if (!children.empty()) {
+						job_list.insert(job_list.end(), children.begin(), children.end());
+					}
+					job_list.remove(*rit);
+				}
+			}
+		}
+	}
 	return NULL;
 }

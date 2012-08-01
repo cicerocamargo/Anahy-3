@@ -23,8 +23,6 @@ class Daemon {
 		
 	static list<VirtualProcessor*> vps_waiting, vps_running;
 
-	static void answer_oldest_vp_waiting(Job* job);
-
 	static void run(); // main Daemon loop
 
 	Daemon();

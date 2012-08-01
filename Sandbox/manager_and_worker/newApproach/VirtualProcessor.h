@@ -45,8 +45,8 @@ class VirtualProcessor {
 	*/
 	static void* call_vp_run(void* vp_obj);
 	
-	//void suspend_current_job_and_try_to_help(Job* joined);
-	//void suspend_current_job_and_run_another(Job* another);
+	void suspend_current_job_and_try_to_help(Job* joined);
+	void suspend_current_job_and_run_another(Job* another);
 
 public:
 
@@ -81,7 +81,7 @@ public:
 	void resume();
 	
 	void insert_job(Job* job);
-	Job* get_ready_job(Job* _starting_job);
+	Job* get_ready_job(Job* _starting_job, bool normal_search);
 	void erase_job(Job* joined_job);
 
 	/* getters and setters */

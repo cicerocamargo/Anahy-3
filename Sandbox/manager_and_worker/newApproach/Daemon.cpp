@@ -18,17 +18,7 @@ int Daemon::num_vps_waiting = 0;
 
 /**** PRIVATE METHODS ****/
 
-void Daemon::answer_oldest_vp_waiting(Job* job) {
-	// job's state has already been set to running
-	VirtualProcessor* vp;
-
-	vp = vps_waiting.front();
-	vps_waiting.pop_front();
-	vp->set_current_job(job);	// send a NULL job to
-								// break VP loop
-	__sync_sub_and_fetch(&num_vps_waiting, 1);
-	vp->resume();
-}
+/* This method is too large and "ugly?"*/
 
 void Daemon::run() {
  	//should_stop = false;
@@ -50,18 +40,21 @@ void Daemon::run() {
  			else {
  				vp = vps_waiting.front();
  				vps_waiting.pop_front();
+ 				__sync_sub_and_fetch(&num_vps_waiting, 1);
  				pthread_mutex_unlock(&mutex);
  				bool job_not_found = true;
- 				 
+
+ 				/* here is where happens the work stealing */
+
  				list<VirtualProcessor*>::iterator it;
  				for(it = vps_running.begin(); it != vps_running.end(); it++) {
 
- 					/* we cannot find a job on vp from vps_waiting list*/
+ 					/* we cannot find a job on vp from vps_waiting list, right?*/
  					if((*it)->get_id() == vp->get_id()) {
  						continue;
  					}
 
- 					job = (*it)->get_ready_job(NULL);
+ 					job = (*it)->get_ready_job(NULL, false);
 
  					if(job) {
  						/* if the Daemon find a job to vp, 
@@ -70,11 +63,13 @@ void Daemon::run() {
  						need to get the next vp on waiting list
  						*/
  						pthread_mutex_lock(&mutex);
-
+ 						/* if the vp isn't blocked, it already has a job
+ 						and, other vp needs to be removed from waiting list
+ 						*/
  						if(!vp->get_status()) {
  							vp = vps_waiting.front();
  							vps_waiting.pop_front();
-
+ 							__sync_sub_and_fetch(&num_vps_waiting, 1);
  							pthread_mutex_unlock(&mutex);
  						}
  						job->set_vp_thief(vp);
@@ -93,6 +88,7 @@ void Daemon::run() {
  			}
  		}
 	}
+	/* Why is this here and is not in terminate()?*/
 	stop_my_vps();
 }
 
@@ -206,7 +202,6 @@ void Daemon::broadcast_null_job() {
 */
 
 void Daemon::waiting_for_a_job(VirtualProcessor* vp) {
-
 	__sync_add_and_fetch(&num_vps_waiting, 1);
 
 	pthread_mutex_lock(&mutex);

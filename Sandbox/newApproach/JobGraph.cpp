@@ -49,8 +49,8 @@ Job* JobGraph::find_a_ready_job(Job* starting_job, bool mode) {
 	set<Job*> children;
 	// temp code
 	list<Job*> job_list = root_jobs;
-
-	if (starting_job) {
+	
+	if (starting_job != NULL) {
 		set<Job*>::iterator it;
 		children = starting_job->get_children();
 

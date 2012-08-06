@@ -87,9 +87,12 @@ VirtualProcessor::~VirtualProcessor()  {
 
 void VirtualProcessor::run() {
 	Job* job = NULL;
+	printf("RUNNING_VP %d\n", id);
 	while(true) {
 		job = get_ready_job(NULL, true);
+
 		if (!job) {
+			printf("VP %d: Without job\n", id);
 			/* the vp need ask a new job to Daemon */
 			Daemon::waiting_for_a_job(this);
 		}
@@ -107,6 +110,7 @@ void VirtualProcessor::run() {
 void VirtualProcessor::call_vp_destructor(void *vp_obj) { }
 
 void VirtualProcessor::associate_vp_with_current_thread(void* vp_obj) {
+	printf("ASSOCIATING_VP\n");
 	pthread_setspecific(key, vp_obj);
 }
 
@@ -129,6 +133,7 @@ JobHandle VirtualProcessor::create_new_job(pfunc function, void* args,
 
 	Job* job = new Job(job_id, get_current_job(), this, attr, function, args);
 	
+	printf("VP %d: Creating job\n", id);
 	insert_job(job);
 
 	JobHandle handle;
@@ -166,6 +171,7 @@ void* VirtualProcessor::join_job(JobHandle handle) {
 void VirtualProcessor::start() {
 	// call this->run() in a new thread,
 	// and put this in the thread specific memory
+	pthread_mutex_unlock(&mutex); //unblock mutex that was block onto construtor
 	pthread_create(&thread, NULL, call_vp_run, this);
 }
 
@@ -195,12 +201,15 @@ void VirtualProcessor::insert_job(Job* job) {
 }
 
 Job* VirtualProcessor::get_ready_job(Job* _starting_job, bool normal_search) {
-	pthread_mutex_lock(&mutex);
-
+	printf("VP %d: Getting a ready job\n" ,id);
 	Job* job = NULL;
-	job = graph.find_a_ready_job(_starting_job, normal_search);
 
+	pthread_mutex_lock(&mutex);
+	
+	job = graph.find_a_ready_job(_starting_job, normal_search);
+	
 	pthread_mutex_unlock(&mutex);
+
 	return job;
 }
 

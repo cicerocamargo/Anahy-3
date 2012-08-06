@@ -15,23 +15,19 @@ class Job;
 class Daemon {
 	//bool should_stop;
 	static VirtualProcessor* main_vp;
-		
-	static int num_vps, num_vps_waiting;
 
 	static pthread_mutex_t mutex;
 	static pthread_cond_t cond;
-		
+
+	static int num_vps, num_vps_waiting;
 	static list<VirtualProcessor*> vps_waiting, vps_running;
-
-	static void run(); // main Daemon loop
-
+	
 	Daemon();
 	Daemon(Daemon&);
 	~Daemon();
-
+	static void run(); // main Daemon loop
 	static void start_my_vps();
 	static void stop_my_vps();
-
 	static void broadcast_null_job();
 
 public:

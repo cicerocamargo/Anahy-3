@@ -24,18 +24,22 @@ void Daemon::run() {
  	//should_stop = false;
  	start_my_vps();
 
+ 	printf("RUN_DAEMON...\n");
+
  	VirtualProcessor* vp;
  	Job* job;
  	pthread_mutex_lock(&mutex);
  	while (true) {
  		if(vps_waiting.size() == num_vps) {
  			//all my vps are waiting
+ 			printf("DAEMON: All vps are wainting,\n");
  			pthread_mutex_unlock(&mutex);
  			broadcast_null_job();
  			break;
  		}
  		else {
  			if(vps_waiting.empty()) {
+ 				printf("DAEMON: Withou jobs on waiting list\n");
  				pthread_cond_wait(&cond, &mutex);
  			}
  			else {
@@ -46,7 +50,7 @@ void Daemon::run() {
  				bool job_not_found = true;
 
  				/* here is where happens the work stealing */
-
+ 				printf("DAEMON: I'll steal a job\n");
  				list<VirtualProcessor*>::iterator it;
  				for(it = vps_running.begin(); it != vps_running.end(); it++) {
 
@@ -54,6 +58,7 @@ void Daemon::run() {
  					job = (*it)->get_ready_job(NULL, false);
 
  					if(job) {
+ 						printf("DAEMON: I've found a job for vp %d\n", vp->get_id());
  						/* if the Daemon find a job to vp, 
  						but it has already recepted a new 
  						job from create primitive, the Daemon
@@ -72,20 +77,21 @@ void Daemon::run() {
  				}
  				pthread_mutex_lock(&mutex);
  				if(job_not_found) {
+ 					printf("Any job found, putting vp %d into waiting againg\n", vp->get_id());
  					vps_waiting.push_front(vp);
  					pthread_cond_wait(&cond, &mutex);
  				}
  			}
  		}
 	}
-	/* Why is this here and is not in terminate()?*/
+	
 	stop_my_vps();
 }
 
 void Daemon::start_my_vps() {
-	list<VirtualProcessor*>::iterator it;
 
-	//remove vps list
+	list<VirtualProcessor*>::iterator it;
+	
 	for (it = vps_running.begin(); it != vps_running.end(); ++it) {
 		if((*it)->get_id() == 0) {
 			set_main_vp(*it);
@@ -93,10 +99,11 @@ void Daemon::start_my_vps() {
 			(*it)->start(); // start vps
 		}
 	}
-	pthread_mutex_lock(&mutex);
-
+	pthread_mutex_lock(&mutex);	// wait for VP 0 to be set
+								// by daemon 0
 	VirtualProcessor::associate_vp_with_current_thread((void*) main_vp);
 	pthread_mutex_unlock(&mutex);
+	printf("STARTED_VPS\n");
 }
 
 void Daemon::stop_my_vps() {
@@ -106,7 +113,7 @@ void Daemon::stop_my_vps() {
 	 * main VP is also idle when there's no work
 	 */
 	main_vp->run();
-
+	printf("DAEMON: Stoping vps\n");
 	for (it = vps_running.begin(); it != vps_running.end(); ++it) {
 		if((*it)->get_id() > 0) {
 			(*it)->stop();
@@ -133,13 +140,18 @@ void Daemon::init(int _num_vps) {
 	}
 
 	pthread_mutex_init(&mutex, NULL);
+	pthread_cond_init(&cond, NULL);
+
 	/* since the main thread has the VM's lock,
 	* it can block itself in the next call
 	* to wait for the VP 0 to be associated
 	* with the main thread*/
-	pthread_mutex_lock(&mutex);	// wait for VP 0 to be set
+	pthread_mutex_lock(&mutex);	// since the main thread has the VM's lock,
+								// it can block itself in the next call
+								// to wait for the VP 0 to be associated
+								// with the main thread
 
-	run();
+	start();
 }
 
 void Daemon::terminate() {
@@ -170,6 +182,7 @@ void Daemon::create(JobHandle* handle, JobAttributes* attr,
 	pfunc function, void* args) {
 
 	VirtualProcessor* vp = VirtualProcessor::get_current_vp();
+	printf("Daemon: Creating a new job on VP %d list\n", vp->get_id());
 	*handle = vp->create_new_job(function, args, attr);
 }
 

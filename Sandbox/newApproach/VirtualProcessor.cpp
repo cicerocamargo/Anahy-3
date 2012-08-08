@@ -70,7 +70,7 @@ void VirtualProcessor::delete_pthread_key() {
 /**** PUBLIC METHODS ****/
 
 // called from Daemon Thread
-VirtualProcessor::VirtualProcessor() {
+VirtualProcessor::VirtualProcessor(Daemon* _daemon) : daemon(_daemon) {
 	id = instance_counter++;
 	set_current_job(NULL);
 	job_counter = 0;
@@ -94,7 +94,7 @@ void VirtualProcessor::run() {
 		if (!job) {
 			printf("VP %d: Without job\n", id);
 			/* the vp need ask a new job to Daemon */
-			Daemon::waiting_for_a_job(this);
+			daemon->waiting_for_a_job(this);
 		}
 		if (current_job) {
 			current_job->compare_and_swap_state(ready, running);

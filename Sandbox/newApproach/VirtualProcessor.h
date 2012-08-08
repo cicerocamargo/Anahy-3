@@ -14,6 +14,8 @@ class VirtualProcessor {
 	// a unique id for this VP
 	uint id;
 
+	Daemon* daemon;
+
 	//tracks how many VP objects have been created
 	static uint instance_counter;
 	
@@ -49,7 +51,7 @@ class VirtualProcessor {
 
 public:
 
-	VirtualProcessor();
+	VirtualProcessor(Daemon* _daemon);
 	~VirtualProcessor();
 
 	void run(); // called from call_vp_run (begins the VP loop)

@@ -2,7 +2,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <iostream>
-#include "Daemon.h"
+#include "AnahyVM.h"
 #include "JobAttributes.h"
 
 using namespace std;
@@ -20,15 +20,15 @@ void* par_fib(void* args) {
 	}
 	else {
 		JobHandle m1, m2;
-		Daemon::create(&m1, NULL, par_fib, (void*) new long(n-1));
-		Daemon::create(&m2, NULL, par_fib, (void*) new long(n-2));
+		AnahyVM::create(&m1, NULL, par_fib, (void*) new long(n-1));
+		AnahyVM::create(&m2, NULL, par_fib, (void*) new long(n-2));
 
 		long* fib_m1 = new long();
 		long* fib_m2 = new long();
 		//fib(15); // para aumentar o custo do thread
 
-		Daemon::join(m1, (void**) &fib_m1);
-		Daemon::join(m2, (void**) &fib_m2);
+		AnahyVM::join(m1, (void**) &fib_m1);
+		AnahyVM::join(m2, (void**) &fib_m2);
 
 		res = *fib_m1 + *fib_m2;
 
@@ -49,14 +49,14 @@ int main(int argc, char const *argv[]) {
 		cout << "fib(" << n << ") = " << fib(n) << endl;
 	}
 	else {
-		Daemon::init(vps);
-	
+		AnahyVM::init(vps);
+		cout << "Init done." << endl;
 		JobHandle handle;
-		Daemon::create(&handle, NULL, par_fib, (void*) new long(n));
+		AnahyVM::create(&handle, NULL, par_fib, (void*) new long(n));
 		long* result = new long(0);
-		Daemon::join(handle, (void**) &result);
+		AnahyVM::join(handle, (void**) &result);
 
-		Daemon::terminate();
+		AnahyVM::terminate();
 
 		cout << "fib(" << n << ") = " << (*result) << endl;
 		delete result;

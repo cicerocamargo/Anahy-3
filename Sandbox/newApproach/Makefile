@@ -1,7 +1,7 @@
 CPP = g++
 CFLAGS = -O3
 
-all: daemon vp job jobid jobgraph jobattributes
+all: daemon vp job jobid jobgraph jobattributes anahy
 
 vp: VirtualProcessor.cpp
 	$(CPP) $(CFLAGS) VirtualProcessor.cpp -c
@@ -17,6 +17,9 @@ jobgraph: JobGraph.cpp
 
 daemon: Daemon.cpp
 	$(CPP) $(CFLAGS) Daemon.cpp -c
+
+anahy: AnahyVM.cpp
+	$(CPP) $(CFLAGS) AnahyVM.cpp -c
 
 jobattributes: JobAttributes.cpp
 	$(CPP) $(CFLAGS) JobAttributes.cpp -c

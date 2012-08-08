@@ -50,9 +50,12 @@ int main(int argc, char const *argv[]) {
 	}
 	else {
 		AnahyVM::init(vps);
-		cout << "Init done." << endl;
 		JobHandle handle;
+		
 		AnahyVM::create(&handle, NULL, par_fib, (void*) new long(n));
+		
+		cout << "Create: Done" << endl;
+
 		long* result = new long(0);
 		AnahyVM::join(handle, (void**) &result);
 

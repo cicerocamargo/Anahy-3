@@ -17,9 +17,9 @@ void* Daemon::run_daemon(void* arg) {
 
 void Daemon::run() {
  	//should_stop = false;
- 	start_my_vps();
+ 	printf("DAEMON: Running...\n");
 
- 	printf("RUN_DAEMON...\n");
+ 	start_my_vps();
 
  	VirtualProcessor* vp;
  	Job* job;
@@ -87,10 +87,9 @@ Daemon::Daemon(int _num_vps) : num_vps(_num_vps) {
 	pthread_mutex_init(&mutex, NULL);
 	pthread_cond_init(&cond, NULL);
 
-	list<VirtualProcessor*>::iterator it;
-
+	printf("DAEMON: Creating vps\n");
 	//create my vps
-	for(it = vps_running.begin(); it != vps_running.end(); ++it) {
+	for(int i = 0; i < num_vps; i++) {
 		vps_running.push_back(new VirtualProcessor(this));
 	}
 }
@@ -99,23 +98,26 @@ Daemon::~Daemon() {
 	pthread_mutex_destroy(&mutex);
 	pthread_cond_destroy(&cond);
 
-
+	vps_waiting.clear();
+	vps_running.clear();
 }
 
 void Daemon::start_my_vps() {
 	/* I still have the lock*/
-	printf("STARTING_VPS\n");
+	printf("DAEMON: Starting the vps\n");
 	list<VirtualProcessor*>::iterator it;
-	
+
 	for (it = vps_running.begin(); it != vps_running.end(); ++it) {
 		if((*it)->get_id() == 0) {
+			printf("DAEMON: Main_vp will be associated\n");
 			AnahyVM::set_main_vp(*it);
+			
 		} else {
 			(*it)->start(); // start vps
 		}
 	}
 
-	printf("STARTED_VPS\n");
+	printf("DAEMON: All vps has started\n");
 }
 
 void Daemon::stop_my_vps() {
@@ -126,7 +128,7 @@ void Daemon::stop_my_vps() {
 	 * main VP is also idle when there's no work
 	 */
 
-	printf("STOPING_VPS\n");
+	printf("DAEMON: Stoping vps\n");
 	for (it = vps_running.begin(); it != vps_running.end(); ++it) {
 		if((*it)->get_id() > 0) {
 			(*it)->stop();
@@ -154,6 +156,8 @@ void Daemon::waiting_for_a_job(VirtualProcessor* vp) {
 	__sync_add_and_fetch(&num_vps_waiting, 1);
 
 	pthread_mutex_lock(&mutex);
+
+	printf("VP %d has added itself on waiting list\n", vp->get_id());
 
 	vps_waiting.push_back(vp);
 	vps_running.remove(vp);

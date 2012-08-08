@@ -50,9 +50,9 @@ void Daemon::stop_my_vps() {
 
 void Daemon::run() {
 	should_stop = false;
-
+	
 	start_my_vps();
-
+	
 	pthread_mutex_lock(&mutex);
 	while (true) {
 		if (event_queue.empty()) {

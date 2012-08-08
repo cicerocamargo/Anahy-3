@@ -64,11 +64,11 @@ void aInit(int argc, char** argv) {
 		}
 	}
 
-	AnahyVM::boot(num_daemons, num_vps, scheduling_function, mode_operation);
+	AnahyVM::init(num_daemons, num_vps, scheduling_function, mode_operation);
 }
 
 void aTerminate() {
-	AnahyVM::shut_down();
+	AnahyVM::terminate();
 }
 
 void athread_exit(void* value_ptr) {

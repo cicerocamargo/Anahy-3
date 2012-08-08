@@ -26,6 +26,7 @@ void AnahyVM::start_vm() {
 								// by daemon 0
 	VirtualProcessor::associate_vp_with_current_thread((void*) main_vp);
 	pthread_mutex_unlock(&mutex);
+	printf("Init done\n");
 }
 
 void AnahyVM::stop_vm() {

@@ -87,7 +87,7 @@ VirtualProcessor::~VirtualProcessor()  {
 
 void VirtualProcessor::run() {
 	Job* job = NULL;
-	printf("RUNNING_VP %d\n", id);
+	printf("VP %d: Running...\n", id);
 	while(true) {
 		job = get_ready_job(NULL, true);
 
@@ -133,8 +133,8 @@ JobHandle VirtualProcessor::create_new_job(pfunc function, void* args,
 
 	Job* job = new Job(job_id, get_current_job(), this, attr, function, args);
 	
-	printf("VP %d: Creating job\n", id);
 	insert_job(job);
+	printf("VP %d: Created a job\n", id);
 
 	JobHandle handle;
 	handle.pointer = job;
@@ -171,6 +171,7 @@ void* VirtualProcessor::join_job(JobHandle handle) {
 void VirtualProcessor::start() {
 	// call this->run() in a new thread,
 	// and put this in the thread specific memory
+
 	pthread_mutex_unlock(&mutex); //unblock mutex that was block onto construtor
 	pthread_create(&thread, NULL, call_vp_run, this);
 }
@@ -194,6 +195,7 @@ void VirtualProcessor::resume() {
 
 void VirtualProcessor::insert_job(Job* job) {
 	pthread_mutex_lock(&mutex);
+	printf("VP %d: Inserting a job\n", id);
 	
 	graph.insert(job);
 
@@ -201,10 +203,10 @@ void VirtualProcessor::insert_job(Job* job) {
 }
 
 Job* VirtualProcessor::get_ready_job(Job* _starting_job, bool normal_search) {
-	printf("VP %d: Getting a ready job\n" ,id);
 	Job* job = NULL;
 
 	pthread_mutex_lock(&mutex);
+	printf("VP %d: Getting a ready job\n" ,id);
 	
 	job = graph.find_a_ready_job(_starting_job, normal_search);
 	

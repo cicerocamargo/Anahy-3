@@ -15,14 +15,56 @@ void* Daemon::run_daemon(void* arg) {
 	return NULL;
 }
 
+Daemon::Daemon(int _num_vps) : num_vps(_num_vps) {
+	pthread_mutex_init(&mutex, NULL);
+	pthread_cond_init(&cond, NULL);
+
+	printf("DAEMON: Creating vps\n");
+	//create my vps
+	for(int i = 0; i < num_vps; i++) {
+		vps_running.push_back(new VirtualProcessor(this));
+	}
+}
+
+bool Daemon::work_stealing_function(VirtualProcessor* vp) {
+	printf("DAEMON: I'll steal a job\n");
+	
+	Job* job = NULL;
+
+ 	list<VirtualProcessor*>::iterator it;
+ 	for(it = vps_running.begin(); it != vps_running.end(); ++it) {
+
+		/* false indicates to make a theft*/
+		job = (*it)->get_ready_job(NULL, false);
+
+		if(job) {
+			printf("DAEMON: I've found a job for vp %d\n", vp->get_id());
+ 			/*if the Daemon find a job to vp, 
+	 		* but it has already recepted a new 
+ 			* job from create primitive, the Daemon
+ 			* need to get the next vp on waiting list
+ 			*/
+	 		
+	 		job->set_vp_thief(vp);
+ 			vp->set_current_job(job);
+
+ 			vps_running.push_back(vp);
+ 			
+ 			return false;
+ 		}
+ 	}
+ 	return true;
+}
+
 void Daemon::run() {
  	//should_stop = false;
  	printf("DAEMON: Running...\n");
-
  	start_my_vps();
 
+ 	bool job_not_found = true;
+
  	VirtualProcessor* vp;
- 	Job* job;
+
  	pthread_mutex_lock(&mutex);
  	while (true) {
  		if(vps_waiting.size() == num_vps) {
@@ -41,57 +83,24 @@ void Daemon::run() {
  				vp = vps_waiting.front();
  				vps_waiting.pop_front();
  				__sync_sub_and_fetch(&num_vps_waiting, 1);
- 				
- 				bool job_not_found = true;
 
- 				/* here is where happens the work stealing */
- 				printf("DAEMON: I'll steal a job\n");
- 				list<VirtualProcessor*>::iterator it;
- 				for(it = vps_running.begin(); it != vps_running.end(); it++) {
+ 				/* here is where the magic happens */
+ 				job_not_found = work_stealing_function(vp);
 
- 					/* false indicates to search a work stealing*/
- 					job = (*it)->get_ready_job(NULL, false);
-
- 					if(job) {
- 						printf("DAEMON: I've found a job for vp %d\n", vp->get_id());
- 						/* if the Daemon find a job to vp, 
- 						but it has already recepted a new 
- 						job from create primitive, the Daemon
- 						need to get the next vp on waiting list
- 						*/
- 						job->set_vp_thief(vp);
- 						vp->set_current_job(job);
- 						vps_running.push_back(vp);
-
- 						pthread_mutex_unlock(&mutex);
-
- 						vp->resume();
- 						job_not_found = false;
- 						break;
- 					}
- 				}
- 				pthread_mutex_lock(&mutex);
  				if(job_not_found) {
- 					printf("Any job found, putting vp %d into waiting againg\n", vp->get_id());
+ 					printf("Any job has been found, putting vp %d into waiting againg\n", vp->get_id());
  					vps_waiting.push_front(vp);
  					pthread_cond_wait(&cond, &mutex);
+ 				}
+ 				else {
+ 					vp->resume();
+ 					pthread_mutex_unlock(&mutex);
  				}
  			}
  		}
 	}
 	
 	stop_my_vps();
-}
-
-Daemon::Daemon(int _num_vps) : num_vps(_num_vps) {
-	pthread_mutex_init(&mutex, NULL);
-	pthread_cond_init(&cond, NULL);
-
-	printf("DAEMON: Creating vps\n");
-	//create my vps
-	for(int i = 0; i < num_vps; i++) {
-		vps_running.push_back(new VirtualProcessor(this));
-	}
 }
 
 Daemon::~Daemon() {

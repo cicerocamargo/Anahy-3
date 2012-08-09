@@ -46,11 +46,12 @@ void JobGraph::erase(Job* job) {
 
 /* I don't know if what I'm doing in this method is right, because it's 3 AM muda fucka LOL*/
 Job* JobGraph::find_a_ready_job(Job* starting_job, bool mode) {
-	set<Job*> children;
 	// temp code
+
+	set<Job*> children;
 	list<Job*> job_list = root_jobs;
 	
-	if (starting_job != NULL) {
+	if (starting_job) {
 		set<Job*>::iterator it;
 		children = starting_job->get_children();
 
@@ -65,8 +66,8 @@ Job* JobGraph::find_a_ready_job(Job* starting_job, bool mode) {
 		
 		if (mode) {
 			list<Job*>::iterator it;
-			/* We can't return a job that was stolen for another vp*/
 			for (it = job_list.begin(); it != job_list.end(); ++it) {
+				/* We can't return a job that was stolen for another vp*/
 				if (!(*it)->get_vp_thief() && (*it)->compare_and_swap_state(ready, running)) {
 					return *it;
 				}

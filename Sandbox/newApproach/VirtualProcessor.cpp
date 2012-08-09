@@ -21,42 +21,6 @@ void* VirtualProcessor::call_vp_run(void* arg) {
 	return NULL;
 }
 
-// 'job' was not Finished, so I'll ask for a ready child of the job (joined)
-void VirtualProcessor::suspend_current_job_and_try_to_help(Job* joined) {
-	context_stack.push(get_current_job()); // save context
-
-	while(!joined->compare_and_swap_state(ready, ready)) {
-		set_current_job(get_ready_job(joined, true));
-	
-		if (get_current_job()) {
-			current_job->run();
-
-			erase_job(get_current_job());	
-		}
-		else {
-			/* there isn't a job to run */
-			break;
-		}
-	}
-	set_current_job(context_stack.top()); // restore stacked context
-	
-	context_stack.pop();
-}
-
-
-// run another job keeping track of the suspended job
-void VirtualProcessor::suspend_current_job_and_run_another(Job* another) {
-	context_stack.push(get_current_job()); // save context
-	set_current_job(another); // update current_job
-
-	current_job->run();
-
-	erase_job(get_current_job());
-	set_current_job(context_stack.top()); // restore stacked context
-	context_stack.pop();
-	
-}
-
 /**** STATIC METHODS ****/
 
 void VirtualProcessor::init_pthread_key() {
@@ -75,6 +39,8 @@ VirtualProcessor::VirtualProcessor(Daemon* _daemon) : daemon(_daemon) {
 	set_current_job(NULL);
 	job_counter = 0;
 
+	graph = new JobGraph();
+
 	pthread_mutex_init(&mutex, NULL);
 	pthread_mutex_lock(&mutex);
 }
@@ -85,23 +51,23 @@ VirtualProcessor::~VirtualProcessor()  {
 	pthread_mutex_destroy(&mutex);
 }
 
+// this is the main loop of vp
 void VirtualProcessor::run() {
 	Job* job = NULL;
 	printf("VP %d: Running...\n", id);
 	while(true) {
 		job = get_ready_job(NULL, true);
 
+		/* the vp need ask a new job to Daemon */
 		if (!job) {
-			printf("VP %d: Without job\n", id);
-			/* the vp need ask a new job to Daemon */
+			printf("VP %d: Without job, it will ask to Deamon a job\n", id);
 			daemon->waiting_for_a_job(this);
-		}
-		if (current_job) {
-			current_job->compare_and_swap_state(ready, running);
-			current_job->run();
+			if(get_current_job()) { current_job->run(); }
+			else { break; }
 		}
 		else {
-			break;
+			set_current_job(job);
+			current_job->run();
 		}
 	}
 }
@@ -139,6 +105,52 @@ JobHandle VirtualProcessor::create_new_job(pfunc function, void* args,
 	JobHandle handle;
 	handle.pointer = job;
 	return handle;
+}
+
+/*the job was not Finished, maybe it's waiting its children to finish,
+ * so, I'll help that job asking for a ready child while it doesn't 
+ be Finished.
+ */
+void VirtualProcessor::suspend_current_job_and_try_to_help(Job* joined) {
+	context_stack.push(get_current_job()); // save context
+
+	while(!joined->compare_and_swap_state(finished, finished)) {
+		set_current_job(get_ready_job(joined, false));
+	
+		if (get_current_job()) {
+			current_job->run();
+			printf("VP %d has found a child to run\n", id);
+			erase_job(get_current_job());
+		}
+		else {
+			/* there isn't a job to run, so I'll open a new branch to run
+			 * and after it I'll restore my stacked context.
+			*/
+			 printf("There isn't a child to run, VP %d will open a new branch\n", id);
+			set_current_job(get_ready_job(NULL, true));
+			if(get_current_job()) {
+				current_job->run();
+			}
+			break;
+		}
+	}
+	set_current_job(context_stack.top()); // restore stacked context
+	context_stack.pop();
+}
+
+
+// run another job keeping track of the suspended job
+void VirtualProcessor::suspend_current_job_and_run_another(Job* another) {
+	context_stack.push(get_current_job()); // save context
+	set_current_job(another); // update current_job
+
+	current_job->run();
+	printf("Vp %d running the joined job\n", id);
+
+	erase_job(get_current_job());
+	set_current_job(context_stack.top()); // restore stacked context
+	context_stack.pop();
+	
 }
 
 void* VirtualProcessor::join_job(JobHandle handle) {
@@ -197,19 +209,23 @@ void VirtualProcessor::insert_job(Job* job) {
 	pthread_mutex_lock(&mutex);
 	printf("VP %d: Inserting a job\n", id);
 	
-	graph.insert(job);
+	graph->insert(job);
 
 	pthread_mutex_unlock(&mutex);
 }
 
 Job* VirtualProcessor::get_ready_job(Job* _starting_job, bool normal_search) {
+	pthread_mutex_lock(&mutex);
 	Job* job = NULL;
 
-	pthread_mutex_lock(&mutex);
-	printf("VP %d: Getting a ready job\n" ,id);
+	printf("VP %d: Getting a ready job\n", id);
 	
-	job = graph.find_a_ready_job(_starting_job, normal_search);
+	job = graph->find_a_ready_job(_starting_job, normal_search);
 	
+	if(job) {
+		printf("Vp %d: I've found a job\n", id);
+	}
+
 	pthread_mutex_unlock(&mutex);
 
 	return job;
@@ -218,7 +234,7 @@ Job* VirtualProcessor::get_ready_job(Job* _starting_job, bool normal_search) {
 void VirtualProcessor::erase_job(Job* joined_job) {
 	pthread_mutex_lock(&mutex);
 
-	graph.erase(joined_job);
+	graph->erase(joined_job);
 
 	pthread_mutex_unlock(&mutex);
 }

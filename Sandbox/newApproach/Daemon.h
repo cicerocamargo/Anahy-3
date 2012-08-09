@@ -24,6 +24,7 @@ class Daemon {
 	void stop_my_vps();
 	void broadcast_null_job();
 
+	bool work_stealing_function(VirtualProcessor* vp);
 	static void* run_daemon(void* arg);
 	void run(); // main Daemon loop
 

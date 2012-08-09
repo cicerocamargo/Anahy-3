@@ -20,7 +20,7 @@ class VirtualProcessor {
 	static uint instance_counter;
 	
 	// this is the pointer to the graph of this vp
-	JobGraph graph;
+	JobGraph* graph;
 	
 	// the job that is running at the moment
 	Job* current_job;
@@ -45,7 +45,7 @@ class VirtualProcessor {
 	 * specific data as this and call this->run() (vp_obj is 'this')
 	*/
 	static void* call_vp_run(void* vp_obj);
-	
+
 	void suspend_current_job_and_try_to_help(Job* joined);
 	void suspend_current_job_and_run_another(Job* another);
 

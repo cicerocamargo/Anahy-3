@@ -88,3 +88,56 @@ void AnahyVM::set_main_vp(VirtualProcessor* vp) {
 	main_vp = vp;
 	pthread_mutex_unlock(&mutex);
 }
+
+int attr_init(JobAttributes* attr) {
+	//initialize all the job attributes as default
+	JobAttributes* attr_t = new JobAttributes();
+	attr = attr_t;
+	return 0;
+}
+
+int attr_destroy(JobAttributes* attr) {
+	attr->set_initialized(false);
+	delete attr;
+	return 0;
+}
+
+int attr_setdetached(JobAttributes* attr, JobAttributes_State _detach_state) {
+	if (!(attr->get_JobAttributes_State() & (CREATE_JOINABLE | CREATE_DETACHED))) {
+		return -1;
+	} else {
+		attr->set_detach_state(_detach_state);
+		return 0;
+	}
+}
+
+int attr_getdetached(JobAttributes* attr, JobAttributes_State* _detach_state) {
+	*_detach_state = attr->get_JobAttributes_State();
+	return 0;
+}
+
+int attr_setjoinnumber(JobAttributes* attr, int _num_joins) {
+	if (_num_joins < 0) {
+		return -1;
+	}
+	attr->set_num_joins(_num_joins);
+	return 0;
+}
+
+int attr_getjoinnumber(JobAttributes* attr, int* _num_joins) {
+	*_num_joins = attr->get_num_joins();
+	return 0;	
+}
+
+int attr_setjobcost(JobAttributes* attr, int _job_cost) {
+	if (_job_cost < 0) {
+		return -1;
+	}
+	attr->set_job_cost(_job_cost);
+	return 0;
+}
+
+int attr_setjobcost(JobAttributes* attr, int* _job_cost) {
+	*_job_cost = attr->get_job_cost();
+	return 0;
+}

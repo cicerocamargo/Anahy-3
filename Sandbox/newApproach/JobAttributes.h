@@ -4,8 +4,8 @@
 #include "definitions.h"
 
 enum JobAttributes_State { 
-	ATHREAD_CREATE_JOINABLE, //default
-	ATHREAD_CREATE_DETACHED
+	CREATE_JOINABLE, //default
+	CREATE_DETACHED
 };
 
 class JobAttributes {

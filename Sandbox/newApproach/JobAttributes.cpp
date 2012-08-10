@@ -3,7 +3,7 @@
 JobAttributes::JobAttributes() {
 	set_initialized(true);
 	set_num_joins(1);
-	set_detach_state(ATHREAD_CREATE_JOINABLE);
+	set_detach_state(CREATE_JOINABLE);
 	set_job_cost(0);
 }
 

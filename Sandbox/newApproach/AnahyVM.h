@@ -39,8 +39,8 @@ public:
 	static void set_main_vp(VirtualProcessor* vp);
 
 	//we'll define from now the methods to the job's attributes
-	//int athread_attr_init(athread_attr_t* attr);
-	//int athread_attr_destroy(athread_attr_t* attr);
+	int attr_init(JobAttributes* attr);
+	int attr_destroy(JobAttributes* attr);
 
 /*This attribute sets that threads (when terminated) 
  *can or cannot to free its resources.
@@ -50,18 +50,18 @@ public:
  When it happens, the thread resources are freed to be 
  able to allocate more threads.
 */
-	//int athread_attr_setdetached(athread_attr_t* attr, JobAttributes_State detach_state);
-	//int athread_attr_getdetached(athread_attr_t* attr, JobAttributes_State* detach_state);
+	int attr_setdetached(JobAttributes* attr, JobAttributes_State detach_state);
+	int attr_getdetached(JobAttributes* attr, JobAttributes_State* detach_state);
 
 	//This attributes indicates the joins' number the thread can receive
-	//int athread_attr_setjoinnumber(athread_attr_t* attr, int _num_joins);
-	//int athread_attr_getjoinnumber(athread_attr_t* attr, int* _num_joins);
+	int attr_setjoinnumber(JobAttributes* attr, int _num_joins);
+	int attr_getjoinnumber(JobAttributes* attr, int* _num_joins);
 
 	/*This attibutes sets the thread's cost, it can be used as support to the
  	* scheduling function or to scheduling frequency
 	*/
-	//int athread_attr_setjobcost(athread_attr_t* attr, int _job_cost);
-	//int athread_attr_getjobcost(athread_attr_t* attr, int* _job_cost);
+	int attr_setjobcost(JobAttributes* attr, int _job_cost);
+	int attr_getjobcost(JobAttributes* attr, int* _job_cost);
 };
 
 #endif

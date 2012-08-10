@@ -28,7 +28,7 @@ Daemon::Daemon(int _num_vps) : num_vps(_num_vps) {
 
 bool Daemon::work_stealing_function(VirtualProcessor* vp) {
 	printf("DAEMON: I'll steal a job\n");
-	
+		
 	Job* job = NULL;
 
  	list<VirtualProcessor*>::iterator it;

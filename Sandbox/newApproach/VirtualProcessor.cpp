@@ -207,7 +207,6 @@ void VirtualProcessor::resume() {
 
 void VirtualProcessor::insert_job(Job* job) {
 	pthread_mutex_lock(&mutex);
-	printf("VP %d: Inserting a job\n", id);
 	
 	graph->insert(job);
 
@@ -215,11 +214,15 @@ void VirtualProcessor::insert_job(Job* job) {
 }
 
 Job* VirtualProcessor::get_ready_job(Job* _starting_job, bool normal_search) {
-	pthread_mutex_lock(&mutex);
+	pthread_mutex_trylock(&mutex);
 	Job* job = NULL;
 
-	printf("VP %d: Getting a ready job\n", id);
-	
+	if(!normal_search) {
+		printf("Getting a ready job for Daemon\n", id);
+	} else {
+		printf("VP %d: Getting a ready job\n", id);
+	}
+
 	job = graph->find_a_ready_job(_starting_job, normal_search);
 	
 	if(job) {

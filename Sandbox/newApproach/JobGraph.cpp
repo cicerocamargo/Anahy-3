@@ -56,7 +56,7 @@ Job* JobGraph::find_a_ready_job(Job* starting_job, bool mode) {
 		children = starting_job->get_children();
 
 		for (it = children.begin(); it != children.end(); ++it) {
-			if (!(*it)->get_vp_thief() && (*it)->compare_and_swap_state(ready, running)) {
+			if (((*it)->get_vp_thief() == NULL) && (*it)->compare_and_swap_state(ready, running)) {
 				return *it;
 			}
 		}
@@ -68,7 +68,7 @@ Job* JobGraph::find_a_ready_job(Job* starting_job, bool mode) {
 			list<Job*>::iterator it;
 			for (it = job_list.begin(); it != job_list.end(); ++it) {
 				/* We can't return a job that was stolen for another vp*/
-				if (!(*it)->get_vp_thief() && (*it)->compare_and_swap_state(ready, running)) {
+				if (((*it)->get_vp_thief() == NULL) && (*it)->compare_and_swap_state(ready, running)) {
 					return *it;
 				}
 				else {
@@ -84,7 +84,7 @@ Job* JobGraph::find_a_ready_job(Job* starting_job, bool mode) {
 			list<Job*>::reverse_iterator rit;
 
 			for (rit = job_list.rbegin(); rit != job_list.rend(); ++rit) {
-				if (!(*rit)->get_vp_thief() && (*rit)->compare_and_swap_state(ready, running)) {
+				if (((*rit)->get_vp_thief() == NULL) && (*rit)->compare_and_swap_state(ready, running)) {
 					return *rit;
 				}
 				else {

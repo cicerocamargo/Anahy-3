@@ -76,8 +76,6 @@ public:
 	// messages to be received from a Daemon
 	void start();
 	void stop();
-	void block(); // from my thread
-	void resume();
 
 	/* getters and setters */
 	inline Job* get_current_job() const { return current_job; }

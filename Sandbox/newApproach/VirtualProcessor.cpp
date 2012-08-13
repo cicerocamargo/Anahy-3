@@ -54,8 +54,8 @@ void VirtualProcessor::run() {
 
 	printf("VP %d: Running...\n", id);
 	while(true) {
+		
 		daemon->request_job(NULL, this);
-		block();
 		
 		if (!get_current_job()) {
 			printf("VP %d: I have no job, I'll stop\n", id);
@@ -63,7 +63,7 @@ void VirtualProcessor::run() {
 		}
 		else {
 			current_job->run();
-			set_current_job(NULL);
+			daemon->erase_job(current_job, this);
 		}
 	}
 }
@@ -72,7 +72,7 @@ void VirtualProcessor::run() {
 void VirtualProcessor::call_vp_destructor(void *vp_obj) { }
 
 void VirtualProcessor::associate_vp_with_current_thread(void* vp_obj) {
-	printf("ASSOCIATING_VP\n");
+	printf("VP ASSOCIATING_VP\n");
 	pthread_setspecific(key, vp_obj);
 }
 
@@ -96,7 +96,7 @@ JobHandle VirtualProcessor::create_new_job(pfunc function, void* args,
 	Job* job = new Job(job_id, get_current_job(), this, attr, function, args);
 	
 	daemon->post_job(job);
-	printf("VP %d sended a job to daemon graph\n", id);
+	printf("VP %d sent a job to daemon graph\n", id);
 	
 	JobHandle handle;
 	handle.pointer = job;
@@ -109,17 +109,15 @@ JobHandle VirtualProcessor::create_new_job(pfunc function, void* args,
  */
 void VirtualProcessor::suspend_current_job_and_try_to_help(Job* joined) {
 	context_stack.push(current_job); // save context
+	printf("VP %d: I'll help the job to run\n", id);
 
-	while(joined->compare_and_swap_state(finished, finished)) {
-		daemon->request_job(joined, this);
-		block();
+	daemon->request_job(joined, this);
 
-		if (current_job != context_stack.top()) { // daemon updated my current job
-			current_job->run();
+	if (current_job != context_stack.top()) { // daemon updated my current job
+		current_job->run();
 
-			daemon->erase_job(get_current_job());
-		}
 	}
+
 	current_job = context_stack.top(); // restore stacked context
 
 	// here, if daemon didn't change the current job and resumed me
@@ -132,13 +130,13 @@ void VirtualProcessor::suspend_current_job_and_try_to_help(Job* joined) {
 
 // run another job keeping track of the suspended job
 void VirtualProcessor::suspend_current_job_and_run_another(Job* another) {
+
 	context_stack.push(get_current_job()); // save context
 	set_current_job(another); // update current_job
 
 	current_job->run();
-	printf("Vp %d running the joined job\n", id);
+	printf("Vp %d: Running the joined job ", id);
 
-	daemon->erase_job(get_current_job());
 	set_current_job(context_stack.top()); // restore stacked context
 	context_stack.pop();
 	
@@ -163,7 +161,7 @@ void* VirtualProcessor::join_job(JobHandle handle) {
 	}
 
 	if (joined->dec_join_counter()) {
-		daemon->erase_job(joined);
+		daemon->erase_job(joined, this);
 	}
 	return joined->get_retval();
 }
@@ -180,18 +178,6 @@ void VirtualProcessor::start() {
 // called from Daemon Thread
 void VirtualProcessor::stop() {
 	pthread_join(thread, NULL);
-}
-
-// called from a daemon Object
-void VirtualProcessor::block() {
-
-	pthread_mutex_lock(&mutex);
-}
-
-// called from Daemon Thread
-void VirtualProcessor::resume() {
-
-	pthread_mutex_unlock(&mutex);	// unblock this vp's thread
 }
 
 uint VirtualProcessor::get_id() const {

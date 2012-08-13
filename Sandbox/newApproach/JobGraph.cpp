@@ -61,6 +61,7 @@ Job* JobGraph::find_a_ready_job(Job* starting_job) {
 			}
 		}
 		else {
+			printf("Graph: Precisou chegar aqui\n\n");
 			find_a_ready_job(NULL);
 		}
 	}

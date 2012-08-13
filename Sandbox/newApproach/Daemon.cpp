@@ -21,19 +21,21 @@ Daemon::Daemon(int _num_vps) : num_vps(_num_vps) {
 	for(int i = 0; i < num_vps; i++) {
 		vps_running.push_back(new VirtualProcessor(this));
 	}
-	start_my_vps();
 }
 
 void Daemon::broadcast_null() {
 
+	pthread_mutex_lock(&mutex);
+	
 	list<VirtualProcessor*>::iterator it;
 
 	for (it = vps_waiting.begin(); it != vps_waiting.end(); ++it) {
 		vps_running.push_back(*it);
 		(*it)->set_current_job(NULL);
-		(*it)->resume();
-		vps_waiting.pop_front();
+
+		it = vps_waiting.erase(it);
 	}
+	pthread_mutex_unlock(&mutex);
 }
 
 Daemon::~Daemon() {
@@ -71,48 +73,46 @@ void Daemon::stop_my_vps() {
 	 * main VP is also idle when there's no work
 	 */
 
-	printf("DAEMON: Stoping vps\n");
 	for (it = vps_running.begin(); it != vps_running.end(); ++it) {
 		if((*it)->get_id() > 0) {
 			(*it)->stop();
 		}
 	}
-	if(!vps_waiting.empty()) {
-		for (it = vps_waiting.begin(); it != vps_waiting.end(); ++it) {
-			if((*it)->get_id() > 0) {
-				(*it)->stop();
-			}
-		}
-	}
+	printf("DAEMON: Vps stopped\n");
 }
 
 void Daemon::put_vp_on_waiting_list(VirtualProcessor* vp) {
-	pthread_mutex_lock(&mutex);
 
-	printf("Putting VP %d on waiting list\n", vp->get_id());
-	
+	printf("DAEMON: Putting VP %d on waiting list\n", vp->get_id());
+
+	list<VirtualProcessor*>::iterator it;
+
+	for (it = vps_running.begin(); it != vps_running.end(); ++it) {
+		if ((*it)->get_id() == vp->get_id()) {
+			break;
+		}
+	}
+
 	vps_waiting.push_back(vp);
-	vps_running.pop_front();
-
-	pthread_mutex_unlock(&mutex);
+	it = vps_running.erase(it);
 }
 
 void Daemon::answer_oldest_vp_waiting() {
-	pthread_mutex_lock(&mutex);
 
 	// job's state has already been set to running
 	VirtualProcessor* vp;
+	Job* job;
 
-	printf("Taking a vp from waiting list and searching a job for it\n");
+	printf("DAEMON: Taking a vp from waiting list and searching a job for it\n");
 
-	vp = vps_waiting.front();
-	vps_waiting.pop_front();
-	vps_running.push_back(vp);
-	
-	pthread_mutex_unlock(&mutex);
-
-	request_job(NULL, vp);	// send a NULL job to
-								// break VP loop
+	job = graph->find_a_ready_job(NULL);
+	if (job) {
+		vp = vps_waiting.front();
+		vps_waiting.pop_front();
+		vps_running.push_back(vp);
+		
+		vp->set_current_job(job);
+	}	
 }
 
 /**** PUBLIC METHODS ****/
@@ -122,13 +122,13 @@ void Daemon::post_job(Job* job) {
 	
 	graph->insert(job);
 
-	printf("A job has been posted\n");
+	printf("DAEMON: A job has been posted\n");
 
-	VirtualProcessor* vp;
 	if (!vps_waiting.empty()) {
-		pthread_mutex_unlock(&mutex);
-		printf("the waiting list is not empty:\n");
+		
+		printf("DAEMON: the waiting list is not empty:\n");
 		answer_oldest_vp_waiting();
+		pthread_cond_signal(&cond);
 	}
 
 	pthread_mutex_unlock(&mutex);
@@ -139,36 +139,36 @@ void Daemon::request_job(Job* _starting_job, VirtualProcessor* vp) {
 
 	Job* job = NULL;
 
+	printf("Daemon: I'll find a job to vp %d. w_list %lu and r_lis %lu\n", vp->get_id(), vps_waiting.size(), vps_running.size());
 	job = graph->find_a_ready_job(_starting_job);
 	
 	if(job) {
-		printf("Vp %d: I've found a job\n", vp->get_id());
-		pthread_mutex_unlock(&mutex);
+		printf("DAEMON: Vp %d: I've found a job\n", vp->get_id());
 		
 		vp->set_current_job(job);
-		vp->resume();
 	}
 	else {
 
 		if (vps_waiting.size() == num_vps-1) {
-			printf("All vps are waiting. broadcasting null for all the vps\n");
+			printf("DAEMON: All vps are waiting. Broadcasting null.\n");
+			
 			broadcast_null();
 		}
 		else {
-			printf("Daemon didn't find a job for Vp %d, it will put the vp to waiting list\n", vp->get_id());
-			pthread_mutex_unlock(&mutex);
+			printf("DAEMON: I didn't find a job for Vp %d, it will put the vp to waiting list\n", vp->get_id());
 			put_vp_on_waiting_list(vp);
 
+			pthread_cond_wait(&cond, &mutex);
 		}
 	}
 	pthread_mutex_unlock(&mutex);
-	return;
 }
 
-void Daemon::erase_job(Job* joined_job) {
+void Daemon::erase_job(Job* joined_job, VirtualProcessor* vp) {
 	pthread_mutex_lock(&mutex);
 
 	graph->erase(joined_job);
+	vp->set_current_job(NULL);
 
 	pthread_mutex_unlock(&mutex);
 }

@@ -36,7 +36,7 @@ public:
 	//to be called from vps
 	void post_job(Job* job);
 	void request_job(Job* _starting_job, VirtualProcessor* vp);
-	void erase_job(Job* joined_job);
+	void erase_job(Job* joined_job, VirtualProcessor* vp);
 
 };
 

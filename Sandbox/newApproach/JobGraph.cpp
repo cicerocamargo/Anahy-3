@@ -44,56 +44,38 @@ void JobGraph::erase(Job* job) {
 	// delete job;
 }
 
-/* I don't know if what I'm doing in this method is right, because it's 3 AM muda fucka LOL*/
-Job* JobGraph::find_a_ready_job(Job* starting_job, bool mode) {
-	// temp code
-
+Job* JobGraph::find_a_ready_job(Job* starting_job) {
 	set<Job*> children;
+	// temp code
 	list<Job*> job_list = root_jobs;
-	
-	if (starting_job) {
-		set<Job*>::iterator it;
-		children = starting_job->get_children();
+	list<Job*>::iterator it;
+	set<Job*>::iterator it_child;
 
-		for (it = children.begin(); it != children.end(); ++it) {
-			if (((*it)->get_vp_thief() == NULL) && (*it)->compare_and_swap_state(ready, running)) {
-				return *it;
-			}
-		}
-	}
-	else {
-		/* This stretch of code is stupid, I know*/
-		
-		if (mode) {
-			list<Job*>::iterator it;
-			for (it = job_list.begin(); it != job_list.end(); ++it) {
-				/* We can't return a job that was stolen for another vp*/
-				if (((*it)->get_vp_thief() == NULL) && (*it)->compare_and_swap_state(ready, running)) {
+	if(starting_job) {
+		children = starting_job->get_children();
+		if (!children.empty()) {
+			for (it_child = children.begin(); it_child != children.end(); ++it_child) {
+				if ((*it)->compare_and_swap_state(ready, running)) {
 					return *it;
-				}
-				else {
-					children = (*it)->get_children();
-					if (!children.empty()) {
-						job_list.insert(job_list.end(), children.begin(), children.end());
-					}
-					job_list.remove(*it);
 				}
 			}
 		}
 		else {
-			list<Job*>::reverse_iterator rit;
+			find_a_ready_job(NULL);
+		}
+	}
+	else {
 
-			for (rit = job_list.rbegin(); rit != job_list.rend(); ++rit) {
-				if (((*rit)->get_vp_thief() == NULL) && (*rit)->compare_and_swap_state(ready, running)) {
-					return *rit;
+		for (it = job_list.begin(); it != job_list.end(); ++it) {
+			if ((*it)->compare_and_swap_state(ready, running)) {
+				return *it;
+			}
+			else {
+				children = (*it)->get_children();
+				if (!children.empty()){
+					job_list.insert(job_list.end(), children.begin(), children.end());
 				}
-				else {
-					children = (*rit)->get_children();
-					if (!children.empty()) {
-						job_list.insert(job_list.begin(), children.begin(), children.end());
-					}
-					job_list.remove(*rit);
-				}
+				it = job_list.erase(it);
 			}
 		}
 	}

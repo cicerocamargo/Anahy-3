@@ -1,1 +1,0 @@
-- As funções do ambiente devem ser transparentes para a API, por exemplo: um athread_create deve simplesmente chamar o AnahyVM::create (o mesmo para o join). Daí dentro desses métodos, o ambiente descobre qual o vp que realizou essa chamada e o envia uma mensagem para realizar a operação correspondente.

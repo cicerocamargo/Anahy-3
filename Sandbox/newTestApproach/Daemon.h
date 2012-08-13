@@ -3,7 +3,6 @@
 
 #include <pthread.h>
 #include <list>
-#include "JobGraph.h"
 
 using namespace std;
 
@@ -13,31 +12,32 @@ class VirtualProcessor;
 
 class Daemon {
 
-	JobGraph* graph;
+	pthread_t thread;
 
 	pthread_mutex_t mutex;
 	pthread_cond_t cond;
 
-	int num_vps;
+	int num_vps, num_vps_waiting;
 	list<VirtualProcessor*> vps_waiting, vps_running;
+	
+	void start_my_vps();
+	void stop_my_vps();
+	void broadcast_null_job();
 
-	void put_vp_on_waiting_list(VirtualProcessor* vp);
-	void answer_oldest_vp_waiting();
-	void broadcast_null();
+	bool work_stealing_function(VirtualProcessor* vp);
+	static void* run_daemon(void* arg);
+	void run(); // main Daemon loop
 
 public:
 
 	Daemon(int _num_vps);
 	~Daemon();
 
-	void start_my_vps();
-	void stop_my_vps();
-
 	//to be called from vps
-	void post_job(Job* job);
-	void request_job(Job* _starting_job, VirtualProcessor* vp);
-	void erase_job(Job* joined_job);
-
+	void waiting_for_a_job(VirtualProcessor* vp);
+	
+	void start();
+	void stop();
 };
 
 #endif

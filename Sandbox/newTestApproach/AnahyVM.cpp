@@ -9,7 +9,8 @@ VirtualProcessor* AnahyVM::main_vp;
 pthread_mutex_t AnahyVM::mutex;
 
 void AnahyVM::start_vm() {
-			
+	daemon->start(); // start the daemon
+		
 	pthread_mutex_lock(&mutex);	// wait for VP 0 to be set
 								// by daemon 0
 	VirtualProcessor::associate_vp_with_current_thread((void*) main_vp);
@@ -23,7 +24,8 @@ void AnahyVM::stop_vm() {
 	main_vp->run(); // this allows the main VP to help the execution of
 					// remaining jobs and the Daemon to know that the
 					// main VP is also idle when there's no work
-	daemon->stop_my_vps();
+
+	daemon->stop();
 }
 
 //here the interface begins to be described

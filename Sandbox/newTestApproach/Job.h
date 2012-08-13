@@ -51,7 +51,8 @@ public:
 	Job* get_parent() const;
 	inline set<Job*>& get_children() { return children; }
 	VirtualProcessor* get_creator() const;
-	
+	VirtualProcessor* get_vp_thief() const;
+	void set_vp_thief(VirtualProcessor* vp);
 	JobState get_state() const;
 	JobAttributes* get_attributes() const;
 	void* get_retval() const;

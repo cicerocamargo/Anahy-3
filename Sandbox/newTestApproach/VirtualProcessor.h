@@ -1,6 +1,7 @@
 #include <pthread.h>
 #include <stack>
 #include "definitions.h"
+#include "JobGraph.h"
 
 using namespace std;
 
@@ -19,7 +20,8 @@ class VirtualProcessor {
 	static uint instance_counter;
 	
 	// this is the pointer to the graph of this vp
-		
+	JobGraph* graph;
+	
 	// the job that is running at the moment
 	Job* current_job;
 	
@@ -78,6 +80,10 @@ public:
 	void stop();
 	void block(); // from my thread
 	void resume();
+	
+	void insert_job(Job* job);
+	Job* get_ready_job(Job* _starting_job, bool normal_search);
+	void erase_job(Job* joined_job);
 
 	/* getters and setters */
 	inline Job* get_current_job() const { return current_job; }

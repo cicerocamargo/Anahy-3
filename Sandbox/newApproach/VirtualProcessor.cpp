@@ -15,7 +15,7 @@ pthread_key_t VirtualProcessor::key;
 /* PRIVATE METHODS */
 
 void* VirtualProcessor::call_vp_run(void* arg) {
-	VirtualProcessor::associate_vp_with_current_thread(arg);
+	associate_vp_with_current_thread(arg);
 	VirtualProcessor* vp = (VirtualProcessor*) arg;
 	vp->run();
 	return NULL;
@@ -36,7 +36,7 @@ void VirtualProcessor::delete_pthread_key() {
 // called from Daemon Thread
 VirtualProcessor::VirtualProcessor(Daemon* _daemon) : daemon(_daemon) {
 	id = instance_counter++;
-	set_current_job(NULL);
+	current_job = NULL;
 	job_counter = 0;
 
 	pthread_mutex_init(&mutex, NULL);
@@ -57,13 +57,13 @@ void VirtualProcessor::run() {
 		
 		daemon->request_job(NULL, this);
 		
-		if (!get_current_job()) {
+		if (!current_job) {
 			printf("VP %d: I have no job, I'll stop\n", id);
 			break;
 		}
 		else {
 			current_job->run();
-			daemon->erase_job(current_job, this);
+			//daemon->erase_job(current_job, this);
 		}
 	}
 }
@@ -93,7 +93,7 @@ JobHandle VirtualProcessor::create_new_job(pfunc function, void* args,
 		attr = new JobAttributes();
 	}
 
-	Job* job = new Job(job_id, get_current_job(), this, attr, function, args);
+	Job* job = new Job(job_id, current_job, this, attr, function, args);
 	
 	daemon->post_job(job);
 	printf("VP %d sent a job to daemon graph\n", id);
@@ -131,15 +131,14 @@ void VirtualProcessor::suspend_current_job_and_try_to_help(Job* joined) {
 // run another job keeping track of the suspended job
 void VirtualProcessor::suspend_current_job_and_run_another(Job* another) {
 
-	context_stack.push(get_current_job()); // save context
-	set_current_job(another); // update current_job
+	context_stack.push(current_job); // save context
+	current_job = another; // update current_job
 
 	current_job->run();
-	printf("Vp %d: Running the joined job ", id);
 
-	set_current_job(context_stack.top()); // restore stacked context
+	current_job = context_stack.top(); // restore stacked context
 	context_stack.pop();
-	
+	printf("Vp %d: A joined job was ran.", id);
 }
 
 void* VirtualProcessor::join_job(JobHandle handle) {
@@ -160,9 +159,9 @@ void* VirtualProcessor::join_job(JobHandle handle) {
 		}
 	}
 
-	if (joined->dec_join_counter()) {
-		daemon->erase_job(joined, this);
-	}
+	joined->dec_join_counter();
+		//daemon->erase_job(joined, this);
+	//}
 	return joined->get_retval();
 }
 

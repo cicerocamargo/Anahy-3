@@ -21,7 +21,8 @@ void AnahyVM::start_vm() {
 
 void AnahyVM::stop_vm() {
 	
-	main_vp->run(); // this allows the main VP to help the execution of
+	//printf("XXX Run main vp\n");
+	//main_vp->run(); // this allows the main VP to help the execution of
 					// remaining jobs and the Daemon to know that the
 					// main VP is also idle when there's no work
 	printf("AnahyVM: The Daemon will stop all vps\n");
@@ -41,10 +42,7 @@ void AnahyVM::init(int _num_vps) {
 	* it can block itself in the next call
 	* to wait for the VP 0 to be associated
 	* with the main thread*/
-	pthread_mutex_lock(&mutex);	// since the main thread has the VM's lock,
-								// it can block itself in the next call
-								// to wait for the VP 0 to be associated
-								// with the main thread
+	//pthread_mutex_lock(&mutex);
 
 	start_vm();
 	printf("AnahyVM: Init done\n");

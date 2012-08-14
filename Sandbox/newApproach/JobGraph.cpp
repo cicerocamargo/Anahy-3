@@ -47,10 +47,9 @@ void JobGraph::erase(Job* job) {
 Job* JobGraph::find_a_ready_job(Job* starting_job) {
 	set<Job*> children;
 	// temp code
-	list<Job*> job_list = root_jobs;
 	list<Job*>::iterator it;
 	set<Job*>::iterator it_child;
-
+	//HERE ERROR - HERE ERROR - HERE ERROR
 	if(starting_job) {
 		children = starting_job->get_children();
 		if (!children.empty()) {
@@ -61,24 +60,25 @@ Job* JobGraph::find_a_ready_job(Job* starting_job) {
 			}
 		}
 		else {
-			printf("Graph: Precisou chegar aqui\n\n");
+			printf("Graph: It tried run a child, but I couldn't do it.\n\tSearching a root job.\n");
 			find_a_ready_job(NULL);
 		}
 	}
 	else {
-
-		for (it = job_list.begin(); it != job_list.end(); ++it) {
+		printf("Graph: Ok, no one starting_job has been gave me.\n\tI'll find from the root.\n");
+		for (it = root_jobs.begin(); it != root_jobs.end(); ++it) {
 			if ((*it)->compare_and_swap_state(ready, running)) {
 				return *it;
 			}
 			else {
 				children = (*it)->get_children();
 				if (!children.empty()){
-					job_list.insert(job_list.end(), children.begin(), children.end());
+					root_jobs.insert(root_jobs.end(), children.begin(), children.end());
 				}
-				it = job_list.erase(it);
+				it = root_jobs.erase(it);
 			}
 		}
 	}
+	printf("Mimimi, no on job is ready, I'll give you a NULL.\n");
 	return NULL;
 }

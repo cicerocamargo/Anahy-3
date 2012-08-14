@@ -67,7 +67,7 @@ void Job::set_retval(void* new_retval) {
     retval = new_retval;
 }
 
-JobId Job::get_id() const {
+JobId Job::get_id() {
     return id;
 }
 

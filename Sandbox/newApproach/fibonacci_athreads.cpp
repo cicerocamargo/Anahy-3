@@ -54,15 +54,14 @@ int main(int argc, char const *argv[]) {
 		
 		AnahyVM::create(&handle, NULL, par_fib, (void*) new long(n));
 		
-		cout << "Create: Done" << endl;
+		//cout << "Create: Done" << endl;
 
 		long* result = new long(0);
 		AnahyVM::join(handle, (void**) &result);
 
-		AnahyVM::terminate();
-
 		cout << "fib(" << n << ") = " << (*result) << endl;
 		delete result;
+		AnahyVM::terminate();
 	}
 
 	return 0;

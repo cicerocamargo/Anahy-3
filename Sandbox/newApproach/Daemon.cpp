@@ -25,17 +25,27 @@ Daemon::Daemon(int _num_vps) : num_vps(_num_vps) {
 
 void Daemon::broadcast_null() {
 
-	pthread_mutex_lock(&mutex);
-	
+	//pthread_mutex_lock(&mutex);
 	list<VirtualProcessor*>::iterator it;
 
-	for (it = vps_waiting.begin(); it != vps_waiting.end(); ++it) {
-		vps_running.push_back(*it);
-		(*it)->set_current_job(NULL);
+	/* firstly, I've got to set all the current jobs of the vps on running 
+	 * list as NULL, then I need to remove all the vps from waiting list
+	 * and to set its current job as NULL, too.
+	*/
 
+	for (it = vps_running.begin(); it != vps_running.end(); ++it) {
+		(*it)->set_current_job(NULL);
+	}
+
+	for (it = vps_waiting.begin(); it != vps_waiting.end(); ++it) {
+		
+		(*it)->set_current_job(NULL);
+		vps_running.push_back(*it);
+		
 		it = vps_waiting.erase(it);
 	}
-	pthread_mutex_unlock(&mutex);
+	pthread_cond_broadcast(&cond);
+	//pthread_mutex_unlock(&mutex);
 }
 
 Daemon::~Daemon() {
@@ -45,6 +55,8 @@ Daemon::~Daemon() {
 
 	vps_waiting.clear();
 	vps_running.clear();
+
+	delete graph;
 }
 
 void Daemon::start_my_vps() {
@@ -56,7 +68,6 @@ void Daemon::start_my_vps() {
 		if((*it)->get_id() == 0) {
 			printf("DAEMON: Main_vp will be associated\n");
 			AnahyVM::set_main_vp(*it);
-			
 		} else {
 			(*it)->start(); // start vps
 		}
@@ -84,7 +95,8 @@ void Daemon::stop_my_vps() {
 void Daemon::put_vp_on_waiting_list(VirtualProcessor* vp) {
 
 	printf("DAEMON: Putting VP %d on waiting list\n", vp->get_id());
-
+	printf("%lu R_list and %lu to W_list\n", vps_running.size(), vps_waiting.size());
+	//HERE ERROR - HERE ERROR - HERE ERROR
 	list<VirtualProcessor*>::iterator it;
 
 	for (it = vps_running.begin(); it != vps_running.end(); ++it) {
@@ -93,26 +105,31 @@ void Daemon::put_vp_on_waiting_list(VirtualProcessor* vp) {
 		}
 	}
 
-	vps_waiting.push_back(vp);
+	vps_waiting.push_back(*it);
 	it = vps_running.erase(it);
 }
 
 void Daemon::answer_oldest_vp_waiting() {
 
 	// job's state has already been set to running
-	VirtualProcessor* vp;
-	Job* job;
-
-	printf("DAEMON: Taking a vp from waiting list and searching a job for it\n");
+	VirtualProcessor* vp = NULL;
+	Job* job = NULL;
 
 	job = graph->find_a_ready_job(NULL);
 	if (job) {
 		vp = vps_waiting.front();
-		vps_waiting.pop_front();
 		vps_running.push_back(vp);
+		vps_waiting.pop_front();
 		
+		printf("DAEMON: Taking a VP %dfrom waiting list and sending a job to it run\n", vp->get_id());
+
 		vp->set_current_job(job);
-	}	
+		/* The signal to cond variable needs to be 
+		 * here in case of a job has been found. If not
+		 * the vp waiting must to keep waiting.
+		*/
+		pthread_cond_signal(&cond);
+	}
 }
 
 /**** PUBLIC METHODS ****/
@@ -128,7 +145,6 @@ void Daemon::post_job(Job* job) {
 		
 		printf("DAEMON: the waiting list is not empty:\n");
 		answer_oldest_vp_waiting();
-		pthread_cond_signal(&cond);
 	}
 
 	pthread_mutex_unlock(&mutex);
@@ -156,9 +172,17 @@ void Daemon::request_job(Job* _starting_job, VirtualProcessor* vp) {
 		}
 		else {
 			printf("DAEMON: I didn't find a job for Vp %d, it will put the vp to waiting list\n", vp->get_id());
-			put_vp_on_waiting_list(vp);
+			/* One vp can put itself on waiting lista after 
+			 * the last comparison, then I need to compare again to I don't 
+			 * put one vp on waiting list and no longer take it from there*/
 
-			pthread_cond_wait(&cond, &mutex);
+			if (vps_waiting.size() != num_vps-1) {
+				put_vp_on_waiting_list(vp);
+				pthread_cond_wait(&cond, &mutex);
+			}
+			else {
+				broadcast_null();
+			}
 		}
 	}
 	pthread_mutex_unlock(&mutex);

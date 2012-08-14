@@ -47,7 +47,7 @@ public:
 	void display(int num_tabs=0);
 
 	// getters and setters 
-	JobId get_id() const;
+	JobId get_id();
 	Job* get_parent() const;
 	inline set<Job*>& get_children() { return children; }
 	VirtualProcessor* get_creator() const;

@@ -25,7 +25,7 @@ void AnahyVM::stop_vm() {
 	//main_vp->run(); // this allows the main VP to help the execution of
 					// remaining jobs and the Daemon to know that the
 					// main VP is also idle when there's no work
-	printf("AnahyVM: The Daemon will stop all vps\n");
+	//printf("AnahyVM: The Daemon will stop all vps\n");
 	daemon->stop_my_vps();
 }
 
@@ -45,7 +45,7 @@ void AnahyVM::init(int _num_vps) {
 	//pthread_mutex_lock(&mutex);
 
 	start_vm();
-	printf("AnahyVM: Init done\n");
+	printf("Init done. Starting application with %d vps...\n", _num_vps);
 }
 
 void AnahyVM::terminate() {
@@ -55,6 +55,7 @@ void AnahyVM::terminate() {
 	VirtualProcessor::delete_pthread_key();
 
 	delete daemon;
+	printf("Goodbye. Cruel world!\n");
 }
 
 void AnahyVM::exit(void* value_ptr) {

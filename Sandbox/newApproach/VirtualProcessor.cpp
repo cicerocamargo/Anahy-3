@@ -5,11 +5,13 @@
 #include "JobId.h"
 #include <cstdio>
 #include <cstdlib>
+#include <sched.h>
 
 /**** STATIC MEMBERS' ITIALIZATIONS ****/
 
 pthread_mutex_t VirtualProcessor::mutex;
 uint VirtualProcessor::instance_counter = 0;
+long VirtualProcessor::tid_counter = 0;
 pthread_key_t VirtualProcessor::key;
 
 /* PRIVATE METHODS */
@@ -17,6 +19,18 @@ pthread_key_t VirtualProcessor::key;
 void* VirtualProcessor::call_vp_run(void* arg) {
 	associate_vp_with_current_thread(arg);
 	VirtualProcessor* vp = (VirtualProcessor*) arg;
+
+	cpu_set_t cpuset;
+
+	// this set the vp affinity
+	CPU_ZERO(&cpuset);
+	//printf("%u -- %ld\n", vp->get_id(), vp->get_tid());
+
+	CPU_SET(vp->get_tid(), (cpu_set_t*) &cpuset);
+	if (pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset) != 0) {
+		printf("Error in pthread_setaffinity_np!\n");
+	}
+
 	vp->run();
 	return NULL;
 }
@@ -35,6 +49,12 @@ void VirtualProcessor::delete_pthread_key() {
 
 // called from Daemon Thread
 VirtualProcessor::VirtualProcessor(Daemon* _daemon) : daemon(_daemon) {
+	if (tid_counter == daemon->get_num_cpus())
+		tid_counter = 0;
+	
+	tid = tid_counter++;
+
+	//printf("RA %ld - %u\n", tid, instance_counter);
 	id = instance_counter++;
 	current_job = NULL;
 	job_counter = 0;
@@ -52,13 +72,13 @@ VirtualProcessor::~VirtualProcessor()  {
 // this is the main loop of vp
 void VirtualProcessor::run() {
 
-	printf("VP %d: Running...\n", id);
+	//printf("VP %d: Running...\n", id);
 	while(true) {
 		
 		daemon->request_job(NULL, this);
 		
 		if (!current_job) {
-			printf("VP %d: I have no job, I'll stop\n", id);
+			//printf("VP %d: I have no job, I'll stop\n", id);
 			break;
 		}
 		else {
@@ -72,7 +92,7 @@ void VirtualProcessor::run() {
 void VirtualProcessor::call_vp_destructor(void *vp_obj) { }
 
 void VirtualProcessor::associate_vp_with_current_thread(void* vp_obj) {
-	printf("VP ASSOCIATING_VP\n");
+	//printf("VP ASSOCIATING_VP\n");
 	pthread_setspecific(key, vp_obj);
 }
 
@@ -96,7 +116,7 @@ JobHandle VirtualProcessor::create_new_job(pfunc function, void* args,
 	Job* job = new Job(job_id, current_job, this, attr, function, args);
 	
 	daemon->post_job(job);
-	printf("VP %d sent a job to daemon graph\n", id);
+	//printf("VP %d sent a job to daemon graph\n", id);
 	
 	JobHandle handle;
 	handle.pointer = job;
@@ -109,7 +129,7 @@ JobHandle VirtualProcessor::create_new_job(pfunc function, void* args,
  */
 void VirtualProcessor::suspend_current_job_and_try_to_help(Job* joined) {
 	context_stack.push(current_job); // save context
-	printf("VP %d: I'll help the job to run\n", id);
+	//printf("VP %d: I'll help the job to run\n", id);
 
 	daemon->request_job(joined, this);
 
@@ -138,7 +158,7 @@ void VirtualProcessor::suspend_current_job_and_run_another(Job* another) {
 
 	current_job = context_stack.top(); // restore stacked context
 	context_stack.pop();
-	printf("Vp %d: A joined job was ran.", id);
+	//printf("Vp %d: A joined job was ran.", id);
 }
 
 void* VirtualProcessor::join_job(JobHandle handle) {
@@ -159,9 +179,9 @@ void* VirtualProcessor::join_job(JobHandle handle) {
 		}
 	}
 
-	joined->dec_join_counter();
-		//daemon->erase_job(joined, this);
-	//}
+	if(joined->dec_join_counter()) {
+		daemon->erase_job(joined, this);
+	}
 	return joined->get_retval();
 }
 

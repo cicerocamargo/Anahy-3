@@ -18,7 +18,7 @@ class Daemon {
 	pthread_mutex_t mutex;
 	pthread_cond_t cond;
 
-	int num_vps;
+	int num_vps, num_cpus;
 	list<VirtualProcessor*> vps_waiting, vps_running;
 
 	void put_vp_on_waiting_list(VirtualProcessor* vp);
@@ -37,6 +37,8 @@ public:
 	void post_job(Job* job);
 	void request_job(Job* _starting_job, VirtualProcessor* vp);
 	void erase_job(Job* joined_job, VirtualProcessor* vp);
+
+	inline int get_num_cpus() const { return num_cpus; }
 
 };
 

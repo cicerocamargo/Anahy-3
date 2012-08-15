@@ -60,12 +60,12 @@ Job* JobGraph::find_a_ready_job(Job* starting_job) {
 			}
 		}
 		else {
-			printf("Graph: It tried run a child, but I couldn't do it.\n\tSearching a root job.\n");
+			//printf("Graph: It tried run a child, but I couldn't do it.\n\tSearching a root job.\n");
 			find_a_ready_job(NULL);
 		}
 	}
 	else {
-		printf("Graph: Ok, no one starting_job has been gave me.\n\tI'll find from the root.\n");
+		//printf("Graph: Ok, no one starting_job has been gave me.\n\tI'll find from the root.\n");
 		for (it = root_jobs.begin(); it != root_jobs.end(); ++it) {
 			if ((*it)->compare_and_swap_state(ready, running)) {
 				return *it;
@@ -79,6 +79,6 @@ Job* JobGraph::find_a_ready_job(Job* starting_job) {
 			}
 		}
 	}
-	printf("Mimimi, no on job is ready, I'll give you a NULL.\n");
+	//printf("Mimimi, no on job is ready, I'll give you a NULL.\n");
 	return NULL;
 }

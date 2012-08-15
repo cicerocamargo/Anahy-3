@@ -4,6 +4,7 @@
 #include "VirtualProcessor.h"
 #include <cstdio>
 #include <cstdlib>
+#include <unistd.h>
 
 /**** PRIVATE METHODS ****/
 
@@ -16,9 +17,11 @@ Daemon::Daemon(int _num_vps) : num_vps(_num_vps) {
 
 	graph = new JobGraph();
 
-	printf("DAEMON: Creating vps\n");
+	num_cpus = sysconf(_SC_NPROCESSORS_CONF);
+	
+	//printf("DAEMON: Creating vps\n");
 	//create my vps
-	for(int i = 0; i < num_vps; i++) {
+	for (int i = 0; i < num_vps; i++) {
 		vps_running.push_back(new VirtualProcessor(this));
 	}
 }
@@ -61,19 +64,19 @@ Daemon::~Daemon() {
 
 void Daemon::start_my_vps() {
 	/* I still have the lock*/
-	printf("DAEMON: Starting the vps\n");
+	//printf("DAEMON: Starting the vps\n");
 	list<VirtualProcessor*>::iterator it;
 
 	for (it = vps_running.begin(); it != vps_running.end(); ++it) {
 		if((*it)->get_id() == 0) {
-			printf("DAEMON: Main_vp will be associated\n");
+			//printf("DAEMON: Main_vp will be associated\n");
 			AnahyVM::set_main_vp(*it);
 		} else {
 			(*it)->start(); // start vps
 		}
 	}
 
-	printf("DAEMON: All vps has started\n");
+	//printf("DAEMON: All vps has started\n");
 }
 
 void Daemon::stop_my_vps() {
@@ -89,13 +92,13 @@ void Daemon::stop_my_vps() {
 			(*it)->stop();
 		}
 	}
-	printf("DAEMON: Vps stopped\n");
+	//printf("DAEMON: Vps stopped\n");
 }
 
 void Daemon::put_vp_on_waiting_list(VirtualProcessor* vp) {
 
-	printf("DAEMON: Putting VP %d on waiting list\n", vp->get_id());
-	printf("%lu R_list and %lu to W_list\n", vps_running.size(), vps_waiting.size());
+	//printf("DAEMON: Putting VP %d on waiting list\n", vp->get_id());
+	//printf("%lu R_list and %lu to W_list\n", vps_running.size(), vps_waiting.size());
 	//HERE ERROR - HERE ERROR - HERE ERROR
 	list<VirtualProcessor*>::iterator it;
 
@@ -121,7 +124,7 @@ void Daemon::answer_oldest_vp_waiting() {
 		vps_running.push_back(vp);
 		vps_waiting.pop_front();
 		
-		printf("DAEMON: Taking a VP %dfrom waiting list and sending a job to it run\n", vp->get_id());
+		//printf("DAEMON: Taking a VP %dfrom waiting list and sending a job to it run\n", vp->get_id());
 
 		vp->set_current_job(job);
 		/* The signal to cond variable needs to be 
@@ -139,11 +142,11 @@ void Daemon::post_job(Job* job) {
 	
 	graph->insert(job);
 
-	printf("DAEMON: A job has been posted\n");
+	//printf("DAEMON: A job has been posted\n");
 
 	if (!vps_waiting.empty()) {
 		
-		printf("DAEMON: the waiting list is not empty:\n");
+		//printf("DAEMON: the waiting list is not empty:\n");
 		answer_oldest_vp_waiting();
 	}
 
@@ -155,23 +158,23 @@ void Daemon::request_job(Job* _starting_job, VirtualProcessor* vp) {
 
 	Job* job = NULL;
 
-	printf("Daemon: I'll find a job to vp %d. w_list %lu and r_lis %lu\n", vp->get_id(), vps_waiting.size(), vps_running.size());
+	//printf("Daemon: I'll find a job to vp %d. w_list %lu and r_lis %lu\n", vp->get_id(), vps_waiting.size(), vps_running.size());
 	job = graph->find_a_ready_job(_starting_job);
 	
 	if(job) {
-		printf("DAEMON: Vp %d: I've found a job\n", vp->get_id());
+		//printf("DAEMON: Vp %d: I've found a job\n", vp->get_id());
 		
 		vp->set_current_job(job);
 	}
 	else {
 
 		if (vps_waiting.size() == num_vps-1) {
-			printf("DAEMON: All vps are waiting. Broadcasting null.\n");
+			//printf("DAEMON: All vps are waiting. Broadcasting null.\n");
 			
 			broadcast_null();
 		}
 		else {
-			printf("DAEMON: I didn't find a job for Vp %d, it will put the vp to waiting list\n", vp->get_id());
+			//printf("DAEMON: I didn't find a job for Vp %d, it will put the vp to waiting list\n", vp->get_id());
 			/* One vp can put itself on waiting lista after 
 			 * the last comparison, then I need to compare again to I don't 
 			 * put one vp on waiting list and no longer take it from there*/

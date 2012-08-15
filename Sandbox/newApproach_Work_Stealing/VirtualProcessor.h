@@ -1,7 +1,6 @@
 #include <pthread.h>
 #include <stack>
 #include "definitions.h"
-#include "JobGraph.h"
 
 using namespace std;
 
@@ -16,12 +15,14 @@ class VirtualProcessor {
 
 	Daemon* daemon;
 
+	//to set the vp affinity
+	long tid;
+	
 	//tracks how many VP objects have been created
 	static uint instance_counter;
-	
+	static long tid_counter;
 	// this is the pointer to the graph of this vp
-	JobGraph* graph;
-	
+		
 	// the job that is running at the moment
 	Job* current_job;
 	
@@ -78,16 +79,12 @@ public:
 	// messages to be received from a Daemon
 	void start();
 	void stop();
-	void block(); // from my thread
-	void resume();
-	
-	void insert_job(Job* job);
-	Job* get_ready_job(Job* _starting_job, bool normal_search);
-	void erase_job(Job* joined_job);
 
 	/* getters and setters */
 	inline Job* get_current_job() const { return current_job; }
 	inline void set_current_job(Job* new_value) { current_job = new_value; }
+	inline long get_tid() { return tid; }
+	inline void set_tid(long _tid) { tid = _tid; }
 	uint get_id() const;
 	ulong get_job_counter() const;
 };

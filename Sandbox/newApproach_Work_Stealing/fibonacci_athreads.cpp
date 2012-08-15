@@ -13,7 +13,8 @@ void* par_fib(void* args) {
 	long* _n = ((long*) args);
 	long n = *(_n);
 	long res;
-	cout << "Fibo(" << n << ")" << endl;
+
+	//cout << "Fibo(" << n << ")" << endl;
 	if (n < 2) {
 		res = n;
 		//fib(15); // para aumentar o custo do thread
@@ -54,15 +55,14 @@ int main(int argc, char const *argv[]) {
 		
 		AnahyVM::create(&handle, NULL, par_fib, (void*) new long(n));
 		
-		cout << "Create: Done" << endl;
+		//cout << "Create: Done" << endl;
 
 		long* result = new long(0);
 		AnahyVM::join(handle, (void**) &result);
 
-		AnahyVM::terminate();
-
 		cout << "fib(" << n << ") = " << (*result) << endl;
 		delete result;
+		AnahyVM::terminate();
 	}
 
 	return 0;

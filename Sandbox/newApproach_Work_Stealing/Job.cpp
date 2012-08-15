@@ -20,7 +20,6 @@ Job::Job (JobId _id, Job* _parent, VirtualProcessor* _creator,
     if(parent) {
         parent->add_child(this);
     }
-    vp_thief = NULL;
 	state = ready;
 	//pthread_mutex_init(&mutex, NULL);
 }
@@ -68,7 +67,7 @@ void Job::set_retval(void* new_retval) {
     retval = new_retval;
 }
 
-JobId Job::get_id() const {
+JobId Job::get_id() {
     return id;
 }
 
@@ -80,16 +79,8 @@ VirtualProcessor* Job::get_creator() const {
     return creator;
 }
 
-VirtualProcessor* Job::get_vp_thief() const {
-	return vp_thief;
-}
-
 JobState Job::get_state() const {
     return state;
-}
-
-void Job::set_vp_thief(VirtualProcessor* _vp_thief) {
-	vp_thief = _vp_thief;
 }
 
 JobAttributes* Job::get_attributes() const {

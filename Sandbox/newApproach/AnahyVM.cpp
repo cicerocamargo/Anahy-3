@@ -13,9 +13,9 @@ void AnahyVM::start_vm() {
 	daemon->start_my_vps();
 	
 	pthread_mutex_lock(&mutex);	// wait for VP 0 to be set
-								// by daemon 0
-	VirtualProcessor::associate_vp_with_current_thread((void*) main_vp);
 	
+	VirtualProcessor::associate_vp_with_current_thread((void*) main_vp);
+
 	pthread_mutex_unlock(&mutex);
 }
 
@@ -45,7 +45,7 @@ void AnahyVM::init(int _num_vps) {
 	//pthread_mutex_lock(&mutex);
 
 	start_vm();
-	printf("Init done. Starting application with %d vps...\n", _num_vps);
+	printf("**** Anahy3: Starting. Number of VPs equal %d...\n\n", _num_vps);
 }
 
 void AnahyVM::terminate() {
@@ -55,7 +55,7 @@ void AnahyVM::terminate() {
 	VirtualProcessor::delete_pthread_key();
 
 	delete daemon;
-	printf("Goodbye. Cruel world!\n");
+	printf("\n**** Anahy3: Done!\n");
 }
 
 void AnahyVM::exit(void* value_ptr) {
@@ -83,6 +83,7 @@ void AnahyVM::join(JobHandle handle, void** result) {
 
 void AnahyVM::set_main_vp(VirtualProcessor* vp) {
 	main_vp = vp;
+
 	pthread_mutex_unlock(&mutex);
 }
 

@@ -71,6 +71,7 @@ void Daemon::start_my_vps() {
 		if((*it)->get_id() == 0) {
 			//printf("DAEMON: Main_vp will be associated\n");
 			AnahyVM::set_main_vp(*it);
+			
 		} else {
 			(*it)->start(); // start vps
 		}

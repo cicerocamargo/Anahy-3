@@ -24,7 +24,7 @@ void* VirtualProcessor::call_vp_run(void* arg) {
 
 	// this set the vp affinity
 	CPU_ZERO(&cpuset);
-	//printf("%u -- %ld\n", vp->get_id(), vp->get_tid());
+	//printf("%u -- %ld -- %d \n", vp->get_id(), vp->get_tid(), (int) pthread_self());
 
 	CPU_SET(vp->get_tid(), (cpu_set_t*) &cpuset);
 	if (pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset) != 0) {
@@ -71,7 +71,6 @@ VirtualProcessor::~VirtualProcessor()  {
 
 // this is the main loop of vp
 void VirtualProcessor::run() {
-
 	//printf("VP %d: Running...\n", id);
 	while(true) {
 		

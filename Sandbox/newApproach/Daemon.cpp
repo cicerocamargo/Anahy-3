@@ -69,7 +69,7 @@ void Daemon::start_my_vps() {
 
 	for (it = vps_running.begin(); it != vps_running.end(); ++it) {
 		if((*it)->get_id() == 0) {
-			//printf("DAEMON: Main_vp will be associated\n");
+			printf("DAEMON: Main_vp will be associated\n");
 			AnahyVM::set_main_vp(*it);
 			
 		} else {
@@ -94,23 +94,6 @@ void Daemon::stop_my_vps() {
 		}
 	}
 	//printf("DAEMON: Vps stopped\n");
-}
-
-void Daemon::put_vp_on_waiting_list(VirtualProcessor* vp) {
-
-	//printf("DAEMON: Putting VP %d on waiting list\n", vp->get_id());
-	//printf("%lu R_list and %lu to W_list\n", vps_running.size(), vps_waiting.size());
-	//HERE ERROR - HERE ERROR - HERE ERROR
-	list<VirtualProcessor*>::iterator it;
-
-	for (it = vps_running.begin(); it != vps_running.end(); ++it) {
-		if ((*it)->get_id() == vp->get_id()) {
-			break;
-		}
-	}
-
-	vps_waiting.push_back(*it);
-	it = vps_running.erase(it);
 }
 
 void Daemon::answer_oldest_vp_waiting() {
@@ -138,6 +121,7 @@ void Daemon::answer_oldest_vp_waiting() {
 
 /**** PUBLIC METHODS ****/
 
+// this method runs in a VP thread
 void Daemon::post_job(Job* job) {
 	pthread_mutex_lock(&mutex);
 	
@@ -171,22 +155,12 @@ void Daemon::request_job(Job* _starting_job, VirtualProcessor* vp) {
 
 		if (vps_waiting.size() == num_vps-1) {
 			//printf("DAEMON: All vps are waiting. Broadcasting null.\n");
-			
 			broadcast_null();
 		}
 		else {
-			//printf("DAEMON: I didn't find a job for Vp %d, it will put the vp to waiting list\n", vp->get_id());
-			/* One vp can put itself on waiting lista after 
-			 * the last comparison, then I need to compare again to I don't 
-			 * put one vp on waiting list and no longer take it from there*/
-
-			if (vps_waiting.size() != num_vps-1) {
-				put_vp_on_waiting_list(vp);
-				pthread_cond_wait(&cond, &mutex);
-			}
-			else {
-				broadcast_null();
-			}
+			vps_waiting.push_back(vp);
+			vps_running.remove(vp);
+			pthread_cond_wait(&cond, &mutex);
 		}
 	}
 	pthread_mutex_unlock(&mutex);

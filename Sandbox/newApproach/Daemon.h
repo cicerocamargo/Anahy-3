@@ -21,7 +21,6 @@ class Daemon {
 	int num_vps, num_cpus;
 	list<VirtualProcessor*> vps_waiting, vps_running;
 
-	void put_vp_on_waiting_list(VirtualProcessor* vp);
 	void answer_oldest_vp_waiting();
 	void broadcast_null();
 

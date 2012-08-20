@@ -20,17 +20,18 @@ void* VirtualProcessor::call_vp_run(void* arg) {
 	associate_vp_with_current_thread(arg);
 	VirtualProcessor* vp = (VirtualProcessor*) arg;
 
+/*								TODO:
 	cpu_set_t cpuset;
 
 	// this set the vp affinity
 	CPU_ZERO(&cpuset);
 	//printf("%u -- %ld -- %d \n", vp->get_id(), vp->get_tid(), (int) pthread_self());
 
-	CPU_SET(vp->get_tid(), (cpu_set_t*) &cpuset);
+	CPU_SET(vp->get_tid(), &cpuset);
 	if (pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset) != 0) {
 		printf("Error in pthread_setaffinity_np!\n");
 	}
-
+*/
 	vp->run();
 	return NULL;
 }
@@ -134,7 +135,7 @@ void VirtualProcessor::suspend_current_job_and_try_to_help(Job* joined) {
 
 	if (current_job != context_stack.top()) { // daemon updated my current job
 		current_job->run();
-
+		// TODO:
 	}
 
 	current_job = context_stack.top(); // restore stacked context
@@ -154,6 +155,7 @@ void VirtualProcessor::suspend_current_job_and_run_another(Job* another) {
 	current_job = another; // update current_job
 
 	current_job->run();
+	// TODO:
 
 	current_job = context_stack.top(); // restore stacked context
 	context_stack.pop();
@@ -178,9 +180,9 @@ void* VirtualProcessor::join_job(JobHandle handle) {
 		}
 	}
 
-	if(joined->dec_join_counter()) {
-		daemon->erase_job(joined, this);
-	}
+	// if(joined->dec_join_counter()) {
+	// 	daemon->erase_job(joined, this);
+	// }
 	return joined->get_retval();
 }
 

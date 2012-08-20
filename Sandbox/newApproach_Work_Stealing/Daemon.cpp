@@ -61,13 +61,12 @@ Daemon::~Daemon() {
 }
 
 void Daemon::start_my_vps() {
-	/* I still have the lock*/
 	//printf("DAEMON: Starting the vps\n");
 	list<VirtualProcessor*>::iterator it;
 
 	for (it = vps_running.begin(); it != vps_running.end(); ++it) {
 		if((*it)->get_id() == 0) {
-			//printf("DAEMON: Main_vp will be associated\n");
+			printf("DAEMON: Main_vp set.\n");
 			AnahyVM::set_main_vp(*it);
 			
 		} else {

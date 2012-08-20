@@ -10,13 +10,8 @@ pthread_mutex_t AnahyVM::mutex;
 
 void AnahyVM::start_vm() {
 
-	daemon->start_my_vps();
-	
-	pthread_mutex_lock(&mutex);	// wait for VP 0 to be set
-	
+	daemon->start_my_vps(); // inside this method, the daemon sets the main VP
 	VirtualProcessor::associate_vp_with_current_thread((void*) main_vp);
-
-	pthread_mutex_unlock(&mutex);
 }
 
 void AnahyVM::stop_vm() {
@@ -83,8 +78,6 @@ void AnahyVM::join(JobHandle handle, void** result) {
 
 void AnahyVM::set_main_vp(VirtualProcessor* vp) {
 	main_vp = vp;
-
-	pthread_mutex_unlock(&mutex);
 }
 
 int attr_init(JobAttributes* attr) {

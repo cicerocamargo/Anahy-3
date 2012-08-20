@@ -45,7 +45,21 @@ void JobGraph::erase(Job* job) {
 }
 
 Job* JobGraph::find_a_ready_job(Job* starting_job) {
-	set<Job*> children;
+
+	map<JobId, Job*>::iterator it;
+	for (it = job_map.begin(); it != job_map.end(); ++it)
+	{
+		if ((*it).second == NULL) {
+			printf("ooops\n");
+			abort();
+		}
+		if(((*it).second)->compare_and_swap_state(ready, running)) {
+			return (*it).second;
+		}
+	}
+	return NULL;
+
+	/*set<Job*> children;
 	// temp code
 	list<Job*>::iterator it;
 	set<Job*>::iterator it_child;
@@ -54,8 +68,8 @@ Job* JobGraph::find_a_ready_job(Job* starting_job) {
 		children = starting_job->get_children();
 		if (!children.empty()) {
 			for (it_child = children.begin(); it_child != children.end(); ++it_child) {
-				if ((*it)->compare_and_swap_state(ready, running)) {
-					return *it;
+				if ((*it_child)->compare_and_swap_state(ready, running)) {
+					return *it_child;
 				}
 			}
 		}
@@ -80,5 +94,5 @@ Job* JobGraph::find_a_ready_job(Job* starting_job) {
 		}
 	}
 	//printf("Mimimi, no on job is ready, I'll give you a NULL.\n");
-	return NULL;
+	return NULL;*/
 }

@@ -47,15 +47,17 @@ public:
 	void display(int num_tabs=0);
 
 	// getters and setters 
-	JobId get_id();
-	Job* get_parent() const;
+	inline JobId get_id() { return id; }
+	inline Job* get_parent() const { return parent; }
 	inline set<Job*>& get_children() { return children; }
-	VirtualProcessor* get_creator() const;
+	inline VirtualProcessor* get_creator() const { return creator; }
+	inline VirtualProcessor* get_vp_thief() const { return vp_thief; }
+	inline JobState get_state() const { return state; }
+	inline JobAttributes* get_attributes() const { return attributes; }
+	inline void* get_retval() const { return retval; }
 	
-	JobState get_state() const;
-	JobAttributes* get_attributes() const;
-	void* get_retval() const;
-	void set_retval(void* new_retval);
+	void set_vp_thief(VirtualProcessor* new_thief) { vp_thief = new_thief; }
+	void set_retval(void* new_retval) { retval = new_retval; }
 };
 
 struct JobHandle {

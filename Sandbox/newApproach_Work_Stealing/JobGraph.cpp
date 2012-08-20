@@ -44,41 +44,55 @@ void JobGraph::erase(Job* job) {
 	// delete job;
 }
 
-Job* JobGraph::find_a_ready_job(Job* starting_job) {
+Job* JobGraph::find_a_ready_job(Job* starting_job, bool steal_job) {
 	set<Job*> children;
-	// temp code
-	list<Job*>::iterator it;
 	set<Job*>::iterator it_child;
-	//HERE ERROR - HERE ERROR - HERE ERROR
-	if(starting_job) {
-		children = starting_job->get_children();
-		if (!children.empty()) {
-			for (it_child = children.begin(); it_child != children.end(); ++it_child) {
-				if ((*it)->compare_and_swap_state(ready, running)) {
-					return *it;
+	
+	if (steal_job) {
+		list<Job*>::reverse_iterator rit;
+		for(rit = root_jobs.rbegin(); rit != root_jobs.rend(); ++rit) {
+			if (!(*rit)->get_vp_thief() && (*rit)->compare_and_swap_state(ready, running)) {
+				return *rit;
+			}
+			else {
+				children = (*rit)->get_children();
+				if (!children.empty()) {
+					root_jobs.insert(root_jobs.begin(), children.begin(), children.end());
 				}
+				root_jobs.remove(*rit);
+			}
+		}
+
+	}
+	else {
+		list<Job*>::iterator it;
+		if (starting_job) {
+			children = starting_job->get_children();
+			if (!children.empty() || !starting_job->get_vp_thief()) {
+				for (it_child = children.begin(); it_child != children.end(); ++it_child) {
+					if(!(*it)->get_vp_thief() && (*it)->compare_and_swap_state(ready, running)) {
+						return *it;
+					}
+				}
+			}
+			else {
+				find_a_ready_job(NULL, NULL);
 			}
 		}
 		else {
-			//printf("Graph: It tried run a child, but I couldn't do it.\n\tSearching a root job.\n");
-			find_a_ready_job(NULL);
-		}
-	}
-	else {
-		//printf("Graph: Ok, no one starting_job has been gave me.\n\tI'll find from the root.\n");
-		for (it = root_jobs.begin(); it != root_jobs.end(); ++it) {
-			if ((*it)->compare_and_swap_state(ready, running)) {
-				return *it;
-			}
-			else {
-				children = (*it)->get_children();
-				if (!children.empty()){
-					root_jobs.insert(root_jobs.end(), children.begin(), children.end());
+			for (it = root_jobs.begin(); it != root_jobs.end(); ++it) {
+				if (!(*it)->get_vp_thief() && (*it)->compare_and_swap_state(ready, running)) {
+					return *it;
 				}
-				it = root_jobs.erase(it);
+				else {
+					children = (*it)->get_children();
+					if (!children.empty()){
+						root_jobs.insert(root_jobs.end(), children.begin(), children.end());
+					}
+					root_jobs.remove(*it);
+				}
 			}
 		}
 	}
-	//printf("Mimimi, no on job is ready, I'll give you a NULL.\n");
 	return NULL;
 }

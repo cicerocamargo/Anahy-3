@@ -13,17 +13,15 @@ class VirtualProcessor;
 
 class Daemon {
 
-	JobGraph* graph;
-
 	pthread_mutex_t mutex;
 	pthread_cond_t cond;
 
 	int num_vps, num_cpus;
 	list<VirtualProcessor*> vps_waiting, vps_running;
 
-	void put_vp_on_waiting_list(VirtualProcessor* vp);
 	void answer_oldest_vp_waiting();
 	void broadcast_null();
+	void take_vp_from_waiting_list(Job* vp);
 
 public:
 
@@ -33,13 +31,11 @@ public:
 	void start_my_vps();
 	void stop_my_vps();
 
-	//to be called from vps
-	void post_job(Job* job);
-	void request_job(Job* _starting_job, VirtualProcessor* vp);
-	void erase_job(Job* joined_job, VirtualProcessor* vp);
+	void put_vp_on_waiting_list(VirtualProcessor* vp);
+	void wake_up_some_waiting_vp();
+	Job* work_stealing_function(Job* _starting_job, bool steal_job);
 
 	inline int get_num_cpus() const { return num_cpus; }
-
 };
 
 #endif

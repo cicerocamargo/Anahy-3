@@ -20,6 +20,7 @@ Job::Job (JobId _id, Job* _parent, VirtualProcessor* _creator,
     if(parent) {
         parent->add_child(this);
     }
+    vp_thief = NULL;
 	state = ready;
 	//pthread_mutex_init(&mutex, NULL);
 }
@@ -55,36 +56,6 @@ void Job::remove_child(Job* child) {
 	// IMPLEMENT!
 	
 	//pthread_mutex_unlock(&mutex);
-}
-
-// getters and setters
-
-void* Job::get_retval() const {
-	return retval;
-}
-
-void Job::set_retval(void* new_retval) {
-    retval = new_retval;
-}
-
-JobId Job::get_id() {
-    return id;
-}
-
-Job* Job::get_parent() const {
-    return parent;
-}
-
-VirtualProcessor* Job::get_creator() const {
-    return creator;
-}
-
-JobState Job::get_state() const {
-    return state;
-}
-
-JobAttributes* Job::get_attributes() const {
-	return attributes;
 }
 
 // auxiliary function

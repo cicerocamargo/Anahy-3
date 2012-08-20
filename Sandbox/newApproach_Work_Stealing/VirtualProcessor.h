@@ -12,7 +12,7 @@ class JobAttributes;
 class VirtualProcessor {
 	// a unique id for this VP
 	uint id;
-
+	JobGraph* graph;
 	Daemon* daemon;
 
 	//to set the vp affinity
@@ -76,6 +76,11 @@ public:
 	//this will be complicated to do
 	void* join_job(JobHandle handle);
 
+	//to control the graph
+	void post_job(Job* job);
+	Job* request_job(Job* _starting_job, bool steal_job);
+	void erase_job(Job* joined_job);
+
 	// messages to be received from a Daemon
 	void start();
 	void stop();
@@ -85,6 +90,6 @@ public:
 	inline void set_current_job(Job* new_value) { current_job = new_value; }
 	inline long get_tid() { return tid; }
 	inline void set_tid(long _tid) { tid = _tid; }
-	uint get_id() const;
-	ulong get_job_counter() const;
+	inline uint get_id() const { return id; }
+	inline ulong get_job_counter() const { return job_counter; }
 };

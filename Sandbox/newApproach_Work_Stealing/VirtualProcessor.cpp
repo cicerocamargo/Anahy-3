@@ -53,9 +53,10 @@ VirtualProcessor::VirtualProcessor(Daemon* _daemon) : daemon(_daemon) {
 		tid_counter = 0;
 	
 	tid = tid_counter++;
-
 	//printf("RA %ld - %u\n", tid, instance_counter);
 	id = instance_counter++;
+
+	graph = new JobGraph();
 	current_job = NULL;
 	job_counter = 0;
 
@@ -184,6 +185,35 @@ void* VirtualProcessor::join_job(JobHandle handle) {
 	return joined->get_retval();
 }
 
+void VirtualProcessor::post_job(Job* job) {
+	pthread_mutex_lock(&mutex);
+
+	graph->insert(job);
+
+	pthread_mutex_unlock(&mutex);
+}
+
+Job* VirtualProcessor::request_job(Job* _starting_job, bool steal_job) {
+	pthread_mutex_lock(&mutex);
+
+	Job* job = NULL;
+
+	job = graph->find_a_ready_job(_starting_job, steal_job);
+	
+	pthread_mutex_unlock(&mutex);
+
+	return job;
+}
+
+void VirtualProcessor::erase_job(Job* joined_job) {
+	pthread_mutex_lock(&mutex);
+
+	graph->erase(joined_job);
+	current_job = NULL;
+
+	pthread_mutex_unlock(&mutex);
+}
+
 // called from Daemon Thread
 void VirtualProcessor::start() {
 	// call this->run() in a new thread,
@@ -196,12 +226,4 @@ void VirtualProcessor::start() {
 // called from Daemon Thread
 void VirtualProcessor::stop() {
 	pthread_join(thread, NULL);
-}
-
-uint VirtualProcessor::get_id() const {
-	return id;
-}
-
-ulong VirtualProcessor::get_job_counter() const {
-	return job_counter;
 }

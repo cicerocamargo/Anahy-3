@@ -145,7 +145,7 @@ void VirtualProcessor::suspend_current_job_and_try_to_help(Job* joined) {
 
 	if (current_job != context_stack.top()) { // daemon updated my current job
 		current_job->run();
-
+		// TODO:
 	}
 
 	current_job = context_stack.top(); // restore stacked context
@@ -165,6 +165,7 @@ void VirtualProcessor::suspend_current_job_and_run_another(Job* another) {
 	current_job = another; // update current_job
 
 	current_job->run();
+	// TODO:
 
 	current_job = context_stack.top(); // restore stacked context
 	context_stack.pop();
@@ -188,6 +189,7 @@ void* VirtualProcessor::join_job(JobHandle handle) {
 			}
 		}
 	}
+
 
 	if(joined->are_there_more_joins()) {
 		daemon->erase_job(joined, this);

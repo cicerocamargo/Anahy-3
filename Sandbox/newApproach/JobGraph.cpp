@@ -48,9 +48,9 @@ void JobGraph::erase(Job* job) {
 }
 
 Job* JobGraph::find_a_ready_job(Job* starting_job) {
-	map<JobId, Job*>::iterator it;
 	set<Job*>::iterator it_child;
 	set<Job*> children;	
+	map<JobId,Job*>::iterator it;
 	
 	if (starting_job) {
 		children = starting_job->get_children();
@@ -73,12 +73,12 @@ Job* JobGraph::find_a_ready_job(Job* starting_job) {
 			}
 		}
 	}
+
 	return NULL;
 }
 
 Job* JobGraph::find_a_root_ready_job(Job* starting_job) {
 	list<Job*>::iterator it;
-	set<Job*> children;
 
 	for (it = root_jobs.begin(); it != root_jobs.end(); ++it) {
 		if ((*it)->compare_and_swap_state(ready, running)) {

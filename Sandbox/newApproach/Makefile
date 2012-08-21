@@ -1,5 +1,5 @@
 CPP = g++
-CFLAGS = -O3
+CFLAGS = -O3 -dH -ggdb
 
 all: daemon vp job jobid jobgraph jobattributes anahy
 

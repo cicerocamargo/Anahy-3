@@ -41,7 +41,7 @@ public:
 	
 	// atomic operations
 	bool compare_and_swap_state(JobState target_value, JobState new_value);  
-	bool dec_join_counter();
+	bool are_there_more_joins();
 	void remove_child(Job* child);
 
 	void display(int num_tabs=0);

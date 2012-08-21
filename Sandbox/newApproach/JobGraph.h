@@ -19,6 +19,7 @@ public:
 	void insert(Job* job);
 	void erase(Job* job);
 	Job* find_a_ready_job(Job* starting_job);
+	Job* find_a_root_ready_job(Job* starting_job);
 };
 
 #endif

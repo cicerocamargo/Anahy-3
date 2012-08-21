@@ -6,26 +6,18 @@
 Daemon* AnahyVM::daemon;
 VirtualProcessor* AnahyVM::main_vp;
 
-pthread_mutex_t AnahyVM::mutex;
-
 void AnahyVM::start_vm() {
 
 	daemon->start_my_vps();
-	
-	pthread_mutex_lock(&mutex);	// wait for VP 0 to be set
-	
+		
 	VirtualProcessor::associate_vp_with_current_thread((void*) main_vp);
-
-	pthread_mutex_unlock(&mutex);
 }
 
 void AnahyVM::stop_vm() {
-	
-	//printf("XXX Run main vp\n");
-	//main_vp->run(); // this allows the main VP to help the execution of
+	main_vp->run(); // this allows the main VP to help the execution of
 					// remaining jobs and the Daemon to know that the
 					// main VP is also idle when there's no work
-	//printf("AnahyVM: The Daemon will stop all vps\n");
+	
 	daemon->stop_my_vps();
 }
 
@@ -36,7 +28,7 @@ void AnahyVM::init(int _num_vps) {
 
 	VirtualProcessor::init_pthread_key();
 
-	pthread_mutex_init(&mutex, NULL);
+	//pthread_mutex_init(&mutex, NULL);
 
 	/* since the main thread has the VM's lock,
 	* it can block itself in the next call
@@ -45,11 +37,10 @@ void AnahyVM::init(int _num_vps) {
 	//pthread_mutex_lock(&mutex);
 
 	start_vm();
-	printf("**** Anahy3: Starting. Number of VPs equal %d...\n\n", _num_vps);
+	printf("**** Anahy3: Starting. Virtual Processor = %d\n\n", _num_vps);
 }
 
 void AnahyVM::terminate() {
-
 	stop_vm();
 
 	VirtualProcessor::delete_pthread_key();
@@ -83,8 +74,6 @@ void AnahyVM::join(JobHandle handle, void** result) {
 
 void AnahyVM::set_main_vp(VirtualProcessor* vp) {
 	main_vp = vp;
-
-	pthread_mutex_unlock(&mutex);
 }
 
 int attr_init(JobAttributes* attr) {

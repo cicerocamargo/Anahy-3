@@ -19,7 +19,7 @@ class Daemon {
 	int num_vps, num_cpus;
 	list<VirtualProcessor*> vps_waiting, vps_running;
 
-	void answer_oldest_vp_waiting();
+	bool answer_oldest_vp_waiting();
 	void broadcast_null();
 	void take_vp_from_waiting_list(Job* vp);
 
@@ -32,8 +32,8 @@ public:
 	void stop_my_vps();
 
 	void put_vp_on_waiting_list(VirtualProcessor* vp);
-	void wake_up_some_waiting_vp();
-	Job* work_stealing_function(Job* _starting_job, bool steal_job);
+	bool wake_up_some_waiting_vp();
+	Job* work_stealing_function(VirtualProcessor* vp);
 
 	inline int get_num_cpus() const { return num_cpus; }
 };

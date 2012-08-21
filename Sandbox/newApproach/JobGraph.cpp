@@ -15,11 +15,14 @@ JobGraph::~JobGraph() {
 void JobGraph::insert(Job* job) {
 
 	if (!job->get_parent()) {
-		//It's a root job so...
+		//It's a root job, so...
 		root_jobs.push_back(job);
 	}
 	else {
-		job_map[ job->get_id() ] = job;
+		typedef pair<JobId, Job*> job_pair;
+
+		job_map.insert(job_pair(job->get_id(), job));
+		//job_map[ job->get_id() ] = job;
 	}
 }
 
@@ -45,17 +48,16 @@ void JobGraph::erase(Job* job) {
 }
 
 Job* JobGraph::find_a_ready_job(Job* starting_job) {
-	set<Job*> children;
-	// temp code
-	list<Job*>::iterator it;
+	map<JobId, Job*>::iterator it;
 	set<Job*>::iterator it_child;
-	//HERE ERROR - HERE ERROR - HERE ERROR
-	if(starting_job) {
+	set<Job*> children;	
+	
+	if (starting_job) {
 		children = starting_job->get_children();
 		if (!children.empty()) {
 			for (it_child = children.begin(); it_child != children.end(); ++it_child) {
-				if ((*it)->compare_and_swap_state(ready, running)) {
-					return *it;
+				if ((*it_child)->compare_and_swap_state(ready, running)) {
+					return *it_child;
 				}
 			}
 		}
@@ -65,20 +67,23 @@ Job* JobGraph::find_a_ready_job(Job* starting_job) {
 		}
 	}
 	else {
-		//printf("Graph: Ok, no one starting_job has been gave me.\n\tI'll find from the root.\n");
-		for (it = root_jobs.begin(); it != root_jobs.end(); ++it) {
-			if ((*it)->compare_and_swap_state(ready, running)) {
-				return *it;
-			}
-			else {
-				children = (*it)->get_children();
-				if (!children.empty()){
-					root_jobs.insert(root_jobs.end(), children.begin(), children.end());
-				}
-				it = root_jobs.erase(it);
+		for (it = job_map.begin(); it != job_map.end(); ++it) {
+			if (((*it).second)->compare_and_swap_state(ready, running)) {
+				return (*it).second;
 			}
 		}
 	}
-	//printf("Mimimi, no on job is ready, I'll give you a NULL.\n");
+	return NULL;
+}
+
+Job* JobGraph::find_a_root_ready_job(Job* starting_job) {
+	list<Job*>::iterator it;
+	set<Job*> children;
+
+	for (it = root_jobs.begin(); it != root_jobs.end(); ++it) {
+		if ((*it)->compare_and_swap_state(ready, running)) {
+			return *it;
+		}
+	}
 	return NULL;
 }

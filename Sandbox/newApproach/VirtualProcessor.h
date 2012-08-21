@@ -16,7 +16,7 @@ class VirtualProcessor {
 	Daemon* daemon;
 
 	//to set the vp affinity
-	long tid;
+	int tid;
 	
 	//tracks how many VP objects have been created
 	static uint instance_counter;

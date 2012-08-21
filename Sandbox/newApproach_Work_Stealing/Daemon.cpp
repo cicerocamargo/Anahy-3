@@ -167,7 +167,7 @@ Job* Daemon::work_stealing_function(VirtualProcessor* vp) {
 	//printf("Daemon: I'll find a job to vp %d. w_list %lu and r_lis %lu\n", vp->get_id(), vps_waiting.size(), vps_running.size());
 	list<VirtualProcessor*>::interator it;
 	for (it = vps_running.begin(); i != vps_running.end(); ++it) {
-		if(job = (*it)->find_a_ready_job(_starting_job, NULL)) {
+		if(job = (*it)->find_a_ready_job(_starting_job, true)) {
 			break;
 		}
 	}	

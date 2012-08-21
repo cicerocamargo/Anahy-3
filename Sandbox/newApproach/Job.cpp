@@ -45,7 +45,7 @@ bool Job::compare_and_swap_state(JobState target_value, JobState new_value) {
 // drecement atomically the number of joins that
 // the job is to receive and return true, if the counter
 // reached ZERO
-bool Job::dec_join_counter() {
+bool Job::are_there_more_joins() {
 	return attributes->dec_join_counter();
 }
 

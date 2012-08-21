@@ -70,13 +70,24 @@ VirtualProcessor::~VirtualProcessor()  {
 	pthread_mutex_destroy(&mutex);
 }
 
+void VirtualProcessor::block() {
+	pthread_mutex_lock(&mutex);
+}
+
+void VirtualProcessor::resume() {
+	pthread_mutex_unlock(&mutex);
+}
+
 // this is the main loop of vp
 void VirtualProcessor::run() {
 	//printf("VP %d: Running...\n", id);
 	while(true) {
-		
-		daemon->request_job(NULL, this);
-		
+
+		current_job = request_job(NULL, false);
+		if(!current_job) {
+			current_job = work_stealing_function(this);
+			block();
+		}
 		if (!current_job) {
 			//printf("VP %d: I have no job, I'll stop\n", id);
 			break;
@@ -131,7 +142,7 @@ void VirtualProcessor::suspend_current_job_and_try_to_help(Job* joined) {
 	context_stack.push(current_job); // save context
 	//printf("VP %d: I'll help the job to run\n", id);
 
-	daemon->request_job(joined, this);
+	request_job(joined, false);
 
 	if (current_job != context_stack.top()) { // daemon updated my current job
 		current_job->run();
@@ -189,6 +200,7 @@ void VirtualProcessor::post_job(Job* job) {
 	pthread_mutex_lock(&mutex);
 
 	graph->insert(job);
+	Daemon::wake_up_some_waiting_vp();
 
 	pthread_mutex_unlock(&mutex);
 }

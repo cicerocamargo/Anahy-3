@@ -16,8 +16,6 @@ class Job;
 
 class AnahyVM {
 	static Daemon* daemon;
-	
-	static pthread_mutex_t mutex;
 
 	static VirtualProcessor* main_vp;
 

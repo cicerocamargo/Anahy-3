@@ -85,6 +85,9 @@ public:
 	void start();
 	void stop();
 
+	void block();
+	void resume();
+
 	/* getters and setters */
 	inline Job* get_current_job() const { return current_job; }
 	inline void set_current_job(Job* new_value) { current_job = new_value; }

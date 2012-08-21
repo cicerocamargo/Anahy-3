@@ -20,16 +20,28 @@ void* VirtualProcessor::call_vp_run(void* arg) {
 	associate_vp_with_current_thread(arg);
 	VirtualProcessor* vp = (VirtualProcessor*) arg;
 
+	// --------- THIS SET THE VP AFFINITY ---------
+
 	cpu_set_t cpuset;
-
-	// this set the vp affinity
+	int thr = pthread_self();
+	int this_tid = vp->get_tid();
+	int cpuset_len = sizeof(cpu_set_t);
+	
 	CPU_ZERO(&cpuset);
-	//printf("%u -- %ld -- %d \n", vp->get_id(), vp->get_tid(), (int) pthread_self());
+	//printf("%u -- %d\n", vp->get_id(), this_tid);
 
-	CPU_SET(vp->get_tid(), (cpu_set_t*) &cpuset);
-	if (pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset) != 0) {
+	CPU_SET(this_tid, &cpuset);
+
+	if (pthread_setaffinity_np(thr, cpuset_len, &cpuset) != 0) {
 		printf("Error in pthread_setaffinity_np!\n");
 	}
+
+	pthread_getaffinity_np(thr, cpuset_len, &cpuset);
+
+	if (CPU_ISSET(this_tid, &cpuset))
+            //printf("    CPU %d\n", this_tid);
+
+	// --------- THIS SET THE VP AFFINITY ---------
 
 	vp->run();
 	return NULL;
@@ -71,13 +83,13 @@ VirtualProcessor::~VirtualProcessor()  {
 
 // this is the main loop of vp
 void VirtualProcessor::run() {
-	//printf("VP %d: Running...\n", id);
+	printf("VP %d: Running...\n", id);
 	while(true) {
 		
 		daemon->request_job(NULL, this);
 		
 		if (!current_job) {
-			//printf("VP %d: I have no job, I'll stop\n", id);
+			printf("VP %d: I'll stop now.\n", id);
 			break;
 		}
 		else {
@@ -115,7 +127,6 @@ JobHandle VirtualProcessor::create_new_job(pfunc function, void* args,
 	Job* job = new Job(job_id, current_job, this, attr, function, args);
 	
 	daemon->post_job(job);
-	//printf("VP %d sent a job to daemon graph\n", id);
 	
 	JobHandle handle;
 	handle.pointer = job;
@@ -178,7 +189,7 @@ void* VirtualProcessor::join_job(JobHandle handle) {
 		}
 	}
 
-	if(joined->dec_join_counter()) {
+	if(joined->are_there_more_joins()) {
 		daemon->erase_job(joined, this);
 	}
 	return joined->get_retval();

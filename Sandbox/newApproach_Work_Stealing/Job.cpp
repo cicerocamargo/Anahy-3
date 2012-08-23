@@ -22,7 +22,7 @@ Job::Job (JobId _id, Job* _parent, VirtualProcessor* _creator,
     }
     vp_thief = NULL;
 	state = ready;
-	//pthread_mutex_init(&mutex, NULL);
+
 }
 
 Job::~Job() {
@@ -46,7 +46,7 @@ bool Job::compare_and_swap_state(JobState target_value, JobState new_value) {
 // drecement atomically the number of joins that
 // the job is to receive and return true, if the counter
 // reached ZERO
-bool Job::dec_join_counter() {
+bool Job::are_there_joins_yet() {
 	return attributes->dec_join_counter();
 }
 

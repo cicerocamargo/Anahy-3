@@ -37,11 +37,13 @@ void Daemon::broadcast_null() {
 	*/
 
 	for (it = vps_running.begin(); it != vps_running.end(); ++it) {
+		(*it)->set_should_stop();
 		(*it)->set_current_job(NULL);
 	}
 
 	for (it = vps_waiting.begin(); it != vps_waiting.end(); ++it) {
 		
+		(*it)->set_should_stop();
 		(*it)->set_current_job(NULL);
 		vps_running.push_back(*it);
 		

@@ -70,6 +70,7 @@ VirtualProcessor::VirtualProcessor(Daemon* _daemon) : daemon(_daemon) {
 	id = instance_counter++;
 	current_job = NULL;
 	job_counter = 0;
+	should_stop = false;
 
 	pthread_mutex_init(&mutex, NULL);
 	pthread_mutex_lock(&mutex);
@@ -84,18 +85,14 @@ VirtualProcessor::~VirtualProcessor()  {
 // this is the main loop of vp
 void VirtualProcessor::run() {
 	printf("VP %d: Running...\n", id);
-	while(true) {
+	while(!get_should_stop()) {
 		
 		daemon->request_job(NULL, this);
-		
-		if (!current_job) {
-			printf("VP %d: I'll stop now.\n", id);
-			break;
-		}
-		else {
+
+		if(current_job)
 			current_job->run();
-			//daemon->erase_job(current_job, this);
-		}
+		//daemon->erase_job(current_job, this);
+
 	}
 }
 

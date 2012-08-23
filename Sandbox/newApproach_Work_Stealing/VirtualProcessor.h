@@ -12,7 +12,7 @@ class JobAttributes;
 class VirtualProcessor {
 	// a unique id for this VP
 	uint id;
-	JobGraph* graph;
+	JobGraph* local_graph;
 	Daemon* daemon;
 
 	//to set the vp affinity

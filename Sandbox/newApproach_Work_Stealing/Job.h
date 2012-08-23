@@ -27,8 +27,6 @@ class Job {
 	void* data;
 	void* retval; // return value of 'function'
 	
-	//pthread_mutex_t mutex; For what this is used?
-
 	void add_child(Job* child); // called from the constructor
 	Job(Job&); // to avoid copy construction
 	
@@ -41,7 +39,7 @@ public:
 	
 	// atomic operations
 	bool compare_and_swap_state(JobState target_value, JobState new_value);  
-	bool dec_join_counter();
+	bool are_there_joins_yet();
 	void remove_child(Job* child);
 
 	void display(int num_tabs=0);

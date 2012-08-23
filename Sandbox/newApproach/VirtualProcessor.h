@@ -17,6 +17,7 @@ class VirtualProcessor {
 
 	//to set the vp affinity
 	int tid;
+	bool should_stop;
 	
 	//tracks how many VP objects have been created
 	static uint instance_counter;
@@ -83,6 +84,8 @@ public:
 	/* getters and setters */
 	inline Job* get_current_job() const { return current_job; }
 	inline void set_current_job(Job* new_value) { current_job = new_value; }
+	inline void set_should_stop() { should_stop = true; }
+	inline bool get_should_stop() { return should_stop; }
 	inline long get_tid() { return tid; }
 	inline void set_tid(long _tid) { tid = _tid; }
 	uint get_id() const;

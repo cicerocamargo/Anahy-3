@@ -9,8 +9,8 @@ VirtualProcessor* AnahyVM::main_vp;
 pthread_mutex_t AnahyVM::mutex;
 
 void AnahyVM::start_vm() {
-
 	daemon->start_my_vps(); // inside this method, the daemon sets the main VP
+
 	VirtualProcessor::associate_vp_with_current_thread((void*) main_vp);
 }
 
@@ -32,12 +32,6 @@ void AnahyVM::init(int _num_vps) {
 	VirtualProcessor::init_pthread_key();
 
 	pthread_mutex_init(&mutex, NULL);
-
-	/* since the main thread has the VM's lock,
-	* it can block itself in the next call
-	* to wait for the VP 0 to be associated
-	* with the main thread*/
-	//pthread_mutex_lock(&mutex);
 
 	start_vm();
 	printf("**** Anahy3: Starting. Number of VPs equal %d...\n\n", _num_vps);

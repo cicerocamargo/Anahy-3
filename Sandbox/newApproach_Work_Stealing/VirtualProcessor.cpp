@@ -56,12 +56,12 @@ VirtualProcessor::VirtualProcessor(Daemon* _daemon) : daemon(_daemon) {
 	//printf("RA %ld - %u\n", tid, instance_counter);
 	id = instance_counter++;
 
-	graph = new JobGraph();
+	local_graph = new JobGraph();
+
 	current_job = NULL;
 	job_counter = 0;
 
 	pthread_mutex_init(&mutex, NULL);
-	pthread_mutex_lock(&mutex);
 }
 
 // called from Daemon Thread
@@ -70,6 +70,7 @@ VirtualProcessor::~VirtualProcessor()  {
 	pthread_mutex_destroy(&mutex);
 }
 
+//maybe we will use these two methods, but I don't know when and why
 void VirtualProcessor::block() {
 	pthread_mutex_lock(&mutex);
 }
@@ -82,11 +83,10 @@ void VirtualProcessor::resume() {
 void VirtualProcessor::run() {
 	//printf("VP %d: Running...\n", id);
 	while(true) {
-
 		current_job = request_job(NULL, false);
+
 		if(!current_job) {
-			current_job = work_stealing_function(this);
-			block();
+			current_job = daemon->work_stealing_function(this);
 		}
 		if (!current_job) {
 			//printf("VP %d: I have no job, I'll stop\n", id);
@@ -126,8 +126,7 @@ JobHandle VirtualProcessor::create_new_job(pfunc function, void* args,
 
 	Job* job = new Job(job_id, current_job, this, attr, function, args);
 	
-	daemon->post_job(job);
-	//printf("VP %d sent a job to daemon graph\n", id);
+	post_job(job);
 	
 	JobHandle handle;
 	handle.pointer = job;
@@ -199,8 +198,8 @@ void* VirtualProcessor::join_job(JobHandle handle) {
 void VirtualProcessor::post_job(Job* job) {
 	pthread_mutex_lock(&mutex);
 
-	graph->insert(job);
-	Daemon::wake_up_some_waiting_vp();
+	local_graph->insert(job);
+	daemon->wake_up_some_waiting_vp();
 
 	pthread_mutex_unlock(&mutex);
 }
@@ -210,7 +209,7 @@ Job* VirtualProcessor::request_job(Job* _starting_job, bool steal_job) {
 
 	Job* job = NULL;
 
-	job = graph->find_a_ready_job(_starting_job, steal_job);
+	job = local_graph->find_a_ready_job(_starting_job, steal_job);
 	
 	pthread_mutex_unlock(&mutex);
 
@@ -220,7 +219,7 @@ Job* VirtualProcessor::request_job(Job* _starting_job, bool steal_job) {
 void VirtualProcessor::erase_job(Job* joined_job) {
 	pthread_mutex_lock(&mutex);
 
-	graph->erase(joined_job);
+	local_graph->erase(joined_job);
 	current_job = NULL;
 
 	pthread_mutex_unlock(&mutex);
@@ -228,10 +227,7 @@ void VirtualProcessor::erase_job(Job* joined_job) {
 
 // called from Daemon Thread
 void VirtualProcessor::start() {
-	// call this->run() in a new thread,
-	// and put this in the thread specific memory
 
-	pthread_mutex_unlock(&mutex); //unblock mutex that was block onto construtor
 	pthread_create(&thread, NULL, call_vp_run, this);
 }
 

@@ -31,7 +31,7 @@ void AnahyVM::init(int _num_vps) {
 
 void AnahyVM::terminate() {
 
-	main_vp->run();
+	//main_vp->run();
 
 	stop_vm();
 

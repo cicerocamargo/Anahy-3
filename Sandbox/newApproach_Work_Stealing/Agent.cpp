@@ -1,4 +1,4 @@
-#include "Daemon.h"
+#include "Agent.h"
 #include "AnahyVM.h"
 #include "Job.h"
 #include "VirtualProcessor.h"
@@ -8,40 +8,37 @@
 
 /**** PRIVATE METHODS ****/
 
-/* This method is too large and "ugly?"*/
-
-Daemon::Daemon(int _num_vps) : num_vps(_num_vps) {
+Agent::Agent(int _num_vps) : num_vps(_num_vps) {
 	
 	pthread_mutex_init(&mutex, NULL);
 	pthread_cond_init(&cond, NULL);
 
 	num_cpus = sysconf(_SC_NPROCESSORS_CONF);
 	
-	//printf("DAEMON: Creating vps\n");
 	//create my vps
 	for (int i = 0; i < num_vps; i++) {
-		vps_running.push_back(new VirtualProcessor(this));
+		vps_list.push_back(new VirtualProcessor(this));
 	}
 }
 
-void Daemon::broadcast_null() {
+void Agent::broadcast_null() {
 
 	pthread_mutex_lock(&mutex);
 	list<VirtualProcessor*>::iterator it;
 
-	/* firstly, I've got to set all the current jobs of the vps on running 
+	/* firstly, I've got to set all the current jobs of the vps on list 
 	 * list as NULL, then I need to remove all the vps from waiting list
 	 * and to set its current job as NULL, too.
 	*/
 
-	for (it = vps_running.begin(); it != vps_running.end(); ++it) {
+	for (it = vps_list.begin(); it != vps_list.end(); ++it) {
 		(*it)->set_current_job(NULL);
 	}
 
 	for (it = vps_waiting.begin(); it != vps_waiting.end(); ++it) {
 		
 		(*it)->set_current_job(NULL);
-		vps_running.push_back(*it);
+		vps_list.push_back(*it);
 		
 		it = vps_waiting.erase(it);
 	}
@@ -49,22 +46,20 @@ void Daemon::broadcast_null() {
 	pthread_mutex_unlock(&mutex);
 }
 
-Daemon::~Daemon() {
+Agent::~Agent() {
 
 	pthread_mutex_destroy(&mutex);
 	pthread_cond_destroy(&cond);
 
 	vps_waiting.clear();
-	vps_running.clear();
-
-	delete graph;
+	vps_list.clear();
 }
 
-void Daemon::start_my_vps() {
+void Agent::start_my_vps() {
 	//printf("DAEMON: Starting the vps\n");
 	list<VirtualProcessor*>::iterator it;
 
-	for (it = vps_running.begin(); it != vps_running.end(); ++it) {
+	for (it = vps_list.begin(); it != vps_list.end(); ++it) {
 		if((*it)->get_id() == 0) {
 			printf("DAEMON: Main_vp set.\n");
 			AnahyVM::set_main_vp(*it);
@@ -77,15 +72,15 @@ void Daemon::start_my_vps() {
 	//printf("DAEMON: All vps has started\n");
 }
 
-void Daemon::stop_my_vps() {
+void Agent::stop_my_vps() {
 
 	list<VirtualProcessor*>::iterator it;
 	/* this allows the main VP to help the execution of
-	 * remaining jobs and the Daemon to know that the
+	 * remaining jobs and the Agent to know that the
 	 * main VP is also idle when there's no work
 	 */
 
-	for (it = vps_running.begin(); it != vps_running.end(); ++it) {
+	for (it = vps_list.begin(); it != vps_list.end(); ++it) {
 		if((*it)->get_id() > 0) {
 			(*it)->stop();
 		}
@@ -93,32 +88,32 @@ void Daemon::stop_my_vps() {
 	//printf("DAEMON: Vps stopped\n");
 }
 
-void Daemon::put_vp_on_waiting_list(VirtualProcessor* vp) {
+void Agent::put_vp_on_waiting_list(VirtualProcessor* vp) {
 	pthread_mutex_lock(&mutex);
 
 	//printf("DAEMON: Putting VP %d on waiting list\n", vp->get_id());
-	//printf("%lu R_list and %lu to W_list\n", vps_running.size(), vps_waiting.size());
+	//printf("%lu R_list and %lu to W_list\n", vps_list.size(), vps_waiting.size());
 
 	list<VirtualProcessor*>::iterator it;
 
-	for (it = vps_running.begin(); it != vps_running.end(); ++it) {
+	for (it = vps_list.begin(); it != vps_list.end(); ++it) {
 		if ((*it)->get_id() == vp->get_id()) {
 			break;
 		}
 	}
 
 	vps_waiting.push_back(*it);
-	it = vps_running.erase(it);
+	it = vps_list.erase(it);
 
 	pthread_mutex_unlock(&mutex);
 }
 
-void Daemon::take_vp_from_waiting_list(Job* vp) {
+void Agent::take_vp_from_waiting_list(Job* vp) {
 
 	VirtualProcessor* vp = NULL;
 
 	vp = vps_waiting.front();
-	vps_running.push_back(vp);
+	vps_list.push_back(vp);
 	vps_waiting.pop_front();
 
 	vp->set_current_job(job);
@@ -126,13 +121,15 @@ void Daemon::take_vp_from_waiting_list(Job* vp) {
 }
 
 //temp variable can be to use to order some control
-bool Daemon::answer_oldest_vp_waiting() {
+bool Agent::answer_oldest_vp_waiting() {
+	// job's state has already been set to list
 
-	// job's state has already been set to running
 	VirtualProcessor* vp = NULL;
 	Job* job = NULL;
 
-	job = graph->find_a_ready_job(NULL, NULL);
+	vp = vps_waiting.front()
+
+	job = vp->find_a_ready_job(NULL, NULL);
 	if (job) {
 		take_vp_from_waiting_list(job);
 		/* The signal to cond variable needs to be 
@@ -147,25 +144,25 @@ bool Daemon::answer_oldest_vp_waiting() {
 
 /**** PUBLIC METHODS ****/
 
-bool Daemon::wake_up_some_waiting_vp() {
+bool Agent::wake_up_some_waiting_vp() {
 	pthread_mutex_lock(&mutex);
 	bool temp = false;
+	
 	if (!vps_waiting.empty()) {
 		
-		//printf("DAEMON: the waiting list is not empty:\n");
 		temp = answer_oldest_vp_waiting();
 	}
 	pthread_mutex_unlock(&mutex);
 	return temp;
 }
 
-Job* Daemon::work_stealing_function(VirtualProcessor* vp) {
+Job* Agent::work_stealing_function(VirtualProcessor* vp) {
 
 	Job* job = NULL;
 
-	//printf("Daemon: I'll find a job to vp %d. w_list %lu and r_lis %lu\n", vp->get_id(), vps_waiting.size(), vps_running.size());
+	//printf("Agent: I'll find a job to vp %d. w_list %lu and r_lis %lu\n", vp->get_id(), vps_waiting.size(), vps_list.size());
 	list<VirtualProcessor*>::interator it;
-	for (it = vps_running.begin(); i != vps_running.end(); ++it) {
+	for (it = vps_list.begin(); i != vps_list.end(); ++it) {
 		if(job = (*it)->find_a_ready_job(_starting_job, true)) {
 			break;
 		}

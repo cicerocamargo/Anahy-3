@@ -1,5 +1,5 @@
-#ifndef DAEMON_H
-#define DAEMON_H
+#ifndef AGENT_H
+#define AGENT_H
 
 #include <pthread.h>
 #include <list>
@@ -8,16 +8,16 @@
 using namespace std;
 
 class Job;
-class Daemon;
+class Agent;
 class VirtualProcessor;
 
-class Daemon {
+class Agent {
 
 	pthread_mutex_t mutex;
 	pthread_cond_t cond;
 
 	int num_vps, num_cpus;
-	list<VirtualProcessor*> vps_waiting, vps_running;
+	list<VirtualProcessor*> vps_waiting, vps_list;
 
 	bool answer_oldest_vp_waiting();
 	void broadcast_null();
@@ -25,8 +25,8 @@ class Daemon {
 
 public:
 
-	Daemon(int _num_vps);
-	~Daemon();
+	Agent(int _num_vps);
+	~Agent();
 
 	void start_my_vps();
 	void stop_my_vps();

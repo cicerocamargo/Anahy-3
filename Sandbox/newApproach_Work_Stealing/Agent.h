@@ -3,7 +3,6 @@
 
 #include <pthread.h>
 #include <list>
-#include "JobGraph.h"
 
 using namespace std;
 
@@ -14,14 +13,12 @@ class VirtualProcessor;
 class Agent {
 
 	pthread_mutex_t mutex;
-	pthread_cond_t cond;
+	pthread_cond_t cond; //I don't know if this is no longer necessary
 
 	int num_vps, num_cpus;
-	list<VirtualProcessor*> vps_waiting, vps_list;
+	list<VirtualProcessor*> request_list, vps_list;
 
-	bool answer_oldest_vp_waiting();
 	void broadcast_null();
-	void take_vp_from_waiting_list(Job* vp);
 
 public:
 
@@ -31,9 +28,8 @@ public:
 	void start_my_vps();
 	void stop_my_vps();
 
-	void put_vp_on_waiting_list(VirtualProcessor* vp);
-	bool wake_up_some_waiting_vp();
-	Job* work_stealing_function(VirtualProcessor* vp);
+	void put_vp_on_request_list(VirtualProcessor* vp);
+	void attend_requests();
 
 	inline int get_num_cpus() const { return num_cpus; }
 };

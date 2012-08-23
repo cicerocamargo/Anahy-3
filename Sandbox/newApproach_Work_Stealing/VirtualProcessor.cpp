@@ -1,5 +1,5 @@
 #include "VirtualProcessor.h"
-#include "Daemon.h"
+#include "Agent.h"
 #include "Job.h"
 #include "JobAttributes.h"
 #include "JobId.h"
@@ -24,7 +24,6 @@ void* VirtualProcessor::call_vp_run(void* arg) {
 
 	// this set the vp affinity
 	CPU_ZERO(&cpuset);
-	//printf("%u -- %ld -- %d \n", vp->get_id(), vp->get_tid(), (int) pthread_self());
 
 	CPU_SET(vp->get_tid(), (cpu_set_t*) &cpuset);
 	if (pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset) != 0) {
@@ -48,12 +47,12 @@ void VirtualProcessor::delete_pthread_key() {
 /**** PUBLIC METHODS ****/
 
 // called from Daemon Thread
-VirtualProcessor::VirtualProcessor(Daemon* _daemon) : daemon(_daemon) {
-	if (tid_counter == daemon->get_num_cpus())
+VirtualProcessor::VirtualProcessor(Agent* _agent) : agent(_agent) {
+	if (tid_counter == agent->get_num_cpus())
 		tid_counter = 0;
 	
 	tid = tid_counter++;
-	//printf("RA %ld - %u\n", tid, instance_counter);
+
 	id = instance_counter++;
 
 	local_graph = new JobGraph();
@@ -81,20 +80,19 @@ void VirtualProcessor::resume() {
 
 // this is the main loop of vp
 void VirtualProcessor::run() {
-	//printf("VP %d: Running...\n", id);
+
 	while(true) {
 		current_job = request_job(NULL, false);
 
 		if(!current_job) {
-			current_job = daemon->work_stealing_function(this);
+			agent->put_vp_on_request_list(this);
+			block();
 		}
 		if (!current_job) {
-			//printf("VP %d: I have no job, I'll stop\n", id);
 			break;
 		}
 		else {
 			current_job->run();
-			//daemon->erase_job(current_job, this);
 		}
 	}
 }
@@ -139,24 +137,17 @@ JobHandle VirtualProcessor::create_new_job(pfunc function, void* args,
  */
 void VirtualProcessor::suspend_current_job_and_try_to_help(Job* joined) {
 	context_stack.push(current_job); // save context
-	//printf("VP %d: I'll help the job to run\n", id);
 
 	request_job(joined, false);
 
-	if (current_job != context_stack.top()) { // daemon updated my current job
+	if (current_job != context_stack.top()) {
 		current_job->run();
 
 	}
-
 	current_job = context_stack.top(); // restore stacked context
 
-	// here, if daemon didn't change the current job and resumed me
-	// (so I got here without executing the IF statement)
-	// means that 'joined' got finished before a ready job was available
-	
 	context_stack.pop();
 }
-
 
 // run another job keeping track of the suspended job
 void VirtualProcessor::suspend_current_job_and_run_another(Job* another) {
@@ -168,7 +159,7 @@ void VirtualProcessor::suspend_current_job_and_run_another(Job* another) {
 
 	current_job = context_stack.top(); // restore stacked context
 	context_stack.pop();
-	//printf("Vp %d: A joined job was ran.", id);
+
 }
 
 void* VirtualProcessor::join_job(JobHandle handle) {
@@ -189,8 +180,8 @@ void* VirtualProcessor::join_job(JobHandle handle) {
 		}
 	}
 
-	if(joined->dec_join_counter()) {
-		daemon->erase_job(joined, this);
+	if(joined->are_there_joins_yet()) {
+		erase_job(joined);
 	}
 	return joined->get_retval();
 }
@@ -199,9 +190,9 @@ void VirtualProcessor::post_job(Job* job) {
 	pthread_mutex_lock(&mutex);
 
 	local_graph->insert(job);
-	daemon->wake_up_some_waiting_vp();
 
 	pthread_mutex_unlock(&mutex);
+	agent->Agent::attend_requests();
 }
 
 Job* VirtualProcessor::request_job(Job* _starting_job, bool steal_job) {

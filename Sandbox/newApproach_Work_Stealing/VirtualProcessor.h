@@ -1,10 +1,11 @@
 #include <pthread.h>
 #include <stack>
+#include "JobGraph.h"
 #include "definitions.h"
 
 using namespace std;
 
-class Daemon;
+class Agent;
 class Job;
 class JobHandle;
 class JobAttributes;
@@ -13,7 +14,7 @@ class VirtualProcessor {
 	// a unique id for this VP
 	uint id;
 	JobGraph* local_graph;
-	Daemon* daemon;
+	Agent* agent;
 
 	//to set the vp affinity
 	long tid;
@@ -40,7 +41,7 @@ class VirtualProcessor {
 	stack<Job*> context_stack;
 	
 	pthread_t thread; // my thread
-	static pthread_mutex_t mutex; // where I wait for daemon answers
+	static pthread_mutex_t mutex;
 
 	/* called from 'this->thread' to set thread
 	 * specific data as this and call this->run() (vp_obj is 'this')
@@ -52,7 +53,7 @@ class VirtualProcessor {
 
 public:
 
-	VirtualProcessor(Daemon* _daemon);
+	VirtualProcessor(Agent* _agent);
 	~VirtualProcessor();
 
 	void run(); // called from call_vp_run (begins the VP loop)
@@ -69,7 +70,6 @@ public:
 
 	static void associate_vp_with_current_thread(void* vp_obj);
 	
-	// messages to be received from Daemon
 	static VirtualProcessor* get_current_vp();
 	JobHandle create_new_job(pfunc function, void* args, JobAttributes* attr);
 
@@ -81,7 +81,6 @@ public:
 	Job* request_job(Job* _starting_job, bool steal_job);
 	void erase_job(Job* joined_job);
 
-	// messages to be received from a Daemon
 	void start();
 	void stop();
 

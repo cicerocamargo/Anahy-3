@@ -3,13 +3,13 @@
 #include <cstdio>
 #include <cstdlib>
 
-Daemon* AnahyVM::daemon;
+Agent* AnahyVM::agent;
 VirtualProcessor* AnahyVM::main_vp;
 
 pthread_mutex_t AnahyVM::mutex;
 
 void AnahyVM::start_vm() {
-	daemon->start_my_vps(); // inside this method, the daemon sets the main VP
+	agent->start_my_vps(); // inside this method, the agent sets the main VP
 
 	VirtualProcessor::associate_vp_with_current_thread((void*) main_vp);
 }
@@ -21,13 +21,13 @@ void AnahyVM::stop_vm() {
 					// remaining jobs and the Daemon to know that the
 					// main VP is also idle when there's no work
 	//printf("AnahyVM: The Daemon will stop all vps\n");
-	daemon->stop_my_vps();
+	agent->stop_my_vps();
 }
 
 //here the interface begins to be described
 void AnahyVM::init(int _num_vps) {
 	
-	daemon = new Daemon(_num_vps);
+	agent = new Agent(_num_vps);
 
 	VirtualProcessor::init_pthread_key();
 
@@ -43,7 +43,7 @@ void AnahyVM::terminate() {
 
 	VirtualProcessor::delete_pthread_key();
 
-	delete daemon;
+	delete agent;
 	printf("\n**** Anahy3: Done!\n");
 }
 

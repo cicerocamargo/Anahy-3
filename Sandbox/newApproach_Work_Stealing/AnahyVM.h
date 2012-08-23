@@ -4,7 +4,7 @@
 #include <list>
 #include <pthread.h>
 
-#include "Daemon.h"
+#include "Agent.h"
 #include "Job.h"
 #include "JobId.h"
 #include "JobAttributes.h"
@@ -15,7 +15,7 @@ class VirtualProcessor;
 class Job;
 
 class AnahyVM {
-	static Daemon* daemon;
+	static Agent* agent;
 	
 	static pthread_mutex_t mutex;
 

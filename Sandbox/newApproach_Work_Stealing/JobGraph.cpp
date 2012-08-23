@@ -33,16 +33,16 @@ Job* JobGraph::find_a_ready_job(Job* starting_job, bool steal_job) {
 	
 	if (steal_job) {
 		list<Job*>::reverse_iterator rit;
-		for(rit = root_jobs.rbegin(); rit != root_jobs.rend(); ++rit) {
+		for(rit = local_jobs.rbegin(); rit != local_jobs.rend(); ++rit) {
 			if (!(*rit)->get_vp_thief() && (*rit)->compare_and_swap_state(ready, running)) {
 				return *rit;
 			}
 			else {
 				children = (*rit)->get_children();
 				if (!children.empty()) {
-					root_jobs.insert(root_jobs.begin(), children.begin(), children.end());
+					local_jobs.insert(local_jobs.begin(), children.begin(), children.end());
 				}
-				root_jobs.remove(*rit);
+			 	local_jobs.remove(*rit);
 			}
 		}
 
@@ -63,16 +63,16 @@ Job* JobGraph::find_a_ready_job(Job* starting_job, bool steal_job) {
 			}
 		}
 		else {
-			for (it = root_jobs.begin(); it != root_jobs.end(); ++it) {
+			for (it = local_jobs.begin(); it != local_jobs.end(); ++it) {
 				if (!(*it)->get_vp_thief() && (*it)->compare_and_swap_state(ready, running)) {
 					return *it;
 				}
 				else {
 					children = (*it)->get_children();
 					if (!children.empty()){
-						root_jobs.insert(root_jobs.end(), children.begin(), children.end());
+						local_jobs.insert(local_jobs.end(), children.begin(), children.end());
 					}
-					root_jobs.remove(*it);
+					local_jobs.remove(*it);
 				}
 			}
 		}

@@ -7,7 +7,7 @@
 #include "definitions.h"
 #include "athread.h"
 #include "JobAttributes.h"
-#include "Daemon.h"
+#include "Agent.h"
 #include "VirtualProcessor.h"
 #include "AnahyVM.h"
 

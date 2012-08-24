@@ -15,16 +15,17 @@ class Job;
 
 class AnahyVM {
 	
-	static pthread_mutex_t mutex;
-
 	static VirtualProcessor* main_vp;
+	static int num_cpus;
+	static int num_vps;
+
+	static list<VirtualProcessor*> vps;
 
 	AnahyVM();
-	AnahyVM(AnahyVM&);
 	~AnahyVM();
 
-	static void start_vm();
-	static void stop_vm();
+	static void start_vps();
+	static void stop_vps();
 
 public:
 	static void init(int _num_vps);
@@ -34,7 +35,7 @@ public:
 	pfunc function, void* args);
 	static void join(JobHandle handle, void** result);
 
-	static void set_main_vp(VirtualProcessor* vp);
+	static int get_num_cpus() { return num_cpus; }
 
 	//we'll define from now the methods to the job's attributes
 	int attr_init(JobAttributes* attr);

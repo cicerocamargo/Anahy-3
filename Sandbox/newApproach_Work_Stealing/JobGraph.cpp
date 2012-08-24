@@ -12,7 +12,6 @@ JobGraph::~JobGraph() {
 }
 
 void JobGraph::insert(Job* job) {
-
 	local_jobs.push_back(job);
 }
 
@@ -37,21 +36,15 @@ Job* JobGraph::find_a_ready_job(Job* starting_job, bool steal_job) {
 			if (!(*rit)->get_vp_thief() && (*rit)->compare_and_swap_state(ready, running)) {
 				return *rit;
 			}
-			else {
-				children = (*rit)->get_children();
-				if (!children.empty()) {
-					local_jobs.insert(local_jobs.begin(), children.begin(), children.end());
-				}
-			 	local_jobs.remove(*rit);
-			}
 		}
 
 	}
 	else {
 		list<Job*>::iterator it;
-		if (starting_job) {
+		if (starting_job && !starting_job->get_vp_thief()) {
+
 			children = starting_job->get_children();
-			if (!children.empty() || !starting_job->get_vp_thief()) {
+			if (!children.empty()) {
 				for (it_child = children.begin(); it_child != children.end(); ++it_child) {
 					if(!(*it)->get_vp_thief() && (*it)->compare_and_swap_state(ready, running)) {
 						return *it;
@@ -66,13 +59,6 @@ Job* JobGraph::find_a_ready_job(Job* starting_job, bool steal_job) {
 			for (it = local_jobs.begin(); it != local_jobs.end(); ++it) {
 				if (!(*it)->get_vp_thief() && (*it)->compare_and_swap_state(ready, running)) {
 					return *it;
-				}
-				else {
-					children = (*it)->get_children();
-					if (!children.empty()){
-						local_jobs.insert(local_jobs.end(), children.begin(), children.end());
-					}
-					local_jobs.remove(*it);
 				}
 			}
 		}

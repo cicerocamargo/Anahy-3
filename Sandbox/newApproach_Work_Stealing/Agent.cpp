@@ -75,12 +75,12 @@ void Agent::stop_my_vps() {
 // this method answers the requests from vps from the request list
 // make the stealing function
 void Agent::attend_requests() {
-	pthread_mutex_lock(&mutex);
-	
+		
 	VirtualProcessor* vp = NULL;
 	Job* job = NULL;
 	list<VirtualProcessor*>::iterator it;
 
+	pthread_mutex_lock(&mutex);
 	while(!request_list.empty()) {
 
 		if (request_list.size() == num_vps) {
@@ -97,13 +97,15 @@ void Agent::attend_requests() {
 				}
 			}
 			if (job) {
+				job->set_vp_thief(vp);
 				vp->set_current_job(job);
 				vps_list.push_back(vp);
 				request_list.pop_front();
 				vp->resume();
 			}
+			
+			pthread_mutex_unlock(&mutex);
 		}
-		pthread_mutex_unlock(&mutex);
 	}
 }
 

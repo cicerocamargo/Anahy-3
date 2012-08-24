@@ -14,7 +14,9 @@ class VirtualProcessor {
 	// a unique id for this VP
 	uint id;
 	JobGraph* local_graph;
-	Agent* agent;
+
+	static int vps_waiting;
+	static list<VirtualProcessor*> vps_list;
 
 	//to set the vp affinity
 	long tid;

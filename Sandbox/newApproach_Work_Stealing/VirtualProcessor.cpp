@@ -192,7 +192,7 @@ void VirtualProcessor::post_job(Job* job) {
 	local_graph->insert(job);
 
 	pthread_mutex_unlock(&mutex);
-	agent->Agent::attend_requests();
+	agent->attend_requests();
 }
 
 Job* VirtualProcessor::request_job(Job* _starting_job, bool steal_job) {

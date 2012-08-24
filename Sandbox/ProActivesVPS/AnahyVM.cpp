@@ -4,46 +4,53 @@
 #include <cstdlib>
 
 VirtualProcessor* AnahyVM::main_vp;
+list<VirtualProcessor*> AnahyVM::vps;
+int AnahyVM::num_vps;
+int AnahyVM::num_cpus;
 
-pthread_mutex_t AnahyVM::mutex;
+void AnahyVM::start_vps() {
+	list<VirtualProcessor*>::iterator it;
 
-void AnahyVM::start_vm() {
-	agent->start_my_vps(); // inside this method, the agent sets the main VP
-
-	VirtualProcessor::associate_vp_with_current_thread((void*) main_vp);
+	for (it = vps.begin(); it != vps.end(); ++it) {
+		if ((*it)->get_id() == 0) {
+			main_vp = *it;
+		} else {
+			(*it)->start();
+		}
+	}
 }
 
-void AnahyVM::stop_vm() {
-	
-	//printf("XXX Run main vp\n");
-	main_vp->run(); // this allows the main VP to help the execution of
-					// remaining jobs and the Daemon to know that the
-					// main VP is also idle when there's no work
-	//printf("AnahyVM: The Daemon will stop all vps\n");
-	agent->stop_my_vps();
+void AnahyVM::stop_vps() {
+	list<VirtualProcessor*>::iterator it;
+
+	for (it = vps.begin(); it != vps.end(); ++it) {
+		if ((*it)->get_id() != 0) {
+			(*it)->stop();
+		}
+	}
 }
 
 //here the interface begins to be described
 void AnahyVM::init(int _num_vps) {
-	
-	agent = new Agent(_num_vps);
-
+	num_vps = _num_vps;
 	VirtualProcessor::init_pthread_key();
 
-	pthread_mutex_init(&mutex, NULL);
+	for(int i = 0; i < _num_vps; i++) {
+		vps.push_back(new VirtualProcessor());
+	}
 
-	start_vm();
-	printf("**** Anahy3: Starting. Number of VPs equal %d...\n\n", _num_vps);
+	start_vps();
+
+	VirtualProcessor::associate_vp_with_current_thread(main_vp);
 }
 
 void AnahyVM::terminate() {
-
-	stop_vm();
-
+	main_vp->run();// this allows the main VP to help the execution of
+					// remaining jobs and the Daemon to know that the
+					// main VP is also idle when there's no work
+	stop_vps();
 	VirtualProcessor::delete_pthread_key();
-
-	delete agent;
-	printf("\n**** Anahy3: Done!\n");
+	vps.clear();
 }
 
 void AnahyVM::exit(void* value_ptr) {
@@ -67,10 +74,6 @@ void AnahyVM::join(JobHandle handle, void** result) {
 	if(result) {
 		*result = temp;
 	}
-}
-
-void AnahyVM::set_main_vp(VirtualProcessor* vp) {
-	main_vp = vp;
 }
 
 int attr_init(JobAttributes* attr) {

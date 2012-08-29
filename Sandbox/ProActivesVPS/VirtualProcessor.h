@@ -27,7 +27,7 @@ class VirtualProcessor {
 	static pthread_key_t key;
 
 // class vars
-	static list<VirtualProcessor*> vp_list; // read-only access
+	static VirtualProcessor** vp_list; // read-only access
 	static bool end_of_program; // atomic access!
 	static int thief_counter; // atomic access!
 	static int instance_counter;
@@ -44,6 +44,8 @@ public:
 
 	VirtualProcessor();
 	~VirtualProcessor();
+
+	static void init_vp_list(int num_vps);
 
 	static void init_pthread_key();
 	static void delete_pthread_key();

@@ -35,7 +35,8 @@ public:
 	pfunc function, void* args);
 	static void join(JobHandle handle, void** result);
 
-	static int get_num_cpus() { return num_cpus; }
+	inline static int get_num_cpus() { return num_cpus; }
+	inline static int get_num_vps() { return num_vps; }
 
 	//we'll define from now the methods to the job's attributes
 	int attr_init(JobAttributes* attr);

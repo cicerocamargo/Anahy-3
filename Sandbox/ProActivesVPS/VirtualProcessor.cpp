@@ -12,7 +12,7 @@ int VirtualProcessor::thief_counter = 0;
 int VirtualProcessor::tid_counter = 0;
 int VirtualProcessor::instance_counter = 0;
 pthread_key_t VirtualProcessor::key;
-list<VirtualProcessor*> VirtualProcessor::vp_list;
+VirtualProcessor** VirtualProcessor::vp_list;
 
 void* VirtualProcessor::call_vp_run(void* arg) {
 	associate_vp_with_current_thread(arg);
@@ -41,16 +41,18 @@ void VirtualProcessor::run() {
 			if (!thief_mode) {
 				thief_mode = true;
 				int __thief_counter = __sync_add_and_fetch(&thief_counter, 1);
-				if (__thief_counter == vp_list.size()) {
+				printf("VP %d: thief_counter == %d\n", id, __thief_counter);
+				if (__thief_counter == AnahyVM::get_num_vps()) {
+					printf("VP %d: FIM!\n", id);
 					end_of_program = true;
 					break;
 				}
 			}
 				
-			list<VirtualProcessor*>::iterator it;
-			for (it = vp_list.begin(); it != vp_list.end(); ++it) {
-				if (*it != this) {
-					current_job = (*it)->get_job();
+			int num_vps = AnahyVM::get_num_vps();
+			for (int i = 0; i < num_vps; ++i) {
+				if (vp_list[i]!= this) {
+					current_job = (vp_list[i])->get_job();
 					if (current_job) {
 						break;
 					}
@@ -80,12 +82,18 @@ VirtualProcessor::VirtualProcessor() {
 	current_job = NULL;
 	pthread_mutex_init(&mutex, NULL);
 
-	vp_list.push_back(this);
+	vp_list[id] = this;
 }
 
 VirtualProcessor::~VirtualProcessor() {
 	pthread_mutex_destroy(&mutex);
-	vp_list.remove(this);
+}
+
+void VirtualProcessor::init_vp_list(int num_vps) {
+	if (vp_list) {
+		free(vp_list);
+	}
+	vp_list = (VirtualProcessor**) malloc(num_vps*sizeof(VirtualProcessor*));
 }
 
 void VirtualProcessor::init_pthread_key() {
@@ -142,16 +150,20 @@ void VirtualProcessor::suspend_current_job_and_run_another() {
 		if (!thief_mode) {
 			thief_mode = true;
 			int __thief_counter = __sync_add_and_fetch(&thief_counter, 1);
-			if (__thief_counter == vp_list.size()) {
-				// print error and abort!
+			if (__thief_counter == AnahyVM::get_num_vps()) {
+				printf("ooops...\n");
+				abort();
 			}
 		}
 		
-		list<VirtualProcessor*>::iterator it;
-		for (it = vp_list.begin(); it != vp_list.end(); ++it) {
-			if ( *it != this && (current_job = (*it)->get_job()) ) {
-				break;
-			}
+		int num_vps = AnahyVM::get_num_vps();
+		for (int i = 0; i < num_vps; ++i) {
+		 	if (vp_list[i]!= this) {
+					current_job = (vp_list[i])->get_job();
+					if (current_job) {
+						break;
+					}
+				}
 		}
 	}
 	if (current_job) {
@@ -181,21 +193,6 @@ Job* VirtualProcessor::get_job() {
 	Job* job = NULL;
 	pthread_mutex_lock(&mutex);
 		if (!job_list.empty()) {
-
-			// list<Job*>::iterator it;
-
-			// for (it = job_list.begin(); it != job_list.end(); ++it) {
-			// 	//we can't return a stolen job
-			// 	if (!(*it)->get_thief() && (*it)->compare_and_swap(ready, running)) {
-
-			// 		//if I'm in a stealing operation, I've got to indicate it on job's thief flag
-			// 		if (mode) {
-			// 			(*it)->set_vp_thief(vp);
-			// 		}
-			// 		pthread_mutex_unlock(&mutex);
-			// 		return *it;
-			// 	}
-			// }
 
 			job = job_list.front();
 			job_list.pop_front();

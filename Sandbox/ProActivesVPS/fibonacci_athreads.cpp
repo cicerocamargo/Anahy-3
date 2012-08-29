@@ -5,6 +5,8 @@
 #include "AnahyVM.h"
 #include "JobAttributes.h"
 
+int __count = 0;
+
 using namespace std;
 
 long fib(long n) { return n < 2 ? n : fib(n-1) + fib(n-2); }
@@ -14,7 +16,7 @@ void* par_fib(void* args) {
 	long n = *(_n);
 	long res;
 
-	//cout << "Fibo(" << n << ")" << endl;
+	//printf("%d:\tFibo(%lu)\n", __count++, n);
 	if (n < 2) {
 		res = n;
 		//fib(15); // para aumentar o custo do thread

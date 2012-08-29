@@ -34,6 +34,7 @@ void AnahyVM::stop_vps() {
 void AnahyVM::init(int _num_vps) {
 	num_vps = _num_vps;
 	VirtualProcessor::init_pthread_key();
+	VirtualProcessor::init_vp_list(num_vps);
 
 	for(int i = 0; i < _num_vps; i++) {
 		vps.push_back(new VirtualProcessor());

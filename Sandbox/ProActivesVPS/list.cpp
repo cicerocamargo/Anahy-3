@@ -1,23 +1,25 @@
 #include <stdio.h>
 
-template<class T>
+template<class Type>
 class Elem {
 public:
-	Elem(T& __element, Elem __next, Elem __previous) {
+	Elem(Type __element, Elem<Type>* __next) {//, Elem<Type>* __previous) {
 		element = __element;
 		next = __next;
-		previous = __previous;
+		//previous = __previous;
 	}
 
-	Elem* next;
-	Elem* previous;
-	T& element;
+	Elem<Type>* next;
+	//Elem<Type>* previous;
+	Type element;
 };
 
-template<class T>
+template<class Type>
 class list {
+private:
 	int __size;
-	Elem<T> *first, *last;
+	Elem<Type>* first;
+	Elem<Type>* last;
 
 public:
 	list() {
@@ -25,20 +27,28 @@ public:
 		first = last = NULL;
 	}
 
-	T& front() {
+	Type& front() {
 		return first->element;
 	}
 
 	void pop_front() {
-		Elem<T>* e = first;
-		first = first->next;
-		first->previous = NULL;
-		delete e;
+		Elem<Type>* e;
+		if (__size == 0) {
+			return;
+		} else {
+			e = first;
+			first = first->next;
+			//first->previous = first;
+			if (__size == 1) {
+				last = NULL;
+			}
+			delete e;
+		}
 		__size--;
 	}
 
-	void push_back(T& elem) {
-		Elem<T>* e = new Elem<T>(elem, NULL, NULL);
+	void push_back(Type elem) {
+		Elem<Type>* e = new Elem<Type>(elem, NULL);//, NULL);
 
 		if (__size == 0) {
 			first = e;
@@ -46,10 +56,10 @@ public:
 		} else if (__size == 1) {
 			last = e;
 			first->next = last;
-			last->previous = first;
+			//last->previous = first;
 		} else {
+			//e->previous = last;
 			last->next = e;
-			e->previous = last;
 			last = e;
 		}
 		__size++;
@@ -80,8 +90,8 @@ int main() {
 	printf("empty? %s\n", l.empty() ? "yes" : "no" );
 	l.pop_front();
 	l.pop_front();
-
 	printf("size: %d\n", l.size());
 	printf("empty? %s\n", l.empty() ? "yes" : "no" );
+	
 	return 0;
 }

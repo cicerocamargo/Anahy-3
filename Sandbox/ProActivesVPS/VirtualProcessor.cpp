@@ -3,8 +3,9 @@
 #include "JobAttributes.h"
 #include "JobId.h"
 #include "AnahyVM.h"
-#include <iostream>
+#include <stdio.h>
 #include <sched.h>
+#include <stdlib.h>
 
 
 bool VirtualProcessor::end_of_program = false;
@@ -41,7 +42,7 @@ void VirtualProcessor::run() {
 			if (!thief_mode) {
 				thief_mode = true;
 				int __thief_counter = __sync_add_and_fetch(&thief_counter, 1);
-				printf("VP %d: thief_counter == %d\n", id, __thief_counter);
+				//printf("VP %d: thief_counter == %d\n", id, __thief_counter);
 				if (__thief_counter == AnahyVM::get_num_vps()) {
 					printf("VP %d: FIM!\n", id);
 					end_of_program = true;

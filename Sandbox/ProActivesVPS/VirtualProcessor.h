@@ -1,9 +1,9 @@
-#ifndef  VIRTUALPROCESSOR_H
+#ifndef VIRTUALPROCESSOR_H
 #define VIRTUALPROCESSOR_H
 
 #include <pthread.h>
 #include <stack>
-#include <list>
+#include "ourlist.h"
 #include "definitions.h"
 
 using namespace std;
@@ -15,7 +15,7 @@ class JobAttributes;
 class VirtualProcessor {
 //instance vars
 	int id;
-	list<Job*> job_list;
+	mList<Job*> job_list;
 	pthread_t thread; // my own thread
 	pthread_mutex_t mutex; // protection to my job list
 	bool thief_mode;

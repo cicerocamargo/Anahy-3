@@ -1,4 +1,8 @@
-#include <stdio.h>
+#ifndef OURLIST_H
+#define OURLIST_H
+
+#include "Job.h"
+#include "JobId.h"
 
 template<class Type>
 class Elem {
@@ -15,14 +19,14 @@ public:
 };
 
 template<class Type>
-class list {
+class mList {
 private:
 	int __size;
 	Elem<Type>* first;
 	Elem<Type>* last;
 
 public:
-	list() {
+	mList() {
 		__size = 0;
 		first = last = NULL;
 	}
@@ -75,23 +79,4 @@ public:
 
 };
 
-int main() {
-	int x = 1, y = 2, z = 3;
-	list<int> l;
-	l.push_back(x);
-	l.push_back(y);
-	l.push_back(z);
-	printf("front: %d\n", l.front());
-	printf("size: %d\n", l.size());
-	printf("empty? %s\n", l.empty() ? "yes" : "no" );
-	l.pop_front();
-	printf("front: %d\n", l.front());
-	printf("size: %d\n", l.size());
-	printf("empty? %s\n", l.empty() ? "yes" : "no" );
-	l.pop_front();
-	l.pop_front();
-	printf("size: %d\n", l.size());
-	printf("empty? %s\n", l.empty() ? "yes" : "no" );
-	
-	return 0;
-}
+#endif

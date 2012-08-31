@@ -52,7 +52,7 @@ void VirtualProcessor::run() {
 				
 			int num_vps = AnahyVM::get_num_vps();
 			for (int i = 0; i < num_vps; ++i) {
-				if (vp_list[i]!= this) {
+				if (vp_list[i] != this) {
 					current_job = (vp_list[i])->get_job();
 					if (current_job) {
 						break;
@@ -152,8 +152,12 @@ void VirtualProcessor::suspend_current_job_and_run_another() {
 			thief_mode = true;
 			int __thief_counter = __sync_add_and_fetch(&thief_counter, 1);
 			if (__thief_counter == AnahyVM::get_num_vps()) {
-				printf("ooops...\n");
-				abort();
+				// all the others VPs are waiting, then
+				// there isn't any Job for me
+				// I've just got to restore my old job from the stack
+				current_job = context_stack.top();
+				context_stack.pop();
+				return;
 			}
 		}
 		

@@ -26,6 +26,7 @@ void AnahyVM::stop_vps() {
 	for (it = vps.begin(); it != vps.end(); ++it) {
 		if ((*it)->get_id() != 0) {
 			(*it)->stop();
+			num_vps--;
 		}
 	}
 }

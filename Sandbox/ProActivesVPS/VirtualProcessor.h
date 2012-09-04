@@ -3,6 +3,7 @@
 
 #include <pthread.h>
 #include <stack>
+#include <list>
 #include "ourlist.h"
 #include "definitions.h"
 
@@ -15,21 +16,21 @@ class JobAttributes;
 class VirtualProcessor {
 //instance vars
 	int id;
+	bool thief_mode;
+	long job_counter;
+
 	mList<Job*> job_list;
+	Job* current_job;
+	stack<Job*> context_stack;
+
 	pthread_t thread; // my own thread
 	pthread_mutex_t mutex; // protection to my job list
-	bool thief_mode;
-	Job* current_job;
-		stack<Job*> context_stack;
-
-	long job_counter;
 
 	static pthread_key_t key;
 
 // class vars
-	static VirtualProcessor** vp_list; // read-only access
-	static bool end_of_program; // atomic access!
-	static int thief_counter; // atomic access!
+	static list<VirtualProcessor*> vp_list; // read-only access
+	static int idle_vps; // atomic access!
 	static int instance_counter;
 
 	static void* call_vp_run(void *vp_obj);
@@ -44,8 +45,6 @@ public:
 
 	VirtualProcessor();
 	~VirtualProcessor();
-
-	static void init_vp_list(int num_vps);
 
 	static void init_pthread_key();
 	static void delete_pthread_key();

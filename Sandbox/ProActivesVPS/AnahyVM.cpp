@@ -35,7 +35,6 @@ void AnahyVM::stop_vps() {
 void AnahyVM::init(int _num_vps) {
 	num_vps = _num_vps;
 	VirtualProcessor::init_pthread_key();
-	VirtualProcessor::init_vp_list(num_vps);
 
 	for(int i = 0; i < _num_vps; i++) {
 		vps.push_back(new VirtualProcessor());
@@ -47,10 +46,13 @@ void AnahyVM::init(int _num_vps) {
 }
 
 void AnahyVM::terminate() {
+
 	main_vp->run();// this allows the main VP to help the execution of
 					// remaining jobs and the Daemon to know that the
 					// main VP is also idle when there's no work
+
 	stop_vps();
+
 	VirtualProcessor::delete_pthread_key();
 	vps.clear();
 }

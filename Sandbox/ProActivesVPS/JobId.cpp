@@ -6,7 +6,7 @@ JobId::JobId() {
 	serial_number = 0;
 }
 
-JobId::JobId(uint _vp_id, ulong _serial_number)
+JobId::JobId(int _vp_id, long _serial_number)
 : vp_id(_vp_id), serial_number(_serial_number) {}
 
 bool JobId::operator<(const JobId& id) const {
@@ -24,14 +24,14 @@ bool JobId::operator==(const JobId& id) const {
 
 // display a job id
 void JobId::display() {
-	printf("vp%djob%lu", vp_id, serial_number);
+	printf("vp%djob%ld", vp_id, serial_number);
 }
 
 /* getters and setters */
-uint JobId::get_vp_id() const {
+int JobId::get_vp_id() const {
 	return vp_id;
 }
 
-ulong JobId::get_serial_number() const {
+long JobId::get_serial_number() const {
 	return serial_number;
 }

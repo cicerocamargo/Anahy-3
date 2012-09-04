@@ -5,19 +5,19 @@
 
 class JobId {
 
-	uint vp_id;
-	ulong serial_number;
+	int vp_id;
+	long serial_number;
 
 public:
 	JobId();
-	JobId(uint _vp_id, ulong _serial_number);
+	JobId(int _vp_id, long _serial_number);
 	bool operator<(const JobId& id) const;
 	bool operator==(const JobId& id) const;
 	void display();
 
 	/* getters and setters */
-	uint get_vp_id() const;
-	ulong get_serial_number() const;
+	int get_vp_id() const;
+	long get_serial_number() const;
 };
 
 #endif

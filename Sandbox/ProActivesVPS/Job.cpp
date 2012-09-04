@@ -60,7 +60,7 @@ void Job::remove_child(Job* child) {
 
 // auxiliary function
 void print_tabs(int num_tabs) {
-	for (uint i = 0; i < num_tabs; i++) {
+	for (int i = 0; i < num_tabs; i++) {
 		printf("\t");
 	}
 }

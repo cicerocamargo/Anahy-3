@@ -16,14 +16,15 @@ class JobAttributes;
 class VirtualProcessor {
 //instance vars
 	int id;
-	bool thief_mode;
 	long job_counter;
+	int stack_size;
 
 	mList<Job*> job_list;
 	Job* current_job;
 	stack<Job*> context_stack;
 
 	pthread_t thread; // my own thread
+	pthread_attr_t attr;
 	pthread_mutex_t mutex; // protection to my job list
 
 	static pthread_key_t key;

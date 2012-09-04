@@ -101,14 +101,14 @@ VirtualProcessor* VirtualProcessor::get_current_vp() {
 
 JobHandle VirtualProcessor::create_new_job(pfunc function, void* args, JobAttributes* attr) {
 	JobId job_id(id, job_counter++);
-	if (attr) {
-		if (!attr->get_initialized()) {
-			delete attr;
-			attr = new JobAttributes();
-		}
-	} else {
-	 	attr = new JobAttributes();
-	}
+	// if (attr) {
+	// 	if (!attr->get_initialized()) {
+	// 		delete attr;
+	// 		attr = new JobAttributes();
+	// 	}
+	// } else {
+	//  	attr = new JobAttributes();
+	// }
 	Job* job = new Job(job_id, current_job, this, attr, function, args);
 
 	JobHandle handle;
@@ -177,7 +177,12 @@ Job* VirtualProcessor::get_job() {
 }
 
 void VirtualProcessor::start() {
-	pthread_create(&thread, NULL, call_vp_run, this);
+	pthread_attr_init(&attr);
+	stack_size = 32768; //32MB, default is 8MB
+	if ((pthread_attr_setstacksize(&attr, stack_size)) != 0) {
+		printf("Error in pthread_attr_setstacksize!\n");
+	}
+	pthread_create(&thread, &attr, call_vp_run, this);
 }
 
 void VirtualProcessor::stop() {

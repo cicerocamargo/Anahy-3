@@ -3,68 +3,96 @@
 
 #include "Job.h"
 #include "JobId.h"
+#include <cassert>
+#include <iostream>
 
 template<class Type>
-class Elem {
-public:
-	Elem(Type __element, Elem<Type>* __next) {//, Elem<Type>* __previous) {
-		element = __element;
-		next = __next;
-		//previous = __previous;
-	}
+class ListNode {
 
-	Elem<Type>* next;
-	//Elem<Type>* previous;
-	Type element;
+public:
+
+	ListNode<Type>* next;
+	ListNode<Type>* previous;
+	Type value;
+
+	ListNode(Type value) {
+		this->value = value;
+		next = previous = NULL;
+	}
 };
 
 template<class Type>
 class mList {
-private:
+
 	int __size;
-	Elem<Type>* first;
-	Elem<Type>* last;
+	ListNode<Type>* first;
+	ListNode<Type>* last;
 
 public:
 	mList() {
+		std::cout << "node size: " << sizeof(ListNode<Type>) << std::endl;
 		__size = 0;
 		first = last = NULL;
 	}
 
 	Type& front() {
-		return first->element;
+		return first->value;
+	}
+
+	Type& back() {
+		return last->value;
 	}
 
 	void pop_front() {
-		Elem<Type>* e;
-		if (__size == 0) {
-			return;
+		if (__size == 1) {
+			delete first;
+			first = last = NULL;
 		} else {
-			e = first;
+			ListNode<Type>* deadNode = first;
 			first = first->next;
-			//first->previous = first;
-			if (__size == 1) {
-				last = NULL;
-			}
-			delete e;
+			first->previous = NULL;
+			delete deadNode;
 		}
 		__size--;
 	}
 
-	void push_back(Type elem) {
-		Elem<Type>* e = new Elem<Type>(elem, NULL);//, NULL);
+	void pop_back() {
+		if (__size == 1) {
+			delete first;
+			first = last = NULL;
+		} else {
+			ListNode<Type>* deadNode = last;
+			last = last->previous;
+			last->next = NULL;
+			delete deadNode;
+		}
+		__size--;
+	}
+
+	void push_front(Type elem) {
+		ListNode<Type>* newNode = new ListNode<Type>(elem);
 
 		if (__size == 0) {
-			first = e;
-			last = e;
-		} else if (__size == 1) {
-			last = e;
-			first->next = last;
-			//last->previous = first;
+			first = last = newNode;
+		} else  {
+			assert(first != NULL);
+			first->previous = newNode;
+			newNode->next = first;
+			first = newNode;
+		}
+		__size++;
+	}
+
+	void push_back(Type elem) {
+		ListNode<Type>* newNode = new ListNode<Type>(elem);
+
+		if (__size == 0) {
+			first = last = newNode;
 		} else {
-			//e->previous = last;
-			last->next = e;
-			last = e;
+			assert(last != NULL);
+			last->next = newNode;
+			newNode->previous = last;
+			last = newNode;
 		}
 		__size++;
 	}
@@ -77,6 +105,19 @@ public:
 		return __size == 0 ? true : false;
 	}
 
+	void print() {
+		std::cout << "[";
+		ListNode<Type>* it = first;
+		while (it != NULL) {
+			std::cout << " " << it->value;
+			if (it->next != NULL) {
+				std::cout << ",";
+			}
+			it = it->next;
+		}
+		std::cout << "]" << std::endl;
+		std::cout << __size << " elements." << std::endl;
+	}
 };
 
 #endif

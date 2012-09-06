@@ -4,3 +4,12 @@
 */*.o
 */.out
 */*.out
+*.plist
+
+Sandbox/ProActivesVPS/a.out
+
+Sandbox/ProActivesVPS/fibo
+
+Sandbox/ProActivesVPS/fibo.dSYM/Contents/Resources/DWARF/fibo
+
+Sandbox/ProActivesVPS/fino.dSYM/Contents/Resources/DWARF/fino

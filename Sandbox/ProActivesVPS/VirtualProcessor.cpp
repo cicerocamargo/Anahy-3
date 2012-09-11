@@ -1,6 +1,5 @@
 #include "VirtualProcessor.h"
 #include "Job.h"
-#include "JobAttributes.h"
 #include "JobId.h"
 #include "AnahyVM.h"
 #include <stdio.h>
@@ -99,17 +98,9 @@ VirtualProcessor* VirtualProcessor::get_current_vp() {
 	return (VirtualProcessor*) pthread_getspecific(key);
 }
 
-JobHandle VirtualProcessor::create_new_job(pfunc function, void* args, JobAttributes* attr) {
-	// if (attr) {
-	// 	if (!attr->get_initialized()) {
-	// 		delete attr;
-	// 		attr = new JobAttributes();
-	// 	}
-	// } else {
-	//  	attr = new JobAttributes();
-	// }
+JobHandle VirtualProcessor::create_new_job(pfunc function, void* args) {
 	JobId job_id(id, job_counter++);
-	Job* job = new Job(job_id, current_job, this, attr, function, args);
+	Job* job = new Job(job_id, current_job, this, function, args);
 
 	JobHandle handle;
 	handle.pointer = job;
@@ -176,7 +167,6 @@ Job* VirtualProcessor::get_job() {
 }
 
 void VirtualProcessor::start() {
-
 	pthread_create(&thread, NULL, call_vp_run, this);
 }
 

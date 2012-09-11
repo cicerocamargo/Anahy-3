@@ -3,7 +3,6 @@
 #include <ctime>
 #include <iostream>
 #include "AnahyVM.h"
-#include "JobAttributes.h"
 
 int __count = 0;
 
@@ -24,8 +23,8 @@ void* par_fib(void* args) {
 		long* n_minus_1 = new long(n-1);
 		long* n_minus_2 = new long(n-2);
 
-		AnahyVM::create(&m1, NULL, par_fib, (void*) n_minus_1);
-		AnahyVM::create(&m2, NULL, par_fib, (void*) n_minus_2);
+		AnahyVM::create(&m1, par_fib, (void*) n_minus_1);
+		AnahyVM::create(&m2, par_fib, (void*) n_minus_2);
 
 		long* fib_m1 = new long();
 		long* fib_m2 = new long();
@@ -40,7 +39,7 @@ void* par_fib(void* args) {
 		delete fib_m2;
 	}	
 
-	delete _n;
+	//delete _n;
 	return (void*) new long(res);
 }
 
@@ -52,7 +51,7 @@ int main(int argc, char const *argv[]) {
 		AnahyVM::init(vps);
 		JobHandle handle;
 		
-		AnahyVM::create(&handle, NULL, par_fib, (void*) new long(n));
+		AnahyVM::create(&handle, par_fib, (void*) new long(n));
 		
 		//cout << "Create: Done" << endl;
 

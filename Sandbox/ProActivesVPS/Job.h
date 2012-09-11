@@ -3,7 +3,6 @@
 
 #include "definitions.h"
 #include "JobId.h"
-#include "JobAttributes.h"
 #include <pthread.h>
 #include <set>
 
@@ -21,7 +20,6 @@ class Job {
 	VirtualProcessor* creator;
 	VirtualProcessor* vp_thief;
 	JobState state;
-	JobAttributes* attributes;
 	
 	pfunc function;
 	void* data;
@@ -31,15 +29,14 @@ class Job {
 	Job(Job&); // to avoid copy construction
 	
 public:
-	Job (JobId _id, Job* _parent, VirtualProcessor* _creator,
-		JobAttributes* _attributes, pfunc _function, void* _data);
+	Job (JobId _id, Job* _parent, VirtualProcessor* _creator, pfunc _function, void* _data);
 	~Job();
 
 	void run(); // to be called from a VP
 	
 	// atomic operations
 	bool compare_and_swap_state(JobState target_value, JobState new_value);  
-	bool are_not_there_joins();
+
 	void remove_child(Job* child);
 
 	void display(int num_tabs=0);
@@ -51,7 +48,7 @@ public:
 	inline VirtualProcessor* get_creator() const { return creator; }
 	inline VirtualProcessor* get_vp_thief() const { return vp_thief; }
 	inline JobState get_state() const { return state; }
-	inline JobAttributes* get_attributes() const { return attributes; }
+
 	inline void* get_retval() const { return retval; }
 	
 	void set_vp_thief(VirtualProcessor* new_thief) { vp_thief = new_thief; }

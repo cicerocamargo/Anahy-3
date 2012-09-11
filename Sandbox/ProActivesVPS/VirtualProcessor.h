@@ -57,7 +57,7 @@ public:
 	inline Job* get_current_job() const { return current_job; }
 
 	/* interface with the API */
-	JobHandle create_new_job(pfunc function, void* args, JobAttributes* attr);
+	JobHandle create_new_job(pfunc function, void* args);
 	void* join_job(JobHandle handle);
 	void run();
 

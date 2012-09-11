@@ -8,12 +8,10 @@ void Job::add_child(Job* child) {
 	children.insert(child);
 }
 
-Job::Job (JobId _id, Job* _parent, VirtualProcessor* _creator, 
-		JobAttributes* _attributes, pfunc _function, void* _data) :
+Job::Job (JobId _id, Job* _parent, VirtualProcessor* _creator, pfunc _function, void* _data) :
 	id(_id),
 	parent(_parent),
 	creator(_creator),
-	attributes(_attributes),
 	function(_function),
 	data(_data)
 {
@@ -41,13 +39,6 @@ void Job::run() {
 // the return value indicates operation's success (true) or failure
 bool Job::compare_and_swap_state(JobState target_value, JobState new_value) {
 	return __sync_bool_compare_and_swap (&state, target_value, new_value);
-}
-
-// drecement atomically the number of joins that
-// the job is to receive and return true, if the counter
-// reached ZERO
-bool Job::are_not_there_joins() {
-	return attributes->dec_join_counter();
 }
 
 void Job::remove_child(Job* child) {

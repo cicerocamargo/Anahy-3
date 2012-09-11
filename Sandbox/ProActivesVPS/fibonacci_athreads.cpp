@@ -9,8 +9,6 @@ int __count = 0;
 
 using namespace std;
 
-long fib(long n) { return n < 2 ? n : fib(n-1) + fib(n-2); }
-
 void* par_fib(void* args) {
 	long* _n = ((long*) args);
 	long n = *(_n);
@@ -51,10 +49,6 @@ int main(int argc, char const *argv[]) {
 	int vps = atoi(argv[1]);
 	long n = atol(argv[2]);
 
-	if (vps == 0) {
-		cout << "fib(" << n << ") = " << fib(n) << endl;
-	}
-	else {
 		AnahyVM::init(vps);
 		JobHandle handle;
 		
@@ -68,7 +62,6 @@ int main(int argc, char const *argv[]) {
 		cout << "fib(" << n << ") = " << (*result) << endl;
 		delete result;
 		AnahyVM::terminate();
-	}
 
 	return 0;
 }

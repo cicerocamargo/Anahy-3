@@ -100,7 +100,6 @@ VirtualProcessor* VirtualProcessor::get_current_vp() {
 }
 
 JobHandle VirtualProcessor::create_new_job(pfunc function, void* args, JobAttributes* attr) {
-	JobId job_id(id, job_counter++);
 	// if (attr) {
 	// 	if (!attr->get_initialized()) {
 	// 		delete attr;
@@ -109,6 +108,7 @@ JobHandle VirtualProcessor::create_new_job(pfunc function, void* args, JobAttrib
 	// } else {
 	//  	attr = new JobAttributes();
 	// }
+	JobId job_id(id, job_counter++);
 	Job* job = new Job(job_id, current_job, this, attr, function, args);
 
 	JobHandle handle;
@@ -125,8 +125,7 @@ void VirtualProcessor::suspend_current_job_and_run_another() {
 	context_stack.push(current_job);
 
 	list<VirtualProcessor*>::iterator it;
-	int num_vps = AnahyVM::get_num_vps();
-	
+
 	// try to execute some other ready job
 	current_job = this->get_job();
 
@@ -177,12 +176,8 @@ Job* VirtualProcessor::get_job() {
 }
 
 void VirtualProcessor::start() {
-	pthread_attr_init(&attr);
-	stack_size = 32768; //32MB, default is 8MB
-	if ((pthread_attr_setstacksize(&attr, stack_size)) != 0) {
-		printf("Error in pthread_attr_setstacksize!\n");
-	}
-	pthread_create(&thread, &attr, call_vp_run, this);
+
+	pthread_create(&thread, NULL, call_vp_run, this);
 }
 
 void VirtualProcessor::stop() {

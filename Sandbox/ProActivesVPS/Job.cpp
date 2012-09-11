@@ -47,7 +47,7 @@ bool Job::compare_and_swap_state(JobState target_value, JobState new_value) {
 // the job is to receive and return true, if the counter
 // reached ZERO
 bool Job::are_not_there_joins() {
-	//return attributes->dec_join_counter();
+	return attributes->dec_join_counter();
 }
 
 void Job::remove_child(Job* child) {

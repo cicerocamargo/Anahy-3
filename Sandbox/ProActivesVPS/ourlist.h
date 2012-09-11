@@ -30,7 +30,7 @@ class mList {
 
 public:
 	mList() {
-		std::cout << "node size: " << sizeof(ListNode<Type>) << std::endl;
+		//std::cout << "node size: " << sizeof(ListNode<Type>) << std::endl;
 		__size = 0;
 		first = last = NULL;
 	}

@@ -1,5 +1,5 @@
 CPP = g++
-CFLAGS = -O3 -g
+CFLAGS = -O3 -g -Wall -Wextra -Wformat=2 -lpthread
 
 all: vp job jobid jobattributes anahy
 

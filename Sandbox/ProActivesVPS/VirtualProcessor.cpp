@@ -42,7 +42,7 @@ void VirtualProcessor::run() {
 
 			for (it = vp_list.begin(); it != vp_list.end(); ++it) {
 				if (*it != this) {
-					current_job = (*it)->get_job();
+					current_job = (*it)->steal_job();
 					if (current_job) {
 						break;
 					}
@@ -99,21 +99,26 @@ VirtualProcessor* VirtualProcessor::get_current_vp() {
 }
 
 JobHandle VirtualProcessor::create_new_job(pfunc function, void* args) {
+	
 	JobId job_id(id, job_counter++);
 	Job* job = new Job(job_id, current_job, this, function, args);
 
 	JobHandle handle;
 	handle.pointer = job;
 
-	pthread_mutex_lock(&mutex);
-		job_list.push_back(job);
-	pthread_mutex_unlock(&mutex);
-
+	if (context_stack.size() > 5000) {
+		job->run();
+	} else {
+		pthread_mutex_lock(&mutex);
+			job_list.push_back(job);
+		pthread_mutex_unlock(&mutex);
+	}
 	return handle;
 }
 
 void VirtualProcessor::suspend_current_job_and_run_another() {
 	context_stack.push(current_job);
+	//printf("VP # %d :: Context Stack Size # %d\n", this->get_id(), context_stack.size());
 
 	list<VirtualProcessor*>::iterator it;
 
@@ -124,7 +129,7 @@ void VirtualProcessor::suspend_current_job_and_run_another() {
 		
 		for (it = vp_list.begin(); it != vp_list.end(); ++it) {
 		 	if (*it != this) {
-				current_job = (*it)->get_job();
+				current_job = (*it)->steal_job();
 				if (current_job) {
 					break;
 				}
@@ -147,11 +152,30 @@ void* VirtualProcessor::join_job(JobHandle handle) {
 		suspend_current_job_and_run_another();
 	}
 
-	return joined->get_retval();
+	void* temp = joined->get_retval();
+
+	delete joined;
+
+	return temp;
+}
+
+Job* VirtualProcessor::get_job() {
+	Job* job = NULL;
+	pthread_mutex_lock(&mutex);
+		if (!job_list.empty()) {
+
+			job = job_list.back();
+			job_list.pop_back();
+		}
+	pthread_mutex_unlock(&mutex);
+	if (job) {
+		job->compare_and_swap_state(ready, running);
+	}
+	return job;
 }
 
 /* interface with other VPs */
-Job* VirtualProcessor::get_job() {
+Job* VirtualProcessor::steal_job() {
 	Job* job = NULL;
 	pthread_mutex_lock(&mutex);
 		if (!job_list.empty()) {

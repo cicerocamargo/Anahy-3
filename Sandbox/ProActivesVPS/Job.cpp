@@ -26,8 +26,8 @@ Job::Job (JobId _id, Job* _parent, VirtualProcessor* _creator, pfunc _function, 
 Job::~Job() {
 	//delete attributes;
 	// children.clear() e agora Mr M?
-	if(parent)
-		parent->remove_child(this);
+	//if(parent)
+		//parent->remove_child(this);
 }
 
 void Job::run() {

@@ -62,6 +62,7 @@ public:
 	void run();
 
 	Job* get_job();
+	Job* steal_job();
 
 	void start();
 	void stop();

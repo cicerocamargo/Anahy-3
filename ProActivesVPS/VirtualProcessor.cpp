@@ -106,7 +106,7 @@ JobHandle VirtualProcessor::create_new_job(pfunc function, void* args) {
 	JobHandle handle;
 	handle.pointer = job;
 
-	if (context_stack.size() > 5000) {
+	if (context_stack.size() > 10000) {
 		job->run();
 	} else {
 		pthread_mutex_lock(&mutex);

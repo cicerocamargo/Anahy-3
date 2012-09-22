@@ -2,7 +2,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <iostream>
-#include "AnahyVM.h"
+#include "../include/AnahyVM.h"
 
 int __count = 0;
 
@@ -23,8 +23,8 @@ void* par_fib(void* args) {
 		long* n_minus_1 = new long(n-1);
 		long* n_minus_2 = new long(n-2);
 
-		AnahyVM::create(&m1, par_fib, (void*) n_minus_1);
-		AnahyVM::create(&m2, par_fib, (void*) n_minus_2);
+		AnahyVM::create(&m1, NULL, par_fib, (void*) n_minus_1);
+		AnahyVM::create(&m2, NULL, par_fib, (void*) n_minus_2);
 
 		long* fib_m1 = new long();
 		long* fib_m2 = new long();
@@ -43,15 +43,18 @@ void* par_fib(void* args) {
 	return (void*) new long(res);
 }
 
-int main(int argc, char const *argv[]) {
+int main(int argc, char *argv[]) {
 
-	int vps = atoi(argv[1]);
-	long n = atol(argv[2]);
+	long n = atol(argv[1]);
 
-		AnahyVM::init(vps);
-		JobHandle handle;
+		AnahyVM::init(argc, argv);
+		athread_t handle;
+		athread_attr_t attr;
 		
-		AnahyVM::create(&handle, par_fib, (void*) new long(n));
+		AnahyVM::attr_init(&attr);
+		AnahyVM::set_JobCost(&attr, 0);
+
+		AnahyVM::create(&handle, &attr, par_fib, (void*) new long(n));
 		
 		//cout << "Create: Done" << endl;
 

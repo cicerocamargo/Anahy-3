@@ -1,7 +1,8 @@
-#include "VirtualProcessor.h"
-#include "Job.h"
-#include "JobId.h"
-#include "AnahyVM.h"
+#include "include/VirtualProcessor.h"
+#include "include/Job.h"
+#include "include/JobId.h"
+#include "include/AnahyVM.h"
+
 #include <stdio.h>
 #include <sched.h>
 #include <stdlib.h>
@@ -17,7 +18,19 @@ void* VirtualProcessor::call_vp_run(void* arg) {
 	associate_vp_with_current_thread(arg);
 	VirtualProcessor* vp = (VirtualProcessor*) arg;
 
-	//here (later) we've got to set the affinity
+	cpu_set_t cpuset;
+	int thr = pthread_self();
+	int this_tid = vp->get_tid();
+	int cpuset_len = sizeof(cpu_set_t);
+	
+	CPU_ZERO(&cpuset);
+	//printf("%u -- %d\n", vp->get_id(), this_tid);
+
+	CPU_SET(this_tid, &cpuset);
+
+	if (pthread_setaffinity_np(thr, cpuset_len, &cpuset) != 0) {
+		printf("Error in pthread_setaffinity_np!\n");
+	}
 
 	vp->run();
 	return NULL;
@@ -98,10 +111,10 @@ VirtualProcessor* VirtualProcessor::get_current_vp() {
 	return (VirtualProcessor*) pthread_getspecific(key);
 }
 
-JobHandle VirtualProcessor::create_new_job(pfunc function, void* args) {
+JobHandle VirtualProcessor::create_new_job(pfunc function, JobAttributes* attr, void* args) {
 	
 	JobId job_id(id, job_counter++);
-	Job* job = new Job(job_id, current_job, this, function, args);
+	Job* job = new Job(job_id, current_job, this, attr, function, args);
 
 	JobHandle handle;
 	handle.pointer = job;
@@ -157,6 +170,51 @@ void* VirtualProcessor::join_job(JobHandle handle) {
 	delete joined;
 
 	return temp;
+}
+
+
+//let's divide the search function in two methods, because
+//is not good to pass the job cost as an argument to return a
+//job, the method should indicates its action and not its arguments
+
+Job* VirtualProcessor::searchMinJobCost() {
+	list<Job*>::reverse_iterator rit;
+	Job* job = NULL;
+	JobAttributes* attr;
+	pthread_mutex_lock(&mutex);
+
+	for(rit = job_list.rbegin(); rit != job_list.rend(); ++rit) {
+		attr = (*rit)->get_attributes();
+		if (attr->get_job_cost() == 0) {
+			job = *rit;
+			break;
+		}
+	}
+	if (job) {
+		job_list.remove(*rit);
+	}
+	pthread_mutex_unlock(&mutex);
+	return job;
+}
+
+Job* VirtualProcessor::searchMaxJobCost() {
+	list<Job*>::reverse_iterator rit;
+	Job* job = NULL;
+	JobAttributes* attr;
+	pthread_mutex_lock(&mutex);
+
+	for(rit = job_list.rbegin(); rit != job_list.rend(); ++rit) {
+		attr = (*rit)->get_attributes();
+		if (attr->get_job_cost() == 2) {
+			job = *rit;
+			break;
+		}
+	}
+	if (job) {
+		job_list.remove(*rit);
+	}
+	pthread_mutex_unlock(&mutex);
+	return job;
 }
 
 Job* VirtualProcessor::get_job() {

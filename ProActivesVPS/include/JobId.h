@@ -11,8 +11,6 @@ class JobId {
 public:
 	JobId();
 	JobId(int _vp_id, long _serial_number);
-	bool operator<(const JobId& id) const;
-	bool operator==(const JobId& id) const;
 	void display();
 
 	/* getters and setters */

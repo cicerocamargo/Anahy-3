@@ -1,4 +1,4 @@
-#include "JobId.h"
+#include "include/JobId.h"
 #include <cstdio>
 
 JobId::JobId() {
@@ -8,19 +8,6 @@ JobId::JobId() {
 
 JobId::JobId(int _vp_id, long _serial_number)
 : vp_id(_vp_id), serial_number(_serial_number) {}
-
-bool JobId::operator<(const JobId& id) const {
-	if (serial_number == id.serial_number) {
-		return (vp_id < id.vp_id);
-	}
-	else {
-		return (serial_number < id.serial_number);
-	}
-}
-
-bool JobId::operator==(const JobId& id) const {
- 	return (vp_id == id.vp_id && serial_number == id.serial_number);
-}
 
 // display a job id
 void JobId::display() {

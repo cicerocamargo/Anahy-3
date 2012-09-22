@@ -1,5 +1,6 @@
-#include "AnahyVM.h"
-#include "VirtualProcessor.h"
+#include "include/AnahyVM.h"
+#include "include/VirtualProcessor.h"
+#include "include/JobAttributes.h"
 #include <cstdio>
 #include <cstdlib>
 
@@ -31,8 +32,37 @@ void AnahyVM::stop_vps() {
 	}
 }
 
-//here the interface begins to be described
-void AnahyVM::init(int _num_vps) {
+void AnahyVM::help() {
+	printf("\nOptions:\n");
+	printf("	-h show this help message.\n");
+	printf("	-v # set virtual processors to the environment;\n\t\t\t\tDefault is 1.\n");
+	printf("\n");
+}
+
+//here the interface begins to be described	
+void AnahyVM::init(int argc, char **argv) {
+	
+	int _num_vps;
+
+	int c;
+	while(1) {
+		if ((c = getopt(argc, argv, "hv:")) == -1)
+				break;
+		switch(c) {
+			case 'v': 
+				_num_vps = strtol(optarg, NULL, 10);
+				if (_num_vps < 1) {
+					printf("\tNumber of vps cannot be negavite, assuming 1\n");
+					_num_vps = 1;
+				}
+				printf("\tInitializing Anahy3 with num. of vps = %d\n\n", _num_vps);
+			break;
+			default:
+				help();
+				break;
+		}
+	}
+
 	num_vps = _num_vps;
 	VirtualProcessor::init_pthread_key();
 
@@ -63,13 +93,13 @@ void AnahyVM::exit(void* value_ptr) {
 	job->set_retval(value_ptr);
 }
 
-void AnahyVM::create(JobHandle* handle, pfunc function, void* args) {
+void AnahyVM::create(athread_t* handle, athread_attr_t* attr, pfunc function, void* args) {
 
 	VirtualProcessor* vp = VirtualProcessor::get_current_vp();
-	*handle = vp->create_new_job(function, args);
+	*handle = vp->create_new_job(function, attr, args);
 }
 
-void AnahyVM::join(JobHandle handle, void** result) {
+void AnahyVM::join(athread_t handle, void** result) {
 	VirtualProcessor* vp = VirtualProcessor::get_current_vp();
 
 	void* temp = vp->join_job(handle);
@@ -77,4 +107,23 @@ void AnahyVM::join(JobHandle handle, void** result) {
 	if(result) {
 		*result = temp;
 	}
+}
+
+// ATTRIBUTES
+
+void AnahyVM::attr_init(JobAttributes* attr) {
+	JobAttributes* _attr = new JobAttributes();
+	attr = _attr;
+}
+
+void AnahyVM::set_JobCost(JobAttributes* attr, int cost) {
+	attr->set_job_cost(cost);
+}
+
+void AnahyVM::set_JobJoins(JobAttributes* attr, int joins) {
+	attr->set_num_joins(joins);
+}
+
+int AnahyVM::get_JobCost(JobAttributes* attr) {
+	return attr->get_job_cost();
 }

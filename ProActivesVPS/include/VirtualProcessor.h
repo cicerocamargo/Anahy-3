@@ -4,21 +4,20 @@
 #include <pthread.h>
 #include <stack>
 #include <list>
-#include "ourlist.h"
 #include "definitions.h"
+#include "JobAttributes.h"
 
 using namespace std;
 
 class Job;
 class JobHandle;
-class JobAttributes;
 
 class VirtualProcessor {
 //instance vars
 	int id;
 	long job_counter;
 
-	mList<Job*> job_list;
+	list<Job*> job_list;
 	Job* current_job;
 	stack<Job*> context_stack;
 
@@ -55,11 +54,15 @@ public:
 	static VirtualProcessor* get_current_vp();
 	inline int get_id() const { return id; }
 	inline Job* get_current_job() const { return current_job; }
+	inline int get_tid() const { return tid; }
 
 	/* interface with the API */
-	JobHandle create_new_job(pfunc function, void* args);
+	JobHandle create_new_job(pfunc function, JobAttributes* attr, void* args);
 	void* join_job(JobHandle handle);
 	void run();
+
+	Job* searchMaxJobCost();
+	Job* searchMinJobCost();
 
 	Job* get_job();
 	Job* steal_job();

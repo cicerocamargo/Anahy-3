@@ -8,6 +8,8 @@
 #include "Job.h"
 #include "JobId.h"
 
+#include "definitions.h"
+
 typedef JobHandle athread_t;
 typedef JobAttributes athread_attr_t;
 
@@ -44,11 +46,14 @@ public:
 	static void create(athread_t* handle, athread_attr_t* attr, pfunc function, void* args);
 	static void join(athread_t handle, void** result);
 
-	static void attr_init(JobAttributes* attr);
-	static void set_JobCost(JobAttributes* attr, int cost);
-	static void set_JobJoins(JobAttributes* attr, int joins);
+	// USER ATTRIBUTES INTERFACE
 
-	static int get_JobCost(JobAttributes* attr);
+	static void attr_init(JobAttributes* attr);
+
+	static void attr_setjobcost(JobAttributes* attr, JobCost cost);
+	static void attr_setjobjoins(JobAttributes* attr, int joins);
+
+	static int attr_getjobcost(JobAttributes* attr);
 };
 
 #endif

@@ -1,11 +1,13 @@
 #ifndef JOB_H
 #define JOB_H
 
-#include "definitions.h"
-#include "JobId.h"
 #include "JobAttributes.h"
+#include "JobId.h"
+
 #include <pthread.h>
 #include <set>
+
+#include "definitions.h"
 
 using namespace std;
 

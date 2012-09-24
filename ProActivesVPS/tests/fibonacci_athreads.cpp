@@ -52,7 +52,7 @@ int main(int argc, char *argv[]) {
 		athread_attr_t attr;
 		
 		AnahyVM::attr_init(&attr);
-		AnahyVM::set_JobCost(&attr, 0);
+		AnahyVM::attr_setjobcost(&attr, MINIMUM_COST);
 
 		AnahyVM::create(&handle, &attr, par_fib, (void*) new long(n));
 		

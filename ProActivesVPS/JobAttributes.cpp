@@ -4,7 +4,7 @@
 JobAttributes::JobAttributes() {
 	set_initialized(false);
 	set_num_joins(1);
-	set_job_cost(1);
+	set_job_cost(NORMAL_COST);
 }
 
 JobAttributes::~JobAttributes() {

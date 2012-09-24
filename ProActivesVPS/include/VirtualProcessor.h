@@ -4,8 +4,9 @@
 #include <pthread.h>
 #include <stack>
 #include <list>
-#include "definitions.h"
 #include "JobAttributes.h"
+
+#include "definitions.h"
 
 using namespace std;
 

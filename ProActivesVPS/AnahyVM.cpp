@@ -9,6 +9,8 @@ list<VirtualProcessor*> AnahyVM::vps;
 int AnahyVM::num_vps;
 int AnahyVM::num_cpus;
 
+// SYSTEM MANAGEMENT INTERFACE
+
 void AnahyVM::start_vps() {
 	list<VirtualProcessor*>::iterator it;
 
@@ -38,6 +40,8 @@ void AnahyVM::help() {
 	printf("	-v # set virtual processors to the environment;\n\t\t\t\tDefault is 1.\n");
 	printf("\n");
 }
+
+// USER THREADS INTERFACE
 
 //here the interface begins to be described	
 void AnahyVM::init(int argc, char **argv) {
@@ -96,7 +100,15 @@ void AnahyVM::exit(void* value_ptr) {
 void AnahyVM::create(athread_t* handle, athread_attr_t* attr, pfunc function, void* args) {
 
 	VirtualProcessor* vp = VirtualProcessor::get_current_vp();
-	*handle = vp->create_new_job(function, attr, args);
+	JobAttributes* _attr;
+	//we need that job's attributes has been initialized, because
+	//we will need it to decrement the number of job's joins
+	if (!attr) {
+		_attr = new JobAttributes();
+	} else {
+		_attr = attr;
+	}
+	*handle = vp->create_new_job(function, _attr, args);
 }
 
 void AnahyVM::join(athread_t handle, void** result) {
@@ -109,21 +121,21 @@ void AnahyVM::join(athread_t handle, void** result) {
 	}
 }
 
-// ATTRIBUTES
+// USER ATTRIBUTES INTERFACE
 
 void AnahyVM::attr_init(JobAttributes* attr) {
 	JobAttributes* _attr = new JobAttributes();
 	attr = _attr;
 }
 
-void AnahyVM::set_JobCost(JobAttributes* attr, int cost) {
+void AnahyVM::attr_setjobcost(JobAttributes* attr, JobCost cost) {
 	attr->set_job_cost(cost);
 }
 
-void AnahyVM::set_JobJoins(JobAttributes* attr, int joins) {
+void AnahyVM::attr_setjobjoins(JobAttributes* attr, int joins) {
 	attr->set_num_joins(joins);
 }
 
-int AnahyVM::get_JobCost(JobAttributes* attr) {
+int AnahyVM::attr_getjobcost(JobAttributes* attr) {
 	return attr->get_job_cost();
 }

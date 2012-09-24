@@ -3,7 +3,6 @@
 #include "include/JobId.h"
 #include "include/AnahyVM.h"
 
-#include <stdio.h>
 #include <sched.h>
 #include <stdlib.h>
 
@@ -18,6 +17,10 @@ void* VirtualProcessor::call_vp_run(void* arg) {
 	associate_vp_with_current_thread(arg);
 	VirtualProcessor* vp = (VirtualProcessor*) arg;
 
+	// Here is where the system sets the processor affinity,
+	// this is done from a circular core's list. Example: 4 vps to 8 cores
+	// 0_VP -> 0_CORE ... 3_VP -> 3_CORE -> 4_VP -> 0_CORE ... n-1_VP -> m-1_CORE
+
 	cpu_set_t cpuset;
 	int thr = pthread_self();
 	int this_tid = vp->get_tid();
@@ -29,7 +32,7 @@ void* VirtualProcessor::call_vp_run(void* arg) {
 	CPU_SET(this_tid, &cpuset);
 
 	if (pthread_setaffinity_np(thr, cpuset_len, &cpuset) != 0) {
-		printf("Error in pthread_setaffinity_np!\n");
+		//printf("Error in pthread_setaffinity_np!\n");
 	}
 
 	vp->run();
@@ -166,9 +169,13 @@ void* VirtualProcessor::join_job(JobHandle handle) {
 	}
 
 	void* temp = joined->get_retval();
-
-	delete joined;
-
+	
+	//we got to verify if the joined job has joins, yet
+	JobAttributes* job_attr = joined->get_attributes();
+	
+	if(job_attr->dec_join_counter()) {
+		delete joined;
+	}
 	return temp;
 }
 
@@ -185,7 +192,7 @@ Job* VirtualProcessor::searchMinJobCost() {
 
 	for(rit = job_list.rbegin(); rit != job_list.rend(); ++rit) {
 		attr = (*rit)->get_attributes();
-		if (attr->get_job_cost() == 0) {
+		if (attr->get_job_cost() == MINIMUM_COST) {
 			job = *rit;
 			break;
 		}
@@ -205,7 +212,7 @@ Job* VirtualProcessor::searchMaxJobCost() {
 
 	for(rit = job_list.rbegin(); rit != job_list.rend(); ++rit) {
 		attr = (*rit)->get_attributes();
-		if (attr->get_job_cost() == 2) {
+		if (attr->get_job_cost() == MAXIMUM_COST) {
 			job = *rit;
 			break;
 		}

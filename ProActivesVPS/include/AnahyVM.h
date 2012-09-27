@@ -1,6 +1,8 @@
 #ifndef ANAHYVM_H
 #define ANAHYVM_H
 
+#define VERSION 3.0
+
 #include <list>
 #include <pthread.h>
 #include <unistd.h>
@@ -42,7 +44,7 @@ public:
 
 	static void init(int argc, char **argv);
 	static void terminate();
-	static void exit(void* value_ptr);
+	static void _exit(void* value_ptr);
 	static void create(athread_t* handle, athread_attr_t* attr, pfunc function, void* args);
 	static void join(athread_t handle, void** result);
 

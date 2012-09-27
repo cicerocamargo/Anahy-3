@@ -41,36 +41,32 @@ void AnahyVM::help() {
 	printf("\n");
 }
 
-// USER THREADS INTERFACE
-
 //here the interface begins to be described	
 void AnahyVM::init(int argc, char **argv) {
-	
-	int _num_vps;
-
 	int c;
-	while(1) {
-		if ((c = getopt(argc, argv, "hv:")) == -1)
-				break;
-		switch(c) {
-			case 'v': 
-				_num_vps = strtol(optarg, NULL, 10);
-				if (_num_vps < 1) {
-					printf("\tNumber of vps cannot be negavite, assuming 1\n");
-					_num_vps = 1;
-				}
-				printf("\tInitializing Anahy3 with num. of vps = %d\n\n", _num_vps);
+
+	num_vps = 1;
+	if (argc == 2) { // if we have only two arguments and the second one asks for help or the version...
+		if (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0) {
+			help();
+			exit(0);
+		} else if (strcmp(argv[1], "--version") == 0) {
+			printf("\nAnahy %.1f (Beta) runtime.\n\n", VERSION);
+			exit(0);
+		}
+	} 
+	for (int i = 1; i < argc; ++i) {
+		if (strcmp(argv[i], "-v") == 0 && i+1 < argc) {
+			// we have v and no more arguments
+			int _num_vps = atoi(argv[++i]);
+			num_vps = _num_vps > 1 ? _num_vps : 1;
 			break;
-			default:
-				help();
-				break;
 		}
 	}
 
-	num_vps = _num_vps;
 	VirtualProcessor::init_pthread_key();
 
-	for(int i = 0; i < _num_vps; i++) {
+	for(int i = 0; i < num_vps; i++) {
 		vps.push_back(new VirtualProcessor());
 	}
 
@@ -91,7 +87,7 @@ void AnahyVM::terminate() {
 	vps.clear();
 }
 
-void AnahyVM::exit(void* value_ptr) {
+void AnahyVM::_exit(void* value_ptr) {
 	VirtualProcessor* current_vp = VirtualProcessor::get_current_vp();
 	Job* job = current_vp->get_current_job();
 	job->set_retval(value_ptr);

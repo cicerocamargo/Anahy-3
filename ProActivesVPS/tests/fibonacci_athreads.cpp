@@ -1,6 +1,6 @@
-#include <unistd.h>
-#include <cstdlib>
-#include <ctime>
+//#include <unistd.h>
+#include <stdlib.h>
+#include <time.h>
 #include <iostream>
 #include "../include/AnahyVM.h"
 
@@ -20,33 +20,27 @@ void* par_fib(void* args) {
 	}
 	else {
 		JobHandle m1, m2;
-		long* n_minus_1 = new long(n-1);
-		long* n_minus_2 = new long(n-2);
+		long n_minus_1 = n-1;
+		long n_minus_2 = n-2;
 
-		AnahyVM::create(&m1, NULL, par_fib, (void*) n_minus_1);
-		AnahyVM::create(&m2, NULL, par_fib, (void*) n_minus_2);
+		AnahyVM::create(&m1, NULL, par_fib, (void*) &n_minus_1);
+		AnahyVM::create(&m2, NULL, par_fib, (void*) &n_minus_2);
 
-		long* fib_m1 = new long();
-		long* fib_m2 = new long();
+		long fib_m1, fib_m2;
 		//fib(15); // para aumentar o custo do thread
 
 		AnahyVM::join(m1, (void**) &fib_m1);
 		AnahyVM::join(m2, (void**) &fib_m2);
 
-		res = *fib_m1 + *fib_m2;
-
-		delete fib_m1;
-		delete fib_m2;
+		res = fib_m1 + fib_m2;
 	}	
 
-	//delete _n;
-	return (void*) new long(res);
+	return (void*)res;
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char **argv) {
 
 	long n = atol(argv[1]);
-
 		AnahyVM::init(argc, argv);
 		athread_t handle;
 		athread_attr_t attr;
@@ -54,16 +48,14 @@ int main(int argc, char *argv[]) {
 		AnahyVM::attr_init(&attr);
 		AnahyVM::attr_setjobcost(&attr, MINIMUM_COST);
 
-		AnahyVM::create(&handle, &attr, par_fib, (void*) new long(n));
+		AnahyVM::create(&handle, NULL, par_fib, (void*) new long(n));
 		
 		//cout << "Create: Done" << endl;
 
-		long* result = new long(0);
+		long result;
 		AnahyVM::join(handle, (void**) &result);
 
-		cout << "fib(" << n << ") = " << (*result) << endl;
-		delete result;
+		cout << "fib(" << n << ") = " << result << endl;
 		AnahyVM::terminate();
-
 	return 0;
 }

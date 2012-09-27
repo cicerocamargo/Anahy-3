@@ -1,5 +1,5 @@
 CPP = g++
-CFLAGS = -O3 -g -lpthread
+CFLAGS = -O3 -g
 
 all: vp job jobid anahy attr
 

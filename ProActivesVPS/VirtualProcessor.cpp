@@ -3,7 +3,7 @@
 #include "include/JobId.h"
 #include "include/AnahyVM.h"
 
-#include <sched.h>
+//#include <sched.h>
 #include <stdlib.h>
 
 int VirtualProcessor::tid_counter = 0;
@@ -21,6 +21,7 @@ void* VirtualProcessor::call_vp_run(void* arg) {
 	// this is done from a circular core's list. Example: 4 vps to 8 cores
 	// 0_VP -> 0_CORE ... 3_VP -> 3_CORE -> 4_VP -> 0_CORE ... n-1_VP -> m-1_CORE
 
+/*
 	cpu_set_t cpuset;
 	int thr = pthread_self();
 	int this_tid = vp->get_tid();
@@ -34,6 +35,7 @@ void* VirtualProcessor::call_vp_run(void* arg) {
 	if (pthread_setaffinity_np(thr, cpuset_len, &cpuset) != 0) {
 		//printf("Error in pthread_setaffinity_np!\n");
 	}
+*/
 
 	vp->run();
 	return NULL;

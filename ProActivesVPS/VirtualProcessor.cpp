@@ -10,36 +10,7 @@ int VirtualProcessor::tid_counter = 0;
 int VirtualProcessor::instance_counter = 0;
 int VirtualProcessor::idle_vps = 0;
 
-pthread_key_t VirtualProcessor::key;
 list<VirtualProcessor*> VirtualProcessor::vp_list;
-
-void* VirtualProcessor::call_vp_run(void* arg) {
-	associate_vp_with_current_thread(arg);
-	VirtualProcessor* vp = (VirtualProcessor*) arg;
-
-	// Here is where the system sets the processor affinity,
-	// this is done from a circular core's list. Example: 4 vps to 8 cores
-	// 0_VP -> 0_CORE ... 3_VP -> 3_CORE -> 4_VP -> 0_CORE ... n-1_VP -> m-1_CORE
-
-/*
-	cpu_set_t cpuset;
-	int thr = pthread_self();
-	int this_tid = vp->get_tid();
-	int cpuset_len = sizeof(cpu_set_t);
-	
-	CPU_ZERO(&cpuset);
-	//printf("%u -- %d\n", vp->get_id(), this_tid);
-
-	CPU_SET(this_tid, &cpuset);
-
-	if (pthread_setaffinity_np(thr, cpuset_len, &cpuset) != 0) {
-		//printf("Error in pthread_setaffinity_np!\n");
-	}
-*/
-
-	vp->run();
-	return NULL;
-}
 
 void VirtualProcessor::run() {
 	current_job = NULL;
@@ -95,26 +66,7 @@ VirtualProcessor::~VirtualProcessor() {
 	vp_list.remove(this);
 }
 
-void VirtualProcessor::init_pthread_key() {
-	pthread_key_create(&key, call_vp_destructor);
-}
 
-void VirtualProcessor::delete_pthread_key() {
-	pthread_key_delete(key);
-}
-
-void VirtualProcessor::call_vp_destructor(void* vp_obj) {
-	//VirtualProcessor* vp = (VirtualProcessor*) vp_obj;
-	//delete vp;
-}
-
-void VirtualProcessor::associate_vp_with_current_thread(void* vp_obj) {
-	pthread_setspecific(key, vp_obj);
-}
-
-VirtualProcessor* VirtualProcessor::get_current_vp() {
-	return (VirtualProcessor*) pthread_getspecific(key);
-}
 
 JobHandle VirtualProcessor::create_new_job(pfunc function, JobAttributes* attr, void* args) {
 	
@@ -182,50 +134,6 @@ void* VirtualProcessor::join_job(JobHandle handle) {
 }
 
 
-//let's divide the search function in two methods, because
-//is not good to pass the job cost as an argument to return a
-//job, the method should indicates its action and not its arguments
-
-Job* VirtualProcessor::searchMinJobCost() {
-	list<Job*>::reverse_iterator rit;
-	Job* job = NULL;
-	JobAttributes* attr;
-	pthread_mutex_lock(&mutex);
-
-	for(rit = job_list.rbegin(); rit != job_list.rend(); ++rit) {
-		attr = (*rit)->get_attributes();
-		if (attr->get_job_cost() == MINIMUM_COST) {
-			job = *rit;
-			break;
-		}
-	}
-	if (job) {
-		job_list.remove(*rit);
-	}
-	pthread_mutex_unlock(&mutex);
-	return job;
-}
-
-Job* VirtualProcessor::searchMaxJobCost() {
-	list<Job*>::reverse_iterator rit;
-	Job* job = NULL;
-	JobAttributes* attr;
-	pthread_mutex_lock(&mutex);
-
-	for(rit = job_list.rbegin(); rit != job_list.rend(); ++rit) {
-		attr = (*rit)->get_attributes();
-		if (attr->get_job_cost() == MAXIMUM_COST) {
-			job = *rit;
-			break;
-		}
-	}
-	if (job) {
-		job_list.remove(*rit);
-	}
-	pthread_mutex_unlock(&mutex);
-	return job;
-}
-
 Job* VirtualProcessor::get_job() {
 	Job* job = NULL;
 	pthread_mutex_lock(&mutex);
@@ -255,12 +163,4 @@ Job* VirtualProcessor::steal_job() {
 		job->compare_and_swap_state(ready, running);
 	}
 	return job;
-}
-
-void VirtualProcessor::start() {
-	pthread_create(&thread, NULL, call_vp_run, this);
-}
-
-void VirtualProcessor::stop() {
-	pthread_join(thread, NULL);
 }

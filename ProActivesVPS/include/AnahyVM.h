@@ -27,15 +27,21 @@ class AnahyVM {
 	static int num_cpus;
 	static int num_vps;
 
-	static list<VirtualProcessor*> vps;
+	static VirtualProcessor** vp_array;
+	static pthread_t* thread_array;
+	static pthread_key_t key;
 
 	AnahyVM();
 	~AnahyVM();
 
-	static void start_vps();
-	static void stop_vps();
+	// for pthread (set/get)specific API
+	static void* call_vp_run(void* vp_obj);
+	static void call_vp_destructor(void* vp_obj);
 
-	static void help();
+	// init helpers
+	static void parse_user_options(int argc, char **argv);
+	static void show_help();
+
 
 public:
 
@@ -44,17 +50,16 @@ public:
 
 	static void init(int argc, char **argv);
 	static void terminate();
-	static void _exit(void* value_ptr);
 	static void create(athread_t* handle, athread_attr_t* attr, pfunc function, void* args);
 	static void join(athread_t handle, void** result);
+
+	static void _exit(void* value_ptr);
 
 	// USER ATTRIBUTES INTERFACE
 
 	static void attr_init(JobAttributes* attr);
-
 	static void attr_setjobcost(JobAttributes* attr, JobCost cost);
 	static void attr_setjobjoins(JobAttributes* attr, int joins);
-
 	static int attr_getjobcost(JobAttributes* attr);
 };
 

@@ -1,5 +1,7 @@
+
 #include <cassert>
-#include "AnahyJobAttributes.h"
+
+class AnahyJobAttributes;
 
 typedef void*(*ParFunc)(void*);
 
@@ -20,6 +22,8 @@ class AnahyJob {
 	unsigned short _fork_counter;
 	bool _smart;
 
+	friend class VirtualProcessor;
+
 	// hidden constructors
 	AnahyJob() {}
 	AnahyJob(AnahyJob&) {}
@@ -39,14 +43,18 @@ public:
 	
 	unsigned short fork_counter() { return _fork_counter; }
 	void set_fork_counter(unsigned short fork_counter);
+
+	void* result() { return _result; }
+	void set_result(void* result) { _result = result; }
 	
 	// atomic operations
-	bool compare_and_swap_state(AnahyJobState target_value, AnahyJobState new_value);
-	void atomic_decrement_join_counter() { __sync_fetch_and_sub(&_join_counter, 1); }
-	void atomic_decrement_fork_counter() { __sync_fetch_and_sub(&_fork_counter, 1); }
+	bool compare_and_swap_state(AnahyJobState target_value, AnahyJobState new_value) { return __sync_bool_compare_and_swap (&_state, target_value, new_value); }
+	unsigned short decrement_and_fetch_join_counter() { __sync_sub_and_fetch(&_join_counter, 1); }
+	unsigned short decrement_and_fetch_fork_counter() { __sync_sub_and_fetch(&_fork_counter, 1); }
 	
 	bool smart() { return _smart; }
 	
 	AnahyJobAttributes* attributes() { return _attr; }
 	void set_attributes(AnahyJobAttributes* attr) { _attr = attr; }
 };
+

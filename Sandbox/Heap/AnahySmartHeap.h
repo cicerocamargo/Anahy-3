@@ -1,11 +1,7 @@
-#include <iostream>
-#include <stdlib.h>
-#include <list>
-#include "AnahyJob.h"
+#ifndef _ANAHY_SMART_HEAP_H
+#define _ANAHY_SMART_HEAP_H
 
 typedef unsigned int uint;
-
-using namespace std;
 
 #define LEFT(i)     (i << 1)
 #define RIGHT(i)    ((i << 1)+1)
@@ -15,6 +11,7 @@ using namespace std;
                         heap[p] = heap[c]; \
                         heap[c] = tmp; \
                     }
+
 #define POINTER_LT_OPERATOR(l,r) (*l < *r)
 #define POINTER_GT_OPERATOR(l,r) (*l > *r)
 
@@ -29,6 +26,7 @@ template<class T> class AnahySmartHeap {
     uint last_elem;
     
     void heapify_up(int child_index) {
+
         int parent_index = PARENT(child_index);
         while ( parent_index >= 1  && child_index > 1 && POINTER_GT_OPERATOR( heap[parent_index], heap[child_index] ) ) {
             SWAP(parent_index, child_index);
@@ -88,6 +86,11 @@ public:
     }
     
     T extract_min() {
+        if (_cur_size == 0)
+        {
+            return (T)0;
+        }
+
         T min = heap[1];
         heap[1] = heap[_cur_size];
         _cur_size--;
@@ -109,6 +112,11 @@ public:
     }
 
     T extract_last() {
+        if (_cur_size == 0)
+        {
+            return (T)0;
+        }
+        
         T last = heap[_cur_size];
         _cur_size--;
         if (_cur_size == _lower_bound && _cur_size > _min_size) { // realloc!
@@ -127,19 +135,8 @@ public:
     }
         
     uint size() { return _cur_size; }
-
-    T front() {
-        return heap[1];
-    }
     
-    T back() {
-        return heap[_cur_size];
-    }
-    
-    T at(int index) {
-        return heap[index+1];
-    }
-    
+    // methods for display
     void print_array() {
         std::cout << "[";
         for (int i = 1; i <= _cur_size; i++) {
@@ -152,49 +149,31 @@ public:
     }
     
     void print_tree(int parent=1, int num_tabs=0) {
+
+        if (num_tabs == 0) {
+            std::cout << "\n\n";
+        }
+
+        // print right tree
         if (RIGHT(parent) <= _cur_size) {
             print_tree(RIGHT(parent), num_tabs+1);
         }
+
+        // print root
         for (int i=0; i<num_tabs; i++) {
             std::cout << "\t";
         }
         std::cout << heap[parent]->get_id() << std::endl;
+
+        // print left tree
         if (LEFT(parent) <= _cur_size) {
             print_tree(LEFT(parent), num_tabs+1);
         }    
+
+        if (num_tabs == 0) {
+            std::cout << "\n\n";
+        }
     }
 };
 
-void* foo(void* args) {
-    return NULL;
-}
-
-int main() {
-   AnahySmartHeap<AnahyJob*> heap(4);
-   std::list<AnahyJob*> l;
-
-   char c;
-   scanf("%c", &c);
-   while (c != 'e') {
-
-        switch (c) {
-            case 'i':
-                heap.insert(new AnahyJob(foo, 0, 0));
-                heap.print_tree();
-                break;
-            case 'f':
-                heap.extract_min();
-                heap.print_tree();
-                break;
-            case 'b':
-                heap.extract_last();
-                heap.print_tree();
-                break;
-            default:
-                std::cout << "Unknown option\n";
-                break;
-        }
-        scanf("%c", &c);
-   }
-   return 0;
-}
+#endif

@@ -3,22 +3,34 @@
 
 int AnahyJob::counter = 0;
 
-AnahyJob::AnahyJob(ParFunc function, void* args, AnahyJobAttributes* attr, bool smart) {
+void AnahyJob::init(ParFunc function, void* args, AnahyJobAttributes* attr, bool smart) {
 	assert(function);
 	_id = counter++;
-	_function = function;
-	_args = args;
-	_smart = smart;
 	_fork_counter = 1;
 	_join_counter = 1;
-	_attr = attr;
 	_state = AnahyJobStateReady;
+
+	_function = function;
+	_args = args;
+	_attr = attr;
+	_smart = smart;
+}
+
+AnahyJob::AnahyJob(ParFunc function, void* args, AnahyJobAttributes* attr, bool smart) {
+	init(function, args, attr, smart);
 }
 
 AnahyJob* AnahyJob::new_smart_job(ParFunc function, void* args, AnahyJobAttributes* attr) { 
 	return new AnahyJob(function, args, attr, true);
 }
 
+AnahyJob* AnahyJob::new_smart_job() {
+	return new AnahyJob(true);
+}
+
+AnahyJob::AnahyJob(bool smart) {
+	_smart = smart;
+}
 
 AnahyJob::~AnahyJob() {
 	if (_attr && _smart && _attr->smart()) {
@@ -41,4 +53,3 @@ void AnahyJob::run() {
     _result = (_function)(_args);
     compare_and_swap_state(AnahyJobStateRunning, AnahyJobStateFinished);
 }
-

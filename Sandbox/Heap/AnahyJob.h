@@ -1,3 +1,5 @@
+#ifndef ANAHY_JOB_H
+#define ANAHY_JOB_H 
 
 #include <cassert>
 #include <iostream>
@@ -7,11 +9,11 @@ class VirtualProcessor;
 
 typedef void*(*ParFunc)(void*);
 
-typedef enum {
+enum AnahyJobState {
 	AnahyJobStateReady,
 	AnahyJobStateRunning,
 	AnahyJobStateFinished
-} AnahyJobState;
+};
 
 class AnahyJob {
 	static int counter;
@@ -30,7 +32,6 @@ class AnahyJob {
 	friend class VirtualProcessor;
 
 	// hidden constructors
-	AnahyJob() {}
 	AnahyJob(AnahyJob&) {}
 	
 	// private methods that can be called by a VP
@@ -40,9 +41,13 @@ class AnahyJob {
 	void set_id(unsigned long id) { _id = id; }
 
 public:
-
+	void init(ParFunc function, void* args, AnahyJobAttributes* attr, bool smart=false);
 	AnahyJob(ParFunc function, void* args, AnahyJobAttributes* attr, bool smart=false);
+	
 	static AnahyJob* new_smart_job(ParFunc function, void* args, AnahyJobAttributes* attr);
+	static AnahyJob* new_smart_job();
+
+	AnahyJob(bool smart=false);
 	~AnahyJob();
 
 	VirtualProcessor* get_owner() { return _owner; }
@@ -77,3 +82,4 @@ public:
 	}	
 };
 
+#endif

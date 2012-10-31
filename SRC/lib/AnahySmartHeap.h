@@ -1,6 +1,9 @@
 #ifndef _ANAHY_SMART_HEAP_H
 #define _ANAHY_SMART_HEAP_H
 
+#include <cstdlib>
+#include <iostream>
+
 typedef unsigned int uint;
 
 #define LEFT(i)     (i << 1)
@@ -52,10 +55,13 @@ template<class T> class AnahySmartHeap {
 public:
         
     AnahySmartHeap(int size) {
+        if (size < 4) {
+            size = 4;
+        }
         _cur_size = 0;
         _min_size = size;
         _upper_bound = size;
-        _lower_bound = _upper_bound/2;
+        _lower_bound = _upper_bound/4;
         last_elem = 1;
         heap = (T*) malloc(_upper_bound*sizeof(T));
     }
@@ -69,9 +75,10 @@ public:
         _cur_size++;
         
         if (_cur_size == _upper_bound) {
-            //std::cout << "Reallocating heap!" << std::endl;
-            _lower_bound = _upper_bound;
-            _upper_bound = _upper_bound*2;
+            
+//std::cout << "Aumentando o heap!" << std::endl;
+            _lower_bound *= 2;
+            _upper_bound *= 2;
             tmp = (T*)realloc(heap, _upper_bound*sizeof(T));
             if (tmp) {
                 heap = tmp;
@@ -95,9 +102,10 @@ public:
         heap[1] = heap[_cur_size];
         _cur_size--;
         if (_cur_size == _lower_bound && _cur_size > _min_size) { // realloc!
-            //std::cout << "Reallocating heap!" << std::endl;
-            _upper_bound = _lower_bound;
-            _lower_bound = _upper_bound/2;
+            
+//std::cout << "Diminuindo o heap no AnahySmartHeap::extract_min!!" << std::endl;
+            _upper_bound /= 2;
+            _lower_bound /= 2;
             T* tmp = (T*)realloc(heap, _upper_bound*sizeof(T));
             if (tmp) {
                 heap = tmp;
@@ -120,9 +128,10 @@ public:
         T last = heap[_cur_size];
         _cur_size--;
         if (_cur_size == _lower_bound && _cur_size > _min_size) { // realloc!
-            //std::cout << "Reallocating heap!" << std::endl;
-            _upper_bound = _lower_bound;
-            _lower_bound = _upper_bound/2;
+            
+//std::cout << "Diminuindo o heap no AnahySmartHeap::extract_last!" << std::endl;
+            _upper_bound /= 2;
+            _lower_bound /= 2;
             T* tmp = (T*)realloc(heap, _upper_bound*sizeof(T));
             if (tmp) {
                 heap = tmp;
@@ -136,44 +145,52 @@ public:
         
     uint size() { return _cur_size; }
     
-    // methods for display
-    void print_array() {
-        std::cout << "[";
-        for (int i = 1; i <= _cur_size; i++) {
-            std::cout << heap[i]->get_id();
-            if (i != _cur_size) {
-                std::cout << ", ";
-            }
-        }
-        std::cout << "]\n";
-    }
+    // // methods for display
+    // void print_array() {
+    //     
+//std::cout << "[";
+    //     for (int i = 1; i <= _cur_size; i++) {
+    //         
+//std::cout << heap[i]->get_id();
+    //         if (i != _cur_size) {
+    //             
+//std::cout << ", ";
+    //         }
+    //     }
+    //     
+//std::cout << "]\n";
+    // }
     
-    void print_tree(int parent=1, int num_tabs=0) {
+    // void print_tree(int parent=1, int num_tabs=0) {
 
-        if (num_tabs == 0) {
-            std::cout << "\n\n";
-        }
+    //     if (num_tabs == 0) {
+    //         
+//std::cout << "\n\n";
+    //     }
 
-        // print right tree
-        if (RIGHT(parent) <= _cur_size) {
-            print_tree(RIGHT(parent), num_tabs+1);
-        }
+    //     // print right tree
+    //     if (RIGHT(parent) <= _cur_size) {
+    //         print_tree(RIGHT(parent), num_tabs+1);
+    //     }
 
-        // print root
-        for (int i=0; i<num_tabs; i++) {
-            std::cout << "\t";
-        }
-        std::cout << heap[parent]->get_id() << std::endl;
+    //     // print root
+    //     for (int i=0; i<num_tabs; i++) {
+    //         
+//std::cout << "\t";
+    //     }
+    //     
+//std::cout << heap[parent]->get_id() << std::endl;
 
-        // print left tree
-        if (LEFT(parent) <= _cur_size) {
-            print_tree(LEFT(parent), num_tabs+1);
-        }    
+    //     // print left tree
+    //     if (LEFT(parent) <= _cur_size) {
+    //         print_tree(LEFT(parent), num_tabs+1);
+    //     }    
 
-        if (num_tabs == 0) {
-            std::cout << "\n\n";
-        }
-    }
+    //     if (num_tabs == 0) {
+    //         
+//std::cout << "\n\n";
+    //     }
+    // }
 };
 
 #endif

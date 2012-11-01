@@ -3,8 +3,7 @@
 
 #include <cstdlib>
 #include <iostream>
-
-typedef unsigned int uint;
+#include "../definitions.h"
 
 #define LEFT(i)     (i << 1)
 #define RIGHT(i)    ((i << 1)+1)
@@ -18,8 +17,8 @@ typedef unsigned int uint;
 #define POINTER_LT_OPERATOR(l,r) (*l < *r)
 #define POINTER_GT_OPERATOR(l,r) (*l > *r)
 
-
-template<class T> class AnahySmartHeap {
+template<class T>
+class AnahySmartHeap {
     
     T* heap;
     uint _cur_size;
@@ -54,7 +53,7 @@ template<class T> class AnahySmartHeap {
 
 public:
         
-    AnahySmartHeap(int size) {
+    AnahySmartHeap(int size=24) {
         if (size < 4) {
             size = 4;
         }
@@ -144,6 +143,10 @@ public:
     }
         
     uint size() { return _cur_size; }
+
+    bool empty() {
+        return size() ? true : false;
+    }
     
     // // methods for display
     // void print_array() {

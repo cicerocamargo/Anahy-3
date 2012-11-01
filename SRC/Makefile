@@ -1,5 +1,5 @@
 CPP = g++
-CFLAGS = -O3 -g -DDEBUG
+CFLAGS = -O3 -g
 
 all: vp job anahy attr
 

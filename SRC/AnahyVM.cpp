@@ -75,12 +75,6 @@ void AnahyVM::init(int argc, char **argv) {
 	for (int i = 1; i < num_vps; i++) {
 		pthread_attr_t* attr = NULL; // TO DO
 		pthread_create(&thread_array[i-1], NULL, call_vp_run, vp_array[i]);
-		
-		#ifdef DEBUG
-
-			printf("New thread created for VP %d\n", i);
-
-		#endif
 	}
 }
 
@@ -92,12 +86,6 @@ void AnahyVM::terminate() {
 
 	for (int i = 1; i < num_vps; i++) {
 		pthread_join(thread_array[i-1], NULL);
-		
-		#ifdef DEBUG
-
-		printf("Joined VP %d's thread\n", i);
-
-		#endif
 	}
 
 	// release memory

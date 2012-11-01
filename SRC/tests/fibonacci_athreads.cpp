@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <time.h>
 #include <iostream>
-#include "AnahyVM.h"
-#include "AnahyJob.h"
+#include "../AnahyVM.h"
+#include "../AnahyJob.h"
 
 int __count = 0;
 

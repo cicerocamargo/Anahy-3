@@ -2,10 +2,10 @@
 #define VIRTUALPROCESSOR_H
 
 #include <pthread.h>
-#include <stack>
 #include <list>
 #include "AnahyJobAttributes.h"
-
+#include "lib/AnahySmartStack.h"
+//#include "lib/AnahySmartHeap.h"
 #include "definitions.h"
 
 using namespace std;
@@ -19,7 +19,7 @@ class VirtualProcessor {
 
 	list<AnahyJob*> job_list;
 	AnahyJob* current_job;
-	stack<AnahyJob*> context_stack;
+	AnahySmartStack<AnahyJob*> context_stack;
 
 	pthread_mutex_t mutex; // protection to my job list
 	pthread_attr_t attr;

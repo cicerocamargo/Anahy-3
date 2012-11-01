@@ -3,11 +3,11 @@
 
 #include "definitions.h"
 
-typedef enum {
+enum JobCost {
 	LIGHT_COST,
 	NORMAL_COST,
 	HEAVY_COST,
-} JobCost;
+};
 
 class AnahyJobAttributes {
 

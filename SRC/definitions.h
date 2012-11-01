@@ -1,3 +1,4 @@
 class Job;
 
-typedef void*(*pfunc)(void*); // signature of a parallel funtion
+typedef void*(*ParFunc)(void*);
+typedef unsigned int uint;

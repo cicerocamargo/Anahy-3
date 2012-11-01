@@ -1,7 +1,7 @@
 #ifndef ANAHYVM_H
 #define ANAHYVM_H
 
-#define VERSION 3.0
+#define VERSION 3.2
 
 #include <pthread.h>
 #include <unistd.h>

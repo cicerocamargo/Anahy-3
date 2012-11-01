@@ -1,5 +1,5 @@
 #include "VirtualProcessor.h"
-//#include "AnahyJob.h"
+#include "AnahyJob.h"
 #include "AnahyVM.h"
 #include <stdlib.h>
 
@@ -68,6 +68,7 @@ VirtualProcessor::~VirtualProcessor() {
 void VirtualProcessor::fork_job(AnahyJob* job) {
 
 	job->set_parent(current_job);
+	job->set_id(job_counter++);
 
 	if (context_stack.size() > 10000) {
 		job->run();

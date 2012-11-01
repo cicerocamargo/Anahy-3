@@ -1,17 +1,21 @@
+#ifndef ANAHY_JOB_H
+#define ANAHY_JOB_H
 
 #include <cassert>
+#include "definitions.h"
 
 class AnahyJobAttributes;
 
 typedef void*(*ParFunc)(void*);
 
-typedef enum {
+enum AnahyJobState {
 	AnahyJobStateReady,
 	AnahyJobStateRunning,
 	AnahyJobStateFinished
-} AnahyJobState;
+};
 
 class AnahyJob {
+	uint _id;
 	AnahyJob* _parent;
 	AnahyJobState _state;
 	ParFunc _function;
@@ -31,6 +35,9 @@ class AnahyJob {
 	// private methods that can be called by a VP
 	void run();
 	void set_parent(AnahyJob* parent) { _parent = parent; }
+
+	void set_id(uint id) { _id = id; }
+	uint id() { return _id; }
 
 public:
 
@@ -56,5 +63,14 @@ public:
 	
 	AnahyJobAttributes* attributes() { return _attr; }
 	void set_attributes(AnahyJobAttributes* attr) { _attr = attr; }
+
+	bool operator<(AnahyJob& job) {
+		return _id < job._id;
+	}
+
+	bool operator>(AnahyJob& job) {
+		return _id > job._id;
+	}
 };
 
+#endif

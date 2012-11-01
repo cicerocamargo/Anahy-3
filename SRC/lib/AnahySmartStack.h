@@ -1,7 +1,11 @@
+#ifndef _ANAHY_SMART_STACK_H
+#define _ANAHY_SMART_STACK_H
+
 #include <cstdlib>
 #include <cstdio>
 
-template<class T> class AnahySmartStack {
+template<class T>
+class AnahySmartStack {
 	unsigned long _current_size;
 	unsigned long _upper_bound;
 	unsigned long _lower_bound;
@@ -73,3 +77,5 @@ public:
 		_current_size--;
 	}
 };
+
+#endif

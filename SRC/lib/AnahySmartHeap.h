@@ -94,7 +94,7 @@ public:
     T extract_min() {
         if (_cur_size == 0)
         {
-            return (T)0;
+            return NULL;
         }
 
         T min = heap[1];
@@ -121,7 +121,7 @@ public:
     T extract_last() {
         if (_cur_size == 0)
         {
-            return (T)0;
+            return NULL;
         }
         
         T last = heap[_cur_size];
@@ -145,7 +145,10 @@ public:
     uint size() { return _cur_size; }
 
     bool empty() {
-        return size() ? true : false;
+        if (size() == 0) 
+            return true;
+        else
+            return false;
     }
     
     // // methods for display

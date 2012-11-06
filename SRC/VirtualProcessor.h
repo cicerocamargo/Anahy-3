@@ -5,7 +5,7 @@
 #include <list>
 #include "AnahyJobAttributes.h"
 #include "lib/AnahySmartStack.h"
-//#include "lib/AnahySmartHeap.h"
+#include "lib/AnahySmartHeap.h"
 #include "definitions.h"
 
 using namespace std;
@@ -17,7 +17,7 @@ class VirtualProcessor {
 	int id;
 	long job_counter;
 
-	list<AnahyJob*> job_list;
+	AnahySmartHeap<AnahyJob*> job_list;
 	AnahyJob* current_job;
 	AnahySmartStack<AnahyJob*> context_stack;
 

@@ -74,7 +74,7 @@ void VirtualProcessor::fork_job(AnahyJob* job) {
 		job->run();
 	} else {
 		pthread_mutex_lock(&mutex);
-		job_list.push_back(job);
+		job_list.insert(job);
 		pthread_mutex_unlock(&mutex);
 	}
 }
@@ -128,8 +128,7 @@ AnahyJob* VirtualProcessor::get_job() {
 	pthread_mutex_lock(&mutex);
 
 	if (!job_list.empty()) {
-		job = job_list.back();
-		job_list.pop_back();
+		job = job_list.extract_last();
 	}
 
 	pthread_mutex_unlock(&mutex);
@@ -147,8 +146,7 @@ AnahyJob* VirtualProcessor::steal_job() {
 	pthread_mutex_lock(&mutex);
 	
 	if (!job_list.empty()) {
-		job = job_list.front();
-		job_list.pop_front();
+		job = job_list.extract_min();
 	}
 	
 	pthread_mutex_unlock(&mutex);

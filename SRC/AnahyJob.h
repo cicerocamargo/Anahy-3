@@ -1,10 +1,11 @@
 #ifndef ANAHY_JOB_H
-#define ANAHY_JOB_H
+#define ANAHY_JOB_H 
 
 #include <cassert>
-#include "definitions.h"
+#include <iostream>
 
 class AnahyJobAttributes;
+class VirtualProcessor;
 
 typedef void*(*ParFunc)(void*);
 
@@ -15,7 +16,9 @@ enum AnahyJobState {
 };
 
 class AnahyJob {
-	uint _id;
+	static int counter;
+	unsigned long _id;
+	VirtualProcessor* _owner;
 	AnahyJob* _parent;
 	AnahyJobState _state;
 	ParFunc _function;
@@ -29,21 +32,26 @@ class AnahyJob {
 	friend class VirtualProcessor;
 
 	// hidden constructors
-	AnahyJob() {}
 	AnahyJob(AnahyJob&) {}
 	
 	// private methods that can be called by a VP
 	void run();
 	void set_parent(AnahyJob* parent) { _parent = parent; }
-
-	void set_id(uint id) { _id = id; }
-	uint id() { return _id; }
+	void set_owner(VirtualProcessor* vp) { _owner = vp; }
+	void set_id(unsigned long id) { _id = id; }
 
 public:
-
-	AnahyJob(ParFunc function, void* args, AnahyJobAttributes* attr, bool smart=false);
+	void init(ParFunc function, void* args, AnahyJobAttributes* attr, bool smart);
+	AnahyJob(ParFunc function, void* args, AnahyJobAttributes* attr, bool smart);
+	
 	static AnahyJob* new_smart_job(ParFunc function, void* args, AnahyJobAttributes* attr);
+	static AnahyJob* new_smart_job();
+
+	AnahyJob(bool smart);
 	~AnahyJob();
+
+	VirtualProcessor* get_owner() { return _owner; }
+	unsigned long get_id() { return _id; }
 
 	unsigned short join_counter() { return _join_counter; }
 	void set_join_counter(unsigned short join_counter);
@@ -64,13 +72,14 @@ public:
 	AnahyJobAttributes* attributes() { return _attr; }
 	void set_attributes(AnahyJobAttributes* attr) { _attr = attr; }
 
+	// overwritten operators
 	bool operator<(AnahyJob& job) {
 		return _id < job._id;
 	}
 
 	bool operator>(AnahyJob& job) {
 		return _id > job._id;
-	}
+	}	
 };
 
 #endif

@@ -59,6 +59,8 @@ public:
 		_array[_current_size++] = value;
 	}
 
+
+
 	void pop() {
 		if (_current_size == _lower_bound && _lower_bound > _min_size) {
 			_upper_bound /= 2;

@@ -1,24 +1,39 @@
 #include "AnahyJob.h"
 #include "AnahyJobAttributes.h"
 
-AnahyJob::AnahyJob(ParFunc function, void* args, AnahyJobAttributes* attr, bool smart) {
+int AnahyJob::counter = 0;
+
+void AnahyJob::init(ParFunc function, void* args, AnahyJobAttributes* attr, bool smart=false) {
 	assert(function);
-	_function = function;
-	_args = args;
-	_smart = smart;
+	_id = counter++;
 	_fork_counter = 1;
 	_join_counter = 1;
-	_attr = attr;
 	_state = AnahyJobStateReady;
+
+	_function = function;
+	_args = args;
+	_attr = attr;
+	_smart = smart;
+}
+
+AnahyJob::AnahyJob(ParFunc function, void* args, AnahyJobAttributes* attr, bool smart) {
+	init(function, args, attr, smart);
 }
 
 AnahyJob* AnahyJob::new_smart_job(ParFunc function, void* args, AnahyJobAttributes* attr) { 
 	return new AnahyJob(function, args, attr, true);
 }
 
+AnahyJob* AnahyJob::new_smart_job() {
+	return new AnahyJob(true);
+}
+
+AnahyJob::AnahyJob(bool smart=false) {
+	_smart = smart;
+}
 
 AnahyJob::~AnahyJob() {
-	if (_attr && this->smart() && _attr->smart()) {
+	if (_attr && _smart && _attr->smart()) {
 		delete _attr;
 	}
 }
@@ -35,7 +50,6 @@ void AnahyJob::set_fork_counter(unsigned short fork_counter) {
 
 
 void AnahyJob::run() {
-    _result = (_function)(_args);
+	_result = (_function)(_args);
     compare_and_swap_state(AnahyJobStateRunning, AnahyJobStateFinished);
 }
-

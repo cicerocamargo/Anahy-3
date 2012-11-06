@@ -16,8 +16,12 @@ void* par_fib(void* args) {
 		long n_minus_1 = *n-1;
 		long n_minus_2 = *n-2;
 
-		AnahyJob job_left(par_fib, &n_minus_1, NULL);
-		AnahyJob job_right(par_fib, &n_minus_2, NULL);
+		AnahyJob job_left;
+		AnahyJob job_right;
+
+		job_left.init(par_fib, &n_minus_1, NULL);
+		job_right.init(par_fib, &n_minus_2, NULL);
+
 
 		AnahyVM::fork(&job_left);
 		AnahyVM::fork(&job_right);

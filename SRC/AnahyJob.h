@@ -41,13 +41,13 @@ class AnahyJob {
 	void set_id(unsigned long id) { _id = id; }
 
 public:
-	void init(ParFunc function, void* args, AnahyJobAttributes* attr, bool smart);
-	AnahyJob(ParFunc function, void* args, AnahyJobAttributes* attr, bool smart);
+	void init(ParFunc function, void* args, AnahyJobAttributes* attr, bool smart=false);
+	AnahyJob(ParFunc function, void* args, AnahyJobAttributes* attr, bool smart=false);
 	
 	static AnahyJob* new_smart_job(ParFunc function, void* args, AnahyJobAttributes* attr);
 	static AnahyJob* new_smart_job();
 
-	AnahyJob(bool smart);
+	AnahyJob(bool smart=false);
 	~AnahyJob();
 
 	VirtualProcessor* get_owner() { return _owner; }

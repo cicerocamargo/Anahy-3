@@ -3,7 +3,7 @@
 
 int AnahyJob::counter = 0;
 
-void AnahyJob::init(ParFunc function, void* args, AnahyJobAttributes* attr, bool smart=false) {
+void AnahyJob::init(ParFunc function, void* args, AnahyJobAttributes* attr, bool smart) {
 	assert(function);
 	_id = counter++;
 	_fork_counter = 1;
@@ -28,7 +28,7 @@ AnahyJob* AnahyJob::new_smart_job() {
 	return new AnahyJob(true);
 }
 
-AnahyJob::AnahyJob(bool smart=false) {
+AnahyJob::AnahyJob(bool smart) {
 	_smart = smart;
 }
 

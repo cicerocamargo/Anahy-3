@@ -53,9 +53,9 @@ class AnahySmartHeap {
 
 public:
         
-    AnahySmartHeap(int size=24) {
-        if (size < 4) {
-            size = 4;
+    AnahySmartHeap(int size=64) {
+        if (size < 12) {
+            size = 12;
         }
         _cur_size = 0;
         _min_size = size;

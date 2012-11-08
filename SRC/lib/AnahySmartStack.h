@@ -14,8 +14,8 @@ class AnahySmartStack {
 
 public:
 	AnahySmartStack(int size_to_reserve=1024) {
-		if (size_to_reserve < 4) {
-			size_to_reserve = 4;
+		if (size_to_reserve < 12) {
+			size_to_reserve = 12;
 		}
 		_min_size = size_to_reserve;
 		_upper_bound = size_to_reserve;
